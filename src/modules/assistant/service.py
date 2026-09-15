@@ -574,6 +574,15 @@ class AssistantService:
             call_id=data.get("call_id", ""),
             tool_name=data.get("tool", ""),
             summary=data.get("summary", ""),
+            ok=bool(data.get("ok", False)),
+        )
+
+    def record_tool_started(self, task_id: int, data: dict) -> None:
+        self._repository.record_tool_started(
+            task_id,
+            call_id=data.get("call_id", ""),
+            tool_name=data.get("tool", ""),
+            arguments=data.get("arguments") or {},
         )
 
     def record_assistant_message(
@@ -587,12 +596,24 @@ class AssistantService:
             )
         )
 
+    def complete_task_with_message(
+        self, task_id: int, conversation_id: int, content: str
+    ) -> MessageDTO | None:
+        message = self._repository.complete_task_with_message(
+            task_id, conversation_id, content
+        )
+        return self._message_dto(message) if message is not None else None
+
     def finish_task(self, task_id: int, result, final_message_id: int) -> None:
         self._repository.finish_task(
             task_id,
             status=result.status.value,
             final_message_id=final_message_id,
             error_code=result.error_code,
+            event_data={
+                "message_id": final_message_id,
+                "content": result.answer or "",
+            },
         )
 
     def fail_task(self, task_id: int, error_code: str) -> None:
@@ -602,7 +623,22 @@ class AssistantService:
             status="failed",
             final_message_id=None,
             error_code=error_code,
+            event_data={"code": error_code, "message": error_code},
         )
+
+    def cancel_task(self, task_id: int) -> dict:
+        try:
+            self._repository.cancel_task(task_id)
+            return self._repository.get_task_snapshot(task_id)
+        except LookupError as exc:
+            raise AssistantNotFoundError(str(exc)) from exc
+
+    def retry_task(self, task_id: int) -> dict:
+        try:
+            task = self._repository.retry_task(task_id)
+            return self._repository.get_task_snapshot(task.id)
+        except LookupError as exc:
+            raise AssistantNotFoundError(str(exc)) from exc
 
     @staticmethod
     def _approval_presentation(pending) -> dict[str, str]:

@@ -198,6 +198,7 @@ export const chatApi = {
   sendMessageStream,
   sendAssistantMessageStream: (conversationId: number, content: string, callbacks: ChatStreamCallbacks, signal?: AbortSignal) =>
     sendMessageStream(conversationId, content, callbacks, signal, '/assistant/conversations/' + conversationId + '/messages/stream'),
+  subscribeAssistantTaskStream,
   decideAssistantApprovalStream,
 }
 
@@ -206,6 +207,8 @@ export interface ChatStreamCallbacks {
   onStatus?: (message: string) => void
   /** Server accepted a durable assistant task. */
   onRunStarted?: (info: { taskId: number; contextUsage?: ContextUsage }) => void
+  /** A durable task id is known before execution starts. */
+  onTaskCreated?: (taskId: number) => void
   /** Context was measured and, when needed, compacted before the agent loop. */
   onContextPrepared?: (info: {
     compressed: boolean
@@ -264,12 +267,105 @@ const TRACE_EVENTS = new Set([
 
 const CHAT_STREAM_MAX_RECONNECTS = 3
 
+interface AssistantStreamState {
+  lastEventId: number
+  finished: boolean
+  paused: boolean
+  terminalError: string
+}
+
+function dispatchAssistantEvent(
+  ev: SSEEvent,
+  callbacks: ChatStreamCallbacks,
+  state: AssistantStreamState,
+): void {
+  if (ev.id > 0) state.lastEventId = ev.id
+  const d = ev.data || {}
+  if (TRACE_EVENTS.has(ev.event)) {
+    callbacks.onTrace?.({ event: ev.event, data: d, id: ev.id })
+  }
+  switch (ev.event) {
+    case 'task_created':
+    case 'task_queued': {
+      const taskId = Number(d.task_id) || 0
+      if (taskId > 0) callbacks.onTaskCreated?.(taskId)
+      break
+    }
+    case 'status':
+      callbacks.onStatus?.(d.message || '思考中…')
+      break
+    case 'run_started':
+      callbacks.onRunStarted?.({
+        taskId: Number(d.task_id) || 0,
+        contextUsage: d.context_usage as ContextUsage | undefined,
+      })
+      break
+    case 'context_prepared':
+      callbacks.onContextPrepared?.({
+        compressed: !!d.compressed,
+        compressionStatus: d.compression_status || (d.compressed ? 'compressed' : 'not_needed'),
+        mode: d.mode || 'balanced',
+        usageBefore: d.usage_before as ContextUsage,
+        usageAfter: d.usage_after as ContextUsage,
+        compressedMessageCount: Number(d.compressed_message_count) || 0,
+      })
+      break
+    case 'token':
+      callbacks.onToken?.(d.text || d.token || '')
+      break
+    case 'tool_call_start':
+      callbacks.onToolCallStart?.({ name: d.name || d.tool || '', arguments: d.arguments || {} })
+      break
+    case 'tool_result':
+      callbacks.onToolResult?.({ name: d.name || d.tool || '', ok: !!d.ok, preview: d.preview || d.summary || '' })
+      break
+    case 'plan':
+      callbacks.onPlan?.({ status: d.status || '', steps: d.steps || [], current: d.current })
+      break
+    case 'approval_required': {
+      const call = d.calls?.[0] || {}
+      callbacks.onApprovalRequired?.({
+        id: d.approval_id || '',
+        tool_title: d.presentation?.tool_title || call.name || d.name || '需要确认的工具操作',
+        risk: call.risk || d.risk || 'write',
+        summary: d.presentation?.summary || call.summary || ('请求执行 ' + (call.name || d.name || '工具操作')),
+        expires_at: d.expires_at || '',
+        status: 'pending',
+      })
+      break
+    }
+    case 'paused':
+      state.paused = true
+      callbacks.onPaused?.({
+        taskId: Number(d.task_id) || 0,
+        reason: d.reason || '',
+        resolvedApprovalId: d.resolved_approval_id || undefined,
+        resolvedStatus: d.resolved_status === 'approved' || d.resolved_status === 'rejected'
+          ? d.resolved_status
+          : undefined,
+      })
+      break
+    case 'done':
+      state.finished = true
+      callbacks.onDone?.({
+        message_id: d.message_id || 0,
+        content: d.content || '',
+        created_at: d.created_at || '',
+      })
+      break
+    case 'error':
+      state.terminalError = d.message || '未知错误'
+      callbacks.onError?.(state.terminalError)
+      break
+  }
+}
+
 /**
  * 流式发送消息（SSE）。
  *
  * - 首次连接 POST /chat/conversations/{id}/messages/stream；
- * - meta 事件携带 stream_id，之后若连接中断（生成仍在服务端继续），
- *   自动经 GET /chat/streams/{stream_id} + Last-Event-ID 续推；
+ * - 旧流通过 meta 事件携带 stream_id，新助手流通过 task_created 事件携带 task_id；
+ *   连接中断后分别从内存流或持久化任务事件流 + Last-Event-ID 续推；
  * - 若首次连接直接失败（未收到任何事件），抛异常，调用方降级到非流式 sendMessage。
  */
 async function sendMessageStream(
@@ -280,111 +376,53 @@ async function sendMessageStream(
   streamPath = `/chat/conversations/${conversationId}/messages/stream`
 ): Promise<void> {
   let streamId = ''
-  let lastEventId = 0
-  let finished = false
-  let paused = false
-  let terminalError = ''
+  let taskEventPath = ''
+  const state: AssistantStreamState = {
+    lastEventId: 0,
+    finished: false,
+    paused: false,
+    terminalError: '',
+  }
+  let primaryError: unknown = null
 
   const handleEvent = (ev: SSEEvent) => {
-    if (ev.id > 0) lastEventId = ev.id
     const d = ev.data || {}
-    if (TRACE_EVENTS.has(ev.event)) {
-      callbacks.onTrace?.({ event: ev.event, data: d, id: ev.id })
+    if (ev.event === 'meta') {
+      streamId = d.stream_id || ''
     }
-    switch (ev.event) {
-      case 'meta':
-        streamId = d.stream_id || ''
-        break
-      case 'status':
-        callbacks.onStatus?.(d.message || '思考中…')
-        break
-      case 'run_started':
-        callbacks.onRunStarted?.({
-          taskId: Number(d.task_id) || 0,
-          contextUsage: d.context_usage as ContextUsage | undefined,
-        })
-        break
-      case 'context_prepared':
-        callbacks.onContextPrepared?.({
-          compressed: !!d.compressed,
-          compressionStatus: d.compression_status || (d.compressed ? 'compressed' : 'not_needed'),
-          mode: d.mode || 'balanced',
-          usageBefore: d.usage_before as ContextUsage,
-          usageAfter: d.usage_after as ContextUsage,
-          compressedMessageCount: Number(d.compressed_message_count) || 0,
-        })
-        break
-      case 'token':
-        callbacks.onToken?.(d.text || '')
-        break
-      case 'tool_call_start':
-        callbacks.onToolCallStart?.({ name: d.name || '', arguments: d.arguments || {} })
-        break
-      case 'tool_result':
-        callbacks.onToolResult?.({ name: d.name || '', ok: !!d.ok, preview: d.preview || '' })
-        break
-      case 'plan':
-        callbacks.onPlan?.({ status: d.status || '', steps: d.steps || [], current: d.current })
-        break
-      case 'approval_required': {
-        const call = d.calls?.[0] || {}
-        callbacks.onApprovalRequired?.({
-          id: d.approval_id || '',
-          tool_title: d.presentation?.tool_title || call.name || '需要确认的工具操作',
-          risk: call.risk || 'write',
-          summary: d.presentation?.summary || ('请求执行 ' + (call.name || '工具操作')),
-          expires_at: d.expires_at || '',
-          status: 'pending',
-        })
-        break
-      }
-      case 'paused':
-        paused = true
-        callbacks.onPaused?.({
-          taskId: Number(d.task_id) || 0,
-          reason: d.reason || '',
-          resolvedApprovalId: d.resolved_approval_id || undefined,
-          resolvedStatus: d.resolved_status === 'approved' || d.resolved_status === 'rejected'
-            ? d.resolved_status
-            : undefined,
-        })
-        break
-      case 'done':
-        finished = true
-        callbacks.onDone?.({
-          message_id: d.message_id || 0,
-          content: d.content || '',
-          created_at: d.created_at || '',
-        })
-        break
-      case 'error':
-        terminalError = d.message || '未知错误'
-        callbacks.onError?.(terminalError)
-        break
+    if (ev.event === 'task_created' || ev.event === 'task_queued') {
+      const taskId = Number(d.task_id) || 0
+      if (taskId > 0) taskEventPath = `/assistant/tasks/${taskId}/events`
     }
+    dispatchAssistantEvent(ev, callbacks, state)
   }
 
-  await readSSE(streamPath, {
-    method: 'POST',
-    body: { content },
-    signal,
-    onEvent: handleEvent,
-  })
+  try {
+    await readSSE(streamPath, {
+      method: 'POST',
+      body: { content },
+      signal,
+      onEvent: handleEvent,
+    })
+  } catch (error) {
+    primaryError = error
+  }
 
   // The legacy /api/chat endpoint intentionally emits `error` then persists a
   // fallback response as `done`.  Only a stream that ends without `done` is a
   // terminal failure for the caller.
-  if (terminalError && !finished) throw new Error(terminalError)
+  if (state.terminalError && !state.finished) throw new Error(state.terminalError)
 
   // 连接被中断但生成未结束 → 经续推端点接回（服务端缓冲全量事件）
   let reconnects = 0
-  while (!finished && !paused && streamId && reconnects < CHAT_STREAM_MAX_RECONNECTS) {
+  const reconnectPath = taskEventPath || (streamId ? `/chat/streams/${streamId}` : '')
+  while (!state.finished && !state.paused && reconnectPath && reconnects < CHAT_STREAM_MAX_RECONNECTS) {
     if (signal?.aborted) return
     reconnects += 1
     try {
-      await readSSE(`/chat/streams/${streamId}`, {
+      await readSSE(reconnectPath, {
         signal,
-        lastEventId,
+        lastEventId: state.lastEventId,
         onEvent: handleEvent,
       })
     } catch {
@@ -393,77 +431,104 @@ async function sendMessageStream(
     }
   }
 
-  if (!finished && !paused) throw new Error('流式回复未完成')
+  if (!state.finished && !state.paused) throw primaryError || new Error('流式回复未完成')
+}
+
+async function subscribeAssistantTaskStream(
+  taskId: number,
+  callbacks: ChatStreamCallbacks,
+  signal?: AbortSignal,
+  afterEventId = 0,
+): Promise<void> {
+  const state: AssistantStreamState = {
+    lastEventId: Math.max(0, afterEventId),
+    finished: false,
+    paused: false,
+    terminalError: '',
+  }
+  let primaryError: unknown = null
+  let reconnects = 0
+  const path = `/assistant/tasks/${taskId}/events`
+
+  while (!state.finished && !state.paused && reconnects < CHAT_STREAM_MAX_RECONNECTS) {
+    if (signal?.aborted) return
+    try {
+      await readSSE(path, {
+        signal,
+        lastEventId: state.lastEventId,
+        onEvent: (ev) => dispatchAssistantEvent(ev, callbacks, state),
+      })
+      if (!state.finished && !state.paused) {
+        reconnects += 1
+        if (reconnects < CHAT_STREAM_MAX_RECONNECTS) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * reconnects))
+        }
+      }
+    } catch (error) {
+      primaryError = error
+      reconnects += 1
+      if (reconnects >= CHAT_STREAM_MAX_RECONNECTS) break
+      await new Promise((resolve) => setTimeout(resolve, 1000 * reconnects))
+    }
+  }
+
+  if (state.terminalError && !state.finished) throw new Error(state.terminalError)
+  if (!state.finished && !state.paused && !signal?.aborted) {
+    throw primaryError || new Error('任务事件流未完成')
+  }
 }
 
 async function decideAssistantApprovalStream(
   approvalId: string,
   decision: 'approved' | 'rejected',
   callbacks: ChatStreamCallbacks,
+  taskId?: number,
   signal?: AbortSignal,
 ): Promise<void> {
-  let finished = false
-  let paused = false
-  let terminalError = ''
+  const state: AssistantStreamState = {
+    lastEventId: 0,
+    finished: false,
+    paused: false,
+    terminalError: '',
+  }
+  let primaryError: unknown = null
+  try {
+    await readSSE('/assistant/approvals/' + encodeURIComponent(approvalId) + '/decision/stream', {
+      method: 'POST',
+      body: { decision },
+      signal,
+      onEvent: (ev) => dispatchAssistantEvent(ev, callbacks, state),
+    })
+  } catch (error) {
+    primaryError = error
+  }
 
-  await readSSE('/assistant/approvals/' + encodeURIComponent(approvalId) + '/decision/stream', {
-    method: 'POST',
-    body: { decision },
-    signal,
-    onEvent: (ev) => {
-      const d = ev.data || {}
-      if (TRACE_EVENTS.has(ev.event)) {
-        callbacks.onTrace?.({ event: ev.event, data: d, id: ev.id })
-      }
-      switch (ev.event) {
-        case 'token':
-          callbacks.onToken?.(d.text || '')
-          break
-        case 'tool_call_start':
-          callbacks.onToolCallStart?.({ name: d.name || '', arguments: d.arguments || {} })
-          break
-        case 'tool_result':
-          callbacks.onToolResult?.({ name: d.name || '', ok: !!d.ok, preview: d.preview || '' })
-          break
-        case 'approval_required': {
-          const call = d.calls?.[0] || {}
-          callbacks.onApprovalRequired?.({
-            id: d.approval_id || '',
-            tool_title: d.presentation?.tool_title || call.name || '需要确认的工具操作',
-            risk: call.risk || 'write',
-            summary: d.presentation?.summary || ('请求执行 ' + (call.name || '工具操作')),
-            expires_at: d.expires_at || '',
-            status: 'pending',
-          })
-          break
+  // The POST is exactly-once. If its response is lost after the server has
+  // accepted the decision, follow the durable task stream instead of posting
+  // the decision again.
+  let reconnects = 0
+  while (!state.finished && !state.paused && taskId && reconnects < CHAT_STREAM_MAX_RECONNECTS) {
+    if (signal?.aborted) return
+    reconnects += 1
+    try {
+      await readSSE(`/assistant/tasks/${taskId}/events`, {
+        signal,
+        lastEventId: state.lastEventId,
+        onEvent: (ev) => dispatchAssistantEvent(ev, callbacks, state),
+      })
+      if (!state.finished && !state.paused) {
+        reconnects += 1
+        if (reconnects < CHAT_STREAM_MAX_RECONNECTS) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * reconnects))
         }
-        case 'paused':
-          paused = true
-          callbacks.onPaused?.({
-            taskId: Number(d.task_id) || 0,
-            reason: d.reason || '',
-            resolvedApprovalId: d.resolved_approval_id || undefined,
-            resolvedStatus: d.resolved_status === 'approved' || d.resolved_status === 'rejected'
-              ? d.resolved_status
-              : undefined,
-          })
-          break
-        case 'done':
-          finished = true
-          callbacks.onDone?.({
-            message_id: d.message_id || 0,
-            content: d.content || '',
-            created_at: d.created_at || '',
-          })
-          break
-        case 'error':
-          terminalError = d.message || '未知错误'
-          callbacks.onError?.(terminalError)
-          break
       }
-    },
-  })
+    } catch {
+      reconnects += 1
+      if (reconnects >= CHAT_STREAM_MAX_RECONNECTS) break
+      await new Promise((resolve) => setTimeout(resolve, 1000 * reconnects))
+    }
+  }
 
-  if (terminalError && !finished) throw new Error(terminalError)
-  if (!finished && !paused) throw new Error('流式回复未完成')
+  if (state.terminalError && !state.finished) throw new Error(state.terminalError)
+  if (!state.finished && !state.paused) throw primaryError || new Error('流式回复未完成')
 }

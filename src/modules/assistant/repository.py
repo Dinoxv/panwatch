@@ -8,6 +8,8 @@ from uuid import uuid4
 from pan_agent import (
     AgentCheckpoint,
     ApprovalDecision,
+    CheckpointEnvelope,
+    CheckpointReason,
     ContextCompressionMode,
     ContextSummary,
     ContextUsage,
@@ -17,19 +19,25 @@ from pan_agent import (
     ToolRisk,
     ToolSpec,
 )
+from pan_agent import (
+    __version__ as PAN_AGENT_RUNTIME_VERSION,
+)
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 
 # 助手表由共享持久化平台注册；repository 是其唯一的模块内访问边界，
 # 不需要再经由一个只做 re-export 的 ``assistant.models`` 转发层。
 from src.platform.persistence.models import (
-    AssistantTaskRun,
     AssistantContextSnapshot,
+    AssistantTaskEvent,
+    AssistantTaskRun,
     AssistantToolApproval,
     AssistantToolInvocation,
     AssistantToolPermission,
     ChatConversation,
     ChatMessage,
 )
+from src.platform.tasking.contracts import TaskEvent, TaskEventType, TaskStatus
 
 
 class AssistantRepository:
@@ -147,25 +155,289 @@ class AssistantRepository:
         task = AssistantTaskRun(
             conversation_id=conversation_id,
             user_message_id=user_message_id,
-            status="running",
+            status=TaskStatus.QUEUED.value,
             context=context,
-            started_at=datetime.now(timezone.utc),
         )
         self._session.add(task)
+        self._session.flush()
+        self.append_task_event(
+            task.id,
+            TaskEventType.TASK_CREATED,
+            data={"task_id": task.id, "conversation_id": conversation_id},
+            commit=False,
+        )
+        self.append_task_event(
+            task.id,
+            TaskEventType.TASK_QUEUED,
+            status=TaskStatus.QUEUED,
+            data={"task_id": task.id},
+            commit=False,
+        )
         self._session.commit()
         self._session.refresh(task)
         return task
 
-    def record_tool_completed(self, task_run_id: int, *, call_id: str, tool_name: str, summary: str) -> AssistantToolInvocation:
-        invocation = AssistantToolInvocation(
-            task_run_id=task_run_id,
-            call_id=call_id,
-            tool_name=tool_name,
-            status="completed",
-            summary=summary,
-            completed_at=datetime.now(timezone.utc),
+    def mark_task_running(self, task_run_id: int) -> AssistantTaskRun:
+        task = self._require_task(task_run_id)
+        if task.status == TaskStatus.RUNNING.value:
+            return task
+        if TaskStatus(task.status).is_terminal:
+            return task
+        self.claim_task(task_run_id)
+        return self._require_task(task_run_id)
+
+    def claim_task(self, task_run_id: int) -> bool:
+        """Atomically claim queued or approval-resume work for one worker."""
+        now = datetime.now(timezone.utc)
+        claimed = (
+            self._session.query(AssistantTaskRun)
+            .filter(
+                AssistantTaskRun.id == task_run_id,
+                AssistantTaskRun.status.in_(
+                    [TaskStatus.QUEUED.value, TaskStatus.WAITING_APPROVAL.value]
+                ),
+            )
+            .update(
+                {
+                    "status": TaskStatus.RUNNING.value,
+                    "started_at": now,
+                    "finished_at": None,
+                },
+                synchronize_session=False,
+            )
         )
-        self._session.add(invocation)
+        if claimed != 1:
+            return False
+        self._session.expire_all()
+        self.append_task_event(
+            task_run_id,
+            TaskEventType.TASK_STARTED,
+            status=TaskStatus.RUNNING,
+            data={"task_id": task_run_id},
+            commit=False,
+        )
+        self._session.commit()
+        return True
+
+    def append_task_event(
+        self,
+        task_run_id: int,
+        event_type: TaskEventType,
+        *,
+        status: TaskStatus | None = None,
+        step_index: int | None = None,
+        data: dict | None = None,
+        commit: bool = True,
+    ) -> AssistantTaskEvent:
+        """Append one replayable fact and advance the task snapshot cursor."""
+        task = self._require_task(task_run_id)
+        event_type = TaskEventType(event_type)
+        # Lock the task row before reading MAX(sequence).  This serializes
+        # event allocation for one task on both PostgreSQL and SQLite, while
+        # keeping the per-task cursor stable for Last-Event-ID replay.
+        self._session.query(AssistantTaskRun).filter(
+            AssistantTaskRun.id == task_run_id
+        ).update(
+            {AssistantTaskRun.state_version: AssistantTaskRun.state_version},
+            synchronize_session=False,
+        )
+        self._session.expire(task)
+        task = self._require_task(task_run_id)
+        next_sequence = (
+            self._session.query(func.max(AssistantTaskEvent.sequence))
+            .filter(AssistantTaskEvent.task_run_id == task_run_id)
+            .scalar()
+            or 0
+        ) + 1
+        protocol_event = TaskEvent(
+            task_id=str(task_run_id),
+            run_id=str(task_run_id),
+            event_type=event_type,
+            status=status,
+            step_index=step_index,
+            data=data or {},
+        )
+        row = AssistantTaskEvent(
+            task_run_id=task_run_id,
+            sequence=next_sequence,
+            event_id=protocol_event.event_id,
+            run_id=protocol_event.run_id,
+            event_type=protocol_event.event_type.value,
+            status=protocol_event.status.value if protocol_event.status else None,
+            step_index=protocol_event.step_index,
+            data=protocol_event.data,
+            occurred_at=protocol_event.occurred_at,
+        )
+        self._session.add(row)
+        task.last_event_id = str(next_sequence)
+        task.state_version = int(task.state_version or 0) + 1
+        if step_index is not None:
+            task.current_step = max(int(task.current_step or 0), step_index)
+        if commit:
+            self._session.commit()
+            self._session.refresh(row)
+        return row
+
+    def list_task_events(
+        self, task_run_id: int, *, after_sequence: int = 0, limit: int = 200
+    ) -> list[AssistantTaskEvent]:
+        self._require_task(task_run_id)
+        return (
+            self._session.query(AssistantTaskEvent)
+            .filter(
+                AssistantTaskEvent.task_run_id == task_run_id,
+                AssistantTaskEvent.sequence > max(0, int(after_sequence)),
+            )
+            .order_by(AssistantTaskEvent.sequence.asc())
+            .limit(max(1, min(int(limit), 1_000)))
+            .all()
+        )
+
+    def is_task_cancelled(self, task_run_id: int) -> bool:
+        task = self._require_task(task_run_id)
+        return bool(task.cancel_requested or task.status == TaskStatus.CANCELLED.value)
+
+    def cancel_task(self, task_run_id: int) -> AssistantTaskRun:
+        task = self._require_task(task_run_id)
+        if TaskStatus(task.status).is_terminal:
+            return task
+        task.cancel_requested = True
+        task.status = TaskStatus.CANCELLED.value
+        task.finished_at = datetime.now(timezone.utc)
+        task.checkpoint = None
+        task.checkpoint_id = ""
+        now = datetime.now(timezone.utc)
+        for approval in self.list_task_approvals(task_run_id):
+            if approval.status == "pending":
+                approval.status = "cancelled"
+                approval.decided_at = now
+                approval.decided_by = "system"
+        self.append_task_event(
+            task.id,
+            TaskEventType.TASK_CANCELLED,
+            status=TaskStatus.CANCELLED,
+            commit=False,
+            data={"reason": "user_requested"},
+        )
+        self._session.commit()
+        self._session.refresh(task)
+        return task
+
+    def retry_task(self, task_run_id: int) -> AssistantTaskRun:
+        task = self._require_task(task_run_id)
+        current = TaskStatus(task.status)
+        if current not in {TaskStatus.FAILED, TaskStatus.CANCELLED}:
+            return task
+        # A failed task may already have completed a tool call. Replaying it
+        # without a tool-level idempotency key could repeat a write side effect.
+        if (
+            self._session.query(AssistantToolInvocation.id)
+            .filter(AssistantToolInvocation.task_run_id == task_run_id)
+            .first()
+            is not None
+        ):
+            return task
+        task.status = TaskStatus.QUEUED.value
+        task.cancel_requested = False
+        task.retry_count = int(task.retry_count or 0) + 1
+        task.error_code = None
+        task.final_message_id = None
+        task.finished_at = None
+        self.append_task_event(
+            task.id,
+            TaskEventType.TASK_RETRY_SCHEDULED,
+            status=TaskStatus.QUEUED,
+            commit=False,
+            data={"retry_count": task.retry_count},
+        )
+        self._session.commit()
+        self._session.refresh(task)
+        return task
+
+    def record_tool_completed(
+        self,
+        task_run_id: int,
+        *,
+        call_id: str,
+        tool_name: str,
+        summary: str,
+        ok: bool = True,
+    ) -> AssistantToolInvocation:
+        invocation = (
+            self._session.query(AssistantToolInvocation)
+            .filter(
+                AssistantToolInvocation.task_run_id == task_run_id,
+                AssistantToolInvocation.call_id == call_id,
+            )
+            .first()
+        )
+        if invocation is None:
+            invocation = AssistantToolInvocation(
+                task_run_id=task_run_id,
+                call_id=call_id,
+                tool_name=tool_name,
+            )
+            self._session.add(invocation)
+        invocation.tool_name = tool_name
+        invocation.status = "completed" if ok else "failed"
+        invocation.summary = summary
+        invocation.completed_at = datetime.now(timezone.utc)
+        self.append_task_event(
+            task_run_id,
+            TaskEventType.TOOL_COMPLETED,
+            status=TaskStatus.RUNNING,
+            data={
+                "call_id": call_id,
+                "tool": tool_name,
+                "name": tool_name,
+                "ok": ok,
+                "preview": summary,
+                "summary": summary,
+            },
+            commit=False,
+        )
+        self._session.commit()
+        self._session.refresh(invocation)
+        return invocation
+
+    def record_tool_started(
+        self,
+        task_run_id: int,
+        *,
+        call_id: str,
+        tool_name: str,
+        arguments: dict | None = None,
+    ) -> AssistantToolInvocation:
+        """Persist the intent before a tool can produce an external side effect."""
+        invocation = (
+            self._session.query(AssistantToolInvocation)
+            .filter(
+                AssistantToolInvocation.task_run_id == task_run_id,
+                AssistantToolInvocation.call_id == call_id,
+            )
+            .first()
+        )
+        if invocation is None:
+            invocation = AssistantToolInvocation(
+                task_run_id=task_run_id,
+                call_id=call_id,
+                tool_name=tool_name,
+                status="started",
+                arguments=arguments or {},
+            )
+            self._session.add(invocation)
+        self.append_task_event(
+            task_run_id,
+            TaskEventType.TOOL_STARTED,
+            status=TaskStatus.RUNNING,
+            data={
+                "call_id": call_id,
+                "tool": tool_name,
+                "name": tool_name,
+                "arguments": arguments or {},
+            },
+            commit=False,
+        )
         self._session.commit()
         self._session.refresh(invocation)
         return invocation
@@ -192,23 +464,80 @@ class AssistantRepository:
             .all()
         )
 
-    def save_checkpoint(self, task_run_id: int, checkpoint: AgentCheckpoint) -> None:
-        """Persist enough provider-neutral state to resume after human input."""
+    def save_checkpoint(
+        self,
+        task_run_id: int,
+        checkpoint: AgentCheckpoint,
+        *,
+        reason: CheckpointReason = CheckpointReason.APPROVAL_REQUIRED,
+        metadata: dict | None = None,
+    ) -> CheckpointEnvelope:
+        """Persist a versioned envelope around provider-neutral resume state."""
         task = self._require_task(task_run_id)
-        task.status = "awaiting_approval"
-        task.checkpoint = checkpoint.model_dump(mode="json")
+        envelope = CheckpointEnvelope.from_checkpoint(
+            run_id=str(task_run_id),
+            checkpoint=checkpoint,
+            reason=reason,
+            runtime_version=f"pan-agent-runtime@{PAN_AGENT_RUNTIME_VERSION}",
+            metadata=metadata,
+        )
+        task.status = TaskStatus.WAITING_APPROVAL.value
+        task.checkpoint = envelope.model_dump(mode="json")
+        task.checkpoint_id = envelope.checkpoint_id
+        task.current_step = checkpoint.step_index
         task.finished_at = None
+        self.append_task_event(
+            task.id,
+            TaskEventType.CHECKPOINT_SAVED,
+            status=TaskStatus.WAITING_APPROVAL,
+            step_index=checkpoint.step_index,
+            data={
+                "checkpoint_id": envelope.checkpoint_id,
+                "reason": envelope.reason.value,
+            },
+            commit=False,
+        )
         self._session.commit()
+        return envelope
 
-    def get_task_checkpoint(self, task_run_id: int) -> AgentCheckpoint | None:
+    def get_task_checkpoint_envelope(self, task_run_id: int) -> CheckpointEnvelope | None:
+        """Load a current or legacy checkpoint as the versioned envelope."""
         task = self._require_task(task_run_id)
         if task.checkpoint is None:
             return None
-        return AgentCheckpoint.model_validate(task.checkpoint)
+        raw = task.checkpoint
+        if isinstance(raw, dict) and "state" in raw and "schema_version" in raw:
+            return CheckpointEnvelope.model_validate(raw)
+        # Migrate the in-memory representation of pre-P0 approval checkpoints.
+        return CheckpointEnvelope.from_checkpoint(
+            run_id=str(task_run_id),
+            checkpoint=AgentCheckpoint.model_validate(raw),
+            reason=CheckpointReason.APPROVAL_REQUIRED,
+            runtime_version="legacy",
+        )
+
+    def get_task_checkpoint(self, task_run_id: int) -> AgentCheckpoint | None:
+        envelope = self.get_task_checkpoint_envelope(task_run_id)
+        if envelope is None:
+            return None
+        return envelope.to_checkpoint()
 
     def get_task_run(self, task_run_id: int) -> AssistantTaskRun:
         """Return the durable task metadata needed to rebuild a runtime request."""
         return self._require_task(task_run_id)
+
+    def list_tasks_for_recovery(self) -> list[AssistantTaskRun]:
+        """Return tasks whose previous process may have stopped mid-run."""
+        return (
+            self._session.query(AssistantTaskRun)
+            .filter(
+                AssistantTaskRun.status.in_(
+                    [TaskStatus.QUEUED.value, TaskStatus.RUNNING.value]
+                )
+            )
+            .order_by(AssistantTaskRun.created_at.asc())
+            .all()
+        )
 
     def create_approvals(
         self,
@@ -392,8 +721,11 @@ class AssistantRepository:
         status: str,
         final_message_id: int | None,
         error_code: str | None = None,
+        event_data: dict | None = None,
     ) -> None:
         task = self._require_task(task_run_id)
+        if TaskStatus(task.status).is_terminal:
+            return
         if status != "completed":
             # A failed/cancelled task must not leave actionable approval cards
             # behind.  Otherwise a browser reconnect can offer a decision for
@@ -408,8 +740,79 @@ class AssistantRepository:
         task.final_message_id = final_message_id
         task.error_code = error_code
         task.checkpoint = None
+        task.checkpoint_id = ""
         task.finished_at = datetime.now(timezone.utc)
+        final_status = TaskStatus(status)
+        event_type = (
+            TaskEventType.TASK_COMPLETED
+            if final_status is TaskStatus.COMPLETED
+            else TaskEventType.TASK_CANCELLED
+            if final_status is TaskStatus.CANCELLED
+            else TaskEventType.TASK_FAILED
+        )
+        self.append_task_event(
+            task.id,
+            event_type,
+            status=final_status,
+            data={
+                **(event_data or {}),
+                **({"error_code": error_code} if error_code else {}),
+            },
+            commit=False,
+        )
         self._session.commit()
+
+    def complete_task_with_message(
+        self, task_run_id: int, conversation_id: int, content: str
+    ) -> ChatMessage | None:
+        """Commit the final message and task transition as one cancellation-safe unit."""
+        task = self._require_task(task_run_id)
+        if task.status != TaskStatus.RUNNING.value or task.cancel_requested:
+            return None
+        conversation = self.get_conversation(conversation_id)
+        if conversation is None:
+            raise LookupError(f"conversation {conversation_id} not found")
+        conversation.updated_at = datetime.now(timezone.utc)
+        message = ChatMessage(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=content,
+        )
+        self._session.add(message)
+        self._session.flush()
+        updated = (
+            self._session.query(AssistantTaskRun)
+            .filter(
+                AssistantTaskRun.id == task_run_id,
+                AssistantTaskRun.status == TaskStatus.RUNNING.value,
+                AssistantTaskRun.cancel_requested.is_(False),
+            )
+            .update(
+                {
+                    "status": TaskStatus.COMPLETED.value,
+                    "final_message_id": message.id,
+                    "error_code": None,
+                    "checkpoint": None,
+                    "checkpoint_id": "",
+                    "finished_at": datetime.now(timezone.utc),
+                },
+                synchronize_session=False,
+            )
+        )
+        if updated != 1:
+            self._session.rollback()
+            return None
+        self._session.expire_all()
+        self.append_task_event(
+            task_run_id,
+            TaskEventType.TASK_COMPLETED,
+            status=TaskStatus.COMPLETED,
+            commit=False,
+            data={"message_id": message.id, "content": content},
+        )
+        self._session.commit()
+        self._session.refresh(message)
+        return message
 
     def get_task_snapshot(self, task_run_id: int) -> dict:
         task = self._require_task(task_run_id)
@@ -423,6 +826,12 @@ class AssistantRepository:
             "id": task.id,
             "conversation_id": task.conversation_id,
             "status": task.status,
+            "state_version": task.state_version,
+            "current_step": task.current_step,
+            "last_event_id": task.last_event_id or "",
+            "checkpoint_id": task.checkpoint_id or "",
+            "cancel_requested": bool(task.cancel_requested),
+            "retry_count": int(task.retry_count or 0),
             "context": task.context or {},
             "error_code": task.error_code,
             "pending_approvals": [
