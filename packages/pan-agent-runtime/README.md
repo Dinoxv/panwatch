@@ -31,6 +31,7 @@
 - 工具可见性和每次调用的权限决策；
 - Human-in-the-loop 暂停、部分审批和恢复；
 - 工具超时、重试、总超时、最大步骤数和重复调用检测；
+- 工具目录描述、确定性检索和策略过滤（Tool Research）；
 - 将执行过程转换为稳定的结构化事件。
 
 ### 宿主项目负责
@@ -198,6 +199,28 @@ RunRequest
    └─ RUN_COMPLETED / RUN_FAILED
 ~~~
 
+## Optional Runtime Extensions
+
+runtime 只定义通用的 `RuntimeExtension` 协议，不内置 Tool Research、记忆、MCP 或具体
+可观测性实现。扩展可以在每个模型回合前读取请求、消息和当前已通过策略的工具集合，
+选择已注册工具、提供虚拟扩展工具，并在模型调用虚拟工具时处理它；它不能扩大权限边界。
+
+~~~python
+from pan_agent import AgentRuntime
+
+runtime = AgentRuntime(
+    model,
+    tools,
+    policy=policy,
+    extensions=[my_extension],
+)
+~~~
+
+扩展通过 `emit_event()` 发送通用的 `extension_event`，事件数据包含扩展名、事件名和
+业务负载。扩展失败时 runtime 会发出 fallback 事件并继续使用默认工具集合。Tool Research
+是一个独立的可选包，PanWatch 通过显式组装接入；不安装它时，`pan-agent-runtime` 仍可
+单独运行。
+
 模型返回多个工具调用时，runtime 会按原顺序处理。只要有一个调用需要审批，当前
 任务就返回 <code>WAITING_FOR_APPROVAL</code>，尚未批准的调用不会执行。
 
@@ -296,7 +319,7 @@ runtime 只负责这组 provider-neutral contracts。摘要模型选择、snapsh
 | --- | --- |
 | <code>AgentRuntime</code> | 启动、暂停和恢复有界 Agent loop |
 | <code>ToolRegistry</code> | 注册工具、按策略暴露工具、执行工具 |
-| <code>ToolSpec</code> | 工具名称、描述、风险等级和 JSON Schema |
+| <code>ToolSpec</code> | 工具名称、描述、风险等级、暴露层级和 JSON Schema |
 | <code>ToolResult</code> | 工具成功/失败、摘要、结构化数据和来源 |
 | <code>ToolPolicy</code> | 宿主定义工具可见性和每次调用权限 |
 | <code>ReadOnlyToolPolicy</code> | 安全默认策略，只允许无确认读工具 |
@@ -307,6 +330,8 @@ runtime 只负责这组 provider-neutral contracts。摘要模型选择、snapsh
 | <code>AgentCheckpoint</code> | 审批暂停后可持久化的恢复状态 |
 | <code>RunResult</code> | 运行状态、答案、错误码和 checkpoint |
 | <code>RuntimeEvent</code> | SSE/WebSocket 等传输使用的统一事件 |
+| <code>RuntimeExtension</code> | 可选的模型回合扩展协议 |
+| <code>ToolExposureDecision</code> | 扩展选择已注册工具并提供虚拟工具 schema |
 
 ### 风险与权限
 
@@ -344,6 +369,7 @@ runtime 还会检测连续重复的相同工具调用。达到阈值后返回
 | <code>run_created</code> | 创建前端任务状态 |
 | <code>plan_created</code> | 预留给宿主展示计划 |
 | <code>step_updated</code> | 显示当前 Agent 步骤 |
+| <code>extension_event</code> | 持久化可选扩展的结构化事实 |
 | <code>tool_started</code> | 显示工具开始执行 |
 | <code>tool_completed</code> | 显示工具结果摘要和错误码 |
 | <code>answer_token</code> | 增量渲染模型答案 |
@@ -394,7 +420,12 @@ runtime 会在每一轮调用 <code>ToolRegistry.model_tools(request, policy)</c
 默认行为是“把策略允许的工具定义交给模型”。工具数量少时最直观；工具增长后，工具
 定义和工具结果都会成为上下文成本。
 
-建议按以下顺序优化：
+当前 runtime 已支持工具渐进式暴露：`ToolSpec.exposure` 可设置为
+`direct`、`deferred` 或 `hidden`。默认只把 Direct 工具交给模型；Tool Research 等
+可选扩展可以通过虚拟工具发现并加载 Deferred 工具。无论工具如何被发现，执行时仍然
+必须经过宿主 `ToolPolicy` 和 Registry。
+
+建议按以下顺序继续优化：
 
 ### 1. 按能力域动态暴露工具
 
@@ -404,8 +435,10 @@ runtime 会在每一轮调用 <code>ToolRegistry.model_tools(request, policy)</c
 - 用户问账单，只暴露交易和分类工具；
 - 用户要求修改数据，再临时暴露对应写工具。
 
-更大规模的系统可以只暴露一个“工具目录/搜索工具”，模型先检索能力，再由宿主把
-命中的工具加入后续回合。
+更大规模的系统可以只暴露一个“工具目录/搜索工具”，模型先检索能力，再由扩展把
+命中的 Deferred 工具加入后续回合。虚拟扩展工具通过 `ToolExposureDecision.additional_tools`
+提供 schema，并通过 `RuntimeExtension.handle_tool_call()` 处理，不需要把扩展执行器注册
+进业务 Tool Registry。
 
 ### 2. 工具结果摘要化
 
