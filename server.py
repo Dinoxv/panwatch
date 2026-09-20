@@ -43,6 +43,7 @@ from src.modules.automation.chart_analyst import ChartAnalystAgent
 from src.modules.automation.intraday_monitor import IntradayMonitorAgent
 from src.modules.automation.premarket_outlook import PremarketOutlookAgent
 from src.modules.automation.tradingagents import TradingAgentsAgent
+from src.modules.market.data_collector import DEFAULT_TEST_SYMBOLS
 
 logger = logging.getLogger(__name__)
 
@@ -366,7 +367,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": False,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富资讯",
@@ -376,7 +377,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 1,
             "supports_batch": False,  # 每只股票单独请求
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富公告",
@@ -386,7 +387,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 2,
             "supports_batch": True,  # 支持批量查询
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # K线数据源
         {
@@ -397,7 +398,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": False,
-            "test_symbols": ["601127", "600519", "300750"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富 K线",
@@ -407,7 +408,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 5,   # 腾讯(0)之后、Tushare(10)之前 → CN/HK 兜底
             "supports_batch": False,
-            "test_symbols": ["600519", "00700"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "Stooq K线",
@@ -417,7 +418,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 15,  # US 兜底(腾讯 0 之后)
             "supports_batch": False,
-            "test_symbols": ["AAPL"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "Yahoo K线",
@@ -431,7 +432,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": False,  # 需代理,默认关(同 YFinance 口径),用户配好 proxy 再开
             "priority": 20,  # US/HK 最后兜底
             "supports_batch": False,
-            "test_symbols": ["AAPL", "00700"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # 资金流向数据源
         {
@@ -442,7 +443,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": False,
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "新浪资金流",
@@ -455,7 +456,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 5,  # 东财(0)之后的 CN 第二源
             "supports_batch": False,
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # 实时行情数据源
         {
@@ -466,7 +467,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["601127", "600519", "300750"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富行情",
@@ -476,7 +477,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 3,  # 腾讯(0)之后的 CN 第二源(sina/yfinance 不支持 CN)
             "supports_batch": False,  # push2 stock/get 单只查询,逐只
-            "test_symbols": ["601127", "600519", "300750"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "Sina 行情",
@@ -486,7 +487,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 5,   # 腾讯(0)之后
             "supports_batch": True,
-            "test_symbols": ["AAPL", "00700"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "YFinance 行情",
@@ -498,7 +499,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": False,
             "priority": 10,
             "supports_batch": True,
-            "test_symbols": ["AAPL"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # 事件日历数据源（基于公告结构化）
         {
@@ -509,7 +510,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["601127", "600519"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # 快讯数据源（7×24 电报，市场级，不按 symbols 过滤）
         {
@@ -551,7 +552,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["600519", "000001"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富基本面",
@@ -563,7 +564,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 5,
             "supports_batch": True,
-            "test_symbols": ["600519", "AAPL"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         # 市场资金面数据源（龙虎榜/融资融券/股东户数/分红/北向资金）
         {
@@ -587,7 +588,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["600519", "000001"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东财股东户数",
@@ -597,7 +598,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["600519", "000001"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东财分红",
@@ -607,7 +608,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": True,
-            "test_symbols": ["600519", "000001"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "同花顺北向资金",
@@ -633,7 +634,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": True,
             "priority": 0,
             "supports_batch": False,
-            "test_symbols": ["601127"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
             "name": "东方财富K线截图",
@@ -646,18 +647,19 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "enabled": False,
             "priority": 1,
             "supports_batch": False,
-            "test_symbols": ["601127"],
+            "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
 ]
 
 
-def seed_data_sources(db=None) -> list[dict]:
+def seed_data_sources(db=None, *, reset_test_symbols: bool = False) -> list[dict]:
     """初始化预置数据源(按 name+provider 只增不删的 upsert)。
 
     db 为 None 时自建独立 session 并自行 commit/close(兼容旧调用方式);
     传入 db 时复用调用方 session,不 commit/close,交由调用方统一处理
     (供 reconcile_data_sources 在同一事务里接着做删孤儿)。
 
+    reset_test_symbols 仅由“恢复默认”入口传入,用于重置内置源测试股票；普通启动对账不覆盖用户配置。
     返回本次新增(缺失被补齐)的种子记录摘要列表 [{"name","type","provider"}, ...]。
     """
     owns_session = db is None
@@ -675,10 +677,12 @@ def seed_data_sources(db=None) -> list[dict]:
             .first()
         )
         if existing:
-            # 更新已存在记录的新字段（保留用户可能修改的配置）
+            # 恢复默认时只重置测试代码；配置、启用状态、优先级等用户设置仍保留。
             if existing.supports_batch != source_data.get("supports_batch", False):
                 existing.supports_batch = source_data.get("supports_batch", False)
-            if not existing.test_symbols:  # 只在空时更新
+            if reset_test_symbols:
+                existing.test_symbols = list(source_data.get("test_symbols", []))
+            elif not existing.test_symbols:  # 启动对账只补空值,不覆盖用户配置
                 existing.test_symbols = source_data.get("test_symbols", [])
         else:
             db.add(DataSource(**source_data))
@@ -705,17 +709,18 @@ def _seed_providers_by_type() -> dict[str, set[str]]:
     return result
 
 
-def reconcile_data_sources(db) -> dict:
+def reconcile_data_sources(db, *, reset_test_symbols: bool = False) -> dict:
     """数据源表温和对账:补缺失默认 + 删孤儿,保留用户有效自定义/凭证。
 
     孤儿判定: legal(type) = PACKAGE_VENDORS_BY_TYPE.get(type, frozenset()) | seed 内该 type 的 provider 集合;
     DB 行 (type, provider) 不在 legal(type) 内即孤儿。news/chart 等非引擎类型(包内集合为空)的合法性完全由 seed 决定。
 
     只删孤儿行,其余行(含用户改过 config/priority/enabled 的自定义行)原样保留。
+    reset_test_symbols=True 时,仅覆盖内置种子的 test_symbols,供“恢复默认”使用。
     """
     from marketdata import PACKAGE_VENDORS_BY_TYPE
 
-    seeded_missing = seed_data_sources(db)
+    seeded_missing = seed_data_sources(db, reset_test_symbols=reset_test_symbols)
     seed_providers_by_type = _seed_providers_by_type()
 
     deleted: list[dict] = []
@@ -1330,6 +1335,17 @@ async def trigger_agent_for_stock(
     agent_cls = AGENT_REGISTRY.get(agent_name)
     if not agent_cls:
         raise ValueError(f"Agent {agent_name} 未注册实际实现")
+    # 自动调度等不经过 stocks.trigger API 的入口也要拥有同样的生命周期记录；
+    # 手动入口已提前写入，这里幂等调用可避免重复 AgentRun。
+    try:
+        from src.modules.automation.agent_runs import start_agent_run
+        start_agent_run(
+            agent_name=agent_name,
+            trace_id=trace_id,
+            trigger_source="manual",
+        )
+    except Exception as e:
+        logger.warning(f"写 AgentRun running 状态失败,不影响主流程: {e}")
 
     settings = Settings()
     proxy = _get_proxy() or settings.http_proxy
@@ -1483,7 +1499,7 @@ async def lifespan(app):
     # 早期 TA 运行没写建议池,这次启动一次性补齐,让「AI 建议」面板能看到。
     # 幂等:已存在不重复写;每次启动重跑代价极低(只查最近 7 天 + dedupe)。
     try:
-        from src.modules.automation.tradingagents.backfill import backfill_tradingagents_suggestions
+        from src.modules.automation.tradingagents.operations import backfill_tradingagents_suggestions
         backfill_tradingagents_suggestions(days=7)
     except Exception as e:
         logger.warning(f"TradingAgents 建议回填失败,跳过: {e}")

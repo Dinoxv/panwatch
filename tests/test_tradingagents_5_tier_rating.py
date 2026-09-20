@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.modules.automation.tradingagents.result_mapper import (
+from src.modules.automation.tradingagents.decision import (
     RATING_ACTION_MAP,
     RATING_LABEL_MAP,
     _parse_rating_from_text,
@@ -120,6 +120,7 @@ def test_review_signal_is_preserved_as_manual_review():
     assert suggestion["action_label"] == "待人工复核"
     assert suggestion["rating_raw"] == "review"
     assert suggestion["should_alert"] is True
+    assert suggestion["upstream_decision"] == "review"
 
 
 def test_review_signal_overrides_parseable_pm_rating():

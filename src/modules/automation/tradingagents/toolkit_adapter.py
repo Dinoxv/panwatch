@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import contextvars
 import logging
+import re
 import threading
 from contextlib import contextmanager
 from typing import Any
@@ -42,6 +43,30 @@ _PANWATCH_DATA: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
 _CURRENT_TRACE_ID: contextvars.ContextVar[str] = contextvars.ContextVar(
     "_TA_TRACE_ID", default=""
 )
+_CANCEL_EVENT: contextvars.ContextVar[threading.Event | None] = contextvars.ContextVar(
+    "_TA_CANCEL_EVENT", default=None
+)
+
+# 所有上游 monkeypatch 和 PanWatch 数据注入都集中在本文件；其它模块只依赖这些入口。
+__all__ = [
+    "TradingAgentsCancelled",
+    "hk_symbol_to_yfinance",
+    "is_a_share",
+    "is_hk_share",
+    "is_panwatch_routable",
+    "panwatch_data_context",
+    "patch_route_to_vendor",
+]
+
+
+class TradingAgentsCancelled(RuntimeError):
+    """TradingAgents 任务已进入终态，禁止残留 worker 再发起外部请求。"""
+
+
+def _raise_if_cancelled() -> None:
+    event = _CANCEL_EVENT.get()
+    if event is not None and event.is_set():
+        raise TradingAgentsCancelled("TradingAgents task cancelled")
 
 
 def _cache() -> dict[str, Any]:
@@ -50,7 +75,11 @@ def _cache() -> dict[str, Any]:
 
 
 @contextmanager
-def panwatch_data_context(data: dict[str, Any], trace_id: str = ""):
+def panwatch_data_context(
+    data: dict[str, Any],
+    trace_id: str = "",
+    cancel_event: threading.Event | None = None,
+):
     """在调用 TradingAgents 的代码块周围用本 context manager 注入数据。
 
     Args:
@@ -62,9 +91,11 @@ def panwatch_data_context(data: dict[str, Any], trace_id: str = ""):
     """
     token = _PANWATCH_DATA.set(dict(data))
     tid_token = _CURRENT_TRACE_ID.set(trace_id or "")
+    cancel_token = _CANCEL_EVENT.set(cancel_event)
     try:
         yield
     finally:
+        _CANCEL_EVENT.reset(cancel_token)
         _PANWATCH_DATA.reset(token)
         _CURRENT_TRACE_ID.reset(tid_token)
 
@@ -174,6 +205,31 @@ _patch_saved_sites: list[tuple[Any, str, Any]] = []  # (module, attr_name, origi
 _real_route_to_vendor = None  # 真 route_to_vendor(走上游 vendor 时用)
 
 
+_DATE_ARGUMENT = re.compile(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}$")
+
+
+def _looks_like_date(value: Any) -> bool:
+    """判断 route_to_vendor 的字符串参数是不是日期，而不是用数字前缀误判 ticker。
+
+    A/HK 股票代码本身就是纯数字（如 300624、00700），因此不能再用
+    ``value[:4].isdigit()`` 之类的启发式过滤；只有明确匹配日期格式才跳过。
+    """
+    return isinstance(value, str) and bool(_DATE_ARGUMENT.fullmatch(value.strip()))
+
+
+def _extract_requested_symbol(args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
+    """从上游工具参数提取 ticker，兼容 get_global_news 的日期首参。"""
+    for value in args:
+        if isinstance(value, str) and value.strip() and not _looks_like_date(value):
+            return value.strip()
+    return str(kwargs.get("symbol") or kwargs.get("ticker") or "").strip()
+
+
+def _cached_symbol() -> str:
+    stock = _cache().get("stock")
+    return str(getattr(stock, "symbol", "") or "").strip()
+
+
 def _patched_route_to_vendor(method_name: str, *args, **kwargs):
     """模块级无状态 patch:A 股走 PanWatch(读 _cache()),港股先试上游再兜底,其余放行。
 
@@ -187,23 +243,42 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
     无任何实例状态:symbol 来自调用参数,数据来自 _cache()(当前 context),
     所以多个并发任务共享同一个 _patched 也不会串台。
     """
-    symbol = ""
-    # 大多数 method 第一个 positional 就是 ticker/symbol(get_global_news 等例外)
-    if args and isinstance(args[0], str) and not args[0][:4].isdigit():
-        # 第一个参数是 ticker(601127)而非日期(2026-...)
-        if not (len(args[0]) >= 8 and args[0][4] in "-/"):
-            symbol = args[0]
-    # 兜底:再看 kwargs
-    if not symbol:
-        symbol = kwargs.get("symbol") or kwargs.get("ticker") or ""
+    _raise_if_cancelled()
+    # 不过滤纯数字：A/HK ticker 合法地由数字组成；仅跳过明确的日期参数。
+    symbol = _extract_requested_symbol(args, kwargs)
 
     # 没拿到 symbol 时(如 get_global_news),用 cache 里的标的兜底,
     # 拦截"全局新闻"类调用避免拉到无关 Yahoo 鞋类/汽油新闻。
     if not symbol:
-        cached_stock = _cache().get("stock")
-        cached_symbol = getattr(cached_stock, "symbol", "") if cached_stock else ""
+        cached_symbol = _cached_symbol()
         if is_panwatch_routable(cached_symbol):
             symbol = cached_symbol
+
+    # 工具请求了另一个 A/HK 标的时，禁止拿当前任务的快照冒充它。
+    # 这条边界比“尽量返回数据”更重要：错误标的数据会让后续 LLM 生成看似完整但完全错误的报告。
+    cached_symbol = _cached_symbol()
+    snapshot_symbol_mismatch = bool(
+        symbol
+        and is_panwatch_routable(symbol)
+        and cached_symbol
+        and symbol != cached_symbol
+        and _cache()
+    )
+    if snapshot_symbol_mismatch and is_a_share(symbol):
+        message = _data_unavailable_message(
+            method_name,
+            symbol,
+            RuntimeError(f"PanWatch snapshot is for {cached_symbol}, not {symbol}"),
+        )
+        _emit_toolkit_log(
+            "warning",
+            "DEGRADE",
+            method_name,
+            symbol,
+            reason=f"snapshot symbol mismatch: cached={cached_symbol}",
+            extra_args=_args_summary(args),
+        )
+        return message
 
     # A 股:yfinance/finnhub 拉不到,直接走 PanWatch
     if is_a_share(symbol) and _cache():
@@ -239,6 +314,8 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
         try:
             upstream_result = _real_route_to_vendor(method_name, *new_args, **kwargs)
         except Exception as e:
+            if not _is_market_data_failure(e):
+                raise
             upstream_result = ""
             logger.warning(f"[TA toolkit] HK upstream {method_name}({yf_symbol}) 失败: {e}")
         upstream_str = str(upstream_result) if upstream_result is not None else ""
@@ -255,7 +332,7 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
             return upstream_result
 
         # yfinance 没数据 → fallback 到 PanWatch = HIT(PanWatch 兜底提供数据)
-        if _cache():
+        if _cache() and not snapshot_symbol_mismatch:
             try:
                 result = _serve_from_panwatch(method_name, symbol, kwargs, args=args)
                 _emit_toolkit_log(
@@ -301,12 +378,15 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
     try:
         upstream_result = _real_route_to_vendor(method_name, *args, **kwargs)
     except Exception as e:
-        logger.warning(f"[TA toolkit] 上游 {method_name} 失败,降级返回空(不中断分析): {e}")
+        if not _is_market_data_failure(e):
+            raise
+        result = _data_unavailable_message(method_name, symbol, e)
+        logger.warning(f"[TA toolkit] 上游 {method_name} 数据不可用: {e}")
         _emit_toolkit_log(
             "warning", "DEGRADE", method_name, symbol or "(none)",
             error=str(e)[:200], extra_args=_args_summary(args),
         )
-        return ""
+        return result
     upstream_str = str(upstream_result) if upstream_result is not None else ""
     action_label = "PASSTHROUGH" if not is_a_share(symbol) else "FALLTHROUGH"
     _emit_toolkit_log(
@@ -420,11 +500,21 @@ def _market_for_symbol(symbol: str):
 
 def _build_panwatch_ohlcv_df(symbol: str, curr_date: str):
     """用 PanWatch K线构建与原生 load_ohlcv 同结构的 DataFrame(Date/Open/High/Low/Close/Volume)。"""
+    _raise_if_cancelled()
     import pandas as pd
 
     from src.platform.marketdata.collectors.kline_collector import KlineCollector
     market = _market_for_symbol(symbol)
-    klines = KlineCollector(market).get_klines(symbol, days=750)
+    # collect() 已经为本次分析准备了 K 线；验证快照只需要同一份数据，
+    # 不应因为上游默认 lookback=750 再向东财发起一轮可能阻塞的请求。
+    cached_klines = _cache().get("klines")
+    cached_stock = _cache().get("stock")
+    cached_symbol = getattr(cached_stock, "symbol", "") if cached_stock is not None else ""
+    cache_matches_symbol = bool(cached_symbol) and str(cached_symbol) == str(symbol)
+    if cache_matches_symbol and isinstance(cached_klines, (list, tuple)):
+        klines = list(cached_klines)
+    else:
+        klines = KlineCollector(market).get_klines(symbol, days=750)
     if not klines:
         return None
     df = pd.DataFrame(
@@ -455,8 +545,16 @@ def _is_market_data_failure(error: Exception) -> bool:
     name = type(error).__name__.lower()
     detail = str(error).lower()
     return (
-        name in {"yfratelimiterror", "nomarketdataerror"}
+        name in {
+            "yfratelimiterror",
+            "nomarketdataerror",
+            "vendorratelimiterror",
+            "vendornotconfigurederror",
+        }
         or any(token in detail for token in (
+            "api_key",
+            "api key",
+            "not configured",
             "too many requests",
             "rate limited",
             "no market data",
@@ -471,6 +569,16 @@ def _is_market_data_failure(error: Exception) -> bool:
             "server error",
             "http error",
         ))
+    )
+
+
+def _data_unavailable_message(method_name: str, symbol: str, error: Exception) -> str:
+    """给上游 agent 的显式降级结果，禁止将不可用数据默认为中性数据。"""
+    return (
+        "DATA_UNAVAILABLE: "
+        f"method={method_name}; symbol={symbol or 'N/A'}; reason={str(error)[:300]}. "
+        "Do not infer missing values or treat this as neutral evidence. "
+        "State the data limitation and request manual review when it affects the decision."
     )
 
 
@@ -503,6 +611,7 @@ def _load_panwatch_ohlcv_or_raise(symbol: str, curr_date: str, *, fallback: bool
 
 def _panwatch_load_ohlcv(symbol: str, curr_date: str, *args, **kwargs):
     """A/HK 直接走 MarketData；美股优先 Yahoo，失败时再降级 MarketData。"""
+    _raise_if_cancelled()
     if is_panwatch_routable(symbol):
         return _load_panwatch_ohlcv_or_raise(symbol, curr_date)
 
@@ -517,6 +626,7 @@ def _panwatch_load_ohlcv(symbol: str, curr_date: str, *args, **kwargs):
             raise
         logger.warning(f"[TA toolkit] Yahoo OHLCV 不可用，降级 MarketData symbol={symbol}: {exc}")
         _emit_toolkit_log("warning", "DEGRADE", "load_ohlcv", symbol, source="yfinance", error=str(exc)[:200])
+    _raise_if_cancelled()
     return _load_panwatch_ohlcv_or_raise(symbol, curr_date, fallback=True)
 
 
@@ -726,12 +836,12 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
     financial = _cache().get("financial")
     if "fundamental" in method or "financial" in method:
         if financial:
-            from src.modules.automation.tradingagents.financial_data import render_fundamentals_summary
+            from src.modules.automation.tradingagents.data_context import render_fundamentals_summary
             return f"{header}\n\n{render_fundamentals_summary(financial)}"
         return f"{header}\n\n{_quote_to_lightweight_fundamentals(symbol)}"
     if "income" in method:
         if financial:
-            from src.modules.automation.tradingagents.financial_data import render_income_statement
+            from src.modules.automation.tradingagents.data_context import render_income_statement
             return f"{header}\n\n{render_income_statement(financial)}"
         return (
             f"{header}\n\n[Income statement not available for {symbol}. "
@@ -739,7 +849,7 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
         )
     if "balance" in method or "sheet" in method:
         if financial:
-            from src.modules.automation.tradingagents.financial_data import render_balance_sheet
+            from src.modules.automation.tradingagents.data_context import render_balance_sheet
             return f"{header}\n\n{render_balance_sheet(financial)}"
         return (
             f"{header}\n\n[Balance sheet not available for {symbol}. "
@@ -747,7 +857,7 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
         )
     if "cashflow" in method or "cash_flow" in method:
         if financial:
-            from src.modules.automation.tradingagents.financial_data import render_cashflow
+            from src.modules.automation.tradingagents.data_context import render_cashflow
             return f"{header}\n\n{render_cashflow(financial)}"
         return (
             f"{header}\n\n[Cash flow statement not available for {symbol}. "

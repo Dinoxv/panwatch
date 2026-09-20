@@ -19,6 +19,29 @@ interface TestLogItem {
   count: number
 }
 
+export interface TestErrorItem {
+  symbol: string
+  market?: string
+  error: string
+}
+
+export function TestErrorList({ errors }: { errors: TestErrorItem[] }) {
+  if (errors.length === 0) return null
+
+  return (
+    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+      <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mb-1">未返回明细</div>
+      <div className="space-y-1">
+        {errors.map((item, i) => (
+          <div key={`${item.symbol}-${i}`} className="text-[12px] text-amber-700 dark:text-amber-300">
+            {item.symbol}{item.market ? ` (${item.market})` : ''}: {item.error}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 interface TestResult {
   test_passed: boolean
   source_name: string
@@ -30,6 +53,7 @@ interface TestResult {
   count: number
   duration_ms: number
   error?: string
+  errors?: TestErrorItem[]
   items?: unknown[] | { image?: string }  // array for most types, object for chart
   logs: TestLogItem[]
 }
@@ -218,12 +242,12 @@ export default function DataSourcesPage() {
   }
 
   const resetToSeed = async () => {
-    if (!window.confirm('将删除无对应数据源的孤儿行、补齐缺失的默认源,并保留你的自定义配置与凭证。是否继续?')) return
+    if (!window.confirm('将删除孤儿源、补齐缺失默认源，并把内置数据源测试股票恢复为 A/HK/US 各两条；自定义配置与凭证会保留。是否继续?')) return
     setResetting(true)
     try {
       const result = await resetDataSourcesToSeed()
       load()
-      toast(`已清理 ${result.deleted.length} 个孤儿源,补齐 ${result.seeded_missing.length} 个默认源`, 'success')
+      toast(`已恢复默认测试股票，清理 ${result.deleted.length} 个孤儿源,补齐 ${result.seeded_missing.length} 个默认源`, 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : '恢复默认失败', 'error')
     } finally {
@@ -526,6 +550,8 @@ export default function DataSourcesPage() {
                 <div className="text-[12px] text-red-600 dark:text-red-400 break-words whitespace-pre-wrap">{testResult.error}</div>
               </div>
             )}
+
+            {testResult?.errors && <TestErrorList errors={testResult.errors} />}
 
             {/* Execution Logs */}
             {testResult?.logs && testResult.logs.length > 0 && (

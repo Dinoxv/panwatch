@@ -7,8 +7,10 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import threading
 
 import pandas as pd
+import pytest
 
 from src.modules.automation.tradingagents import toolkit_adapter as ta
 from src.platform.marketdata.collectors.kline_collector import KlineCollector, KlineData
@@ -37,6 +39,84 @@ def test_build_df_columns_and_date_filter(monkeypatch):
     assert str(df["Date"].dtype).startswith("datetime64")
     assert (df["Date"] <= pd.to_datetime("2026-04-20")).all()
     assert len(df) == 20  # 04-01..04-20
+
+
+def test_build_df_reuses_injected_klines_before_fetching_again(monkeypatch):
+    """验证快照应复用采集阶段的 K 线，避免 analyst 再发一轮外部请求。"""
+    cached = _sample_klines(12)
+
+    def unexpected_fetch(*args, **kwargs):
+        raise AssertionError("should reuse PanWatch K-lines already in context")
+
+    monkeypatch.setattr(KlineCollector, "get_klines", unexpected_fetch)
+    stock = type("Stock", (), {"symbol": "601238"})()
+    with ta.panwatch_data_context({"stock": stock, "klines": cached}):
+        df = ta._build_panwatch_ohlcv_df("601238", "2026-04-20")
+
+    assert len(df) == 12
+
+
+def test_build_df_reuses_empty_injected_klines_without_retrying(monkeypatch):
+    """采集阶段已确认无 K 线时，后续工具不应再次联网重试同一标的。"""
+    calls = []
+
+    def unexpected_fetch(self, symbol, days=60):
+        calls.append((symbol, days))
+        raise AssertionError("known empty snapshot must not trigger another fetch")
+
+    monkeypatch.setattr(KlineCollector, "get_klines", unexpected_fetch)
+    stock = type("Stock", (), {"symbol": "601238"})()
+    with ta.panwatch_data_context({"stock": stock, "klines": []}):
+        assert ta._build_panwatch_ohlcv_df("601238", "2026-04-20") is None
+
+    assert calls == []
+
+
+def test_build_df_does_not_reuse_klines_for_another_symbol(monkeypatch):
+    """模型误传其它代码时，不能把当前标的缓存冒充成对方行情。"""
+    cached = _sample_klines(12)
+    fetched = _sample_klines(8)
+    calls = []
+
+    def fetch(self, symbol, days=60):
+        calls.append((symbol, days))
+        return fetched
+
+    monkeypatch.setattr(KlineCollector, "get_klines", fetch)
+    stock = type("Stock", (), {"symbol": "601238"})()
+    with ta.panwatch_data_context({"stock": stock, "klines": cached}):
+        df = ta._build_panwatch_ohlcv_df("300624", "2026-04-20")
+
+    assert len(df) == 8
+    assert calls == [("300624", 750)]
+
+
+def test_cancelled_ta_context_does_not_fetch_another_symbol(monkeypatch):
+    """任务超时后，残留 worker 再调用行情工具时必须立即停止。"""
+    calls = []
+
+    def unexpected_fetch(self, symbol, days=60):
+        calls.append((symbol, days))
+        raise AssertionError("cancelled task must not fetch another symbol")
+
+    monkeypatch.setattr(KlineCollector, "get_klines", unexpected_fetch)
+    stock = type("Stock", (), {"symbol": "300624"})()
+    cancel_event = threading.Event()
+    cancel_event.set()
+
+    from src.modules.automation.tradingagents.toolkit_adapter import (
+        TradingAgentsCancelled,
+        panwatch_data_context,
+    )
+
+    with panwatch_data_context(
+        {"stock": stock, "klines": _sample_klines(12)},
+        cancel_event=cancel_event,
+    ):
+        with pytest.raises(TradingAgentsCancelled):
+            ta._build_panwatch_ohlcv_df("300624", "2026-04-20")
+
+    assert calls == []
 
 
 def test_load_ohlcv_routes_a_share_to_panwatch(monkeypatch):
@@ -171,13 +251,71 @@ def test_load_ohlcv_a_share_no_klines_raises_not_fallback(monkeypatch):
     assert real_calls["n"] == 0, "A股拉空不应回退 yfinance"
 
 
-def test_route_to_vendor_degrades_on_upstream_error(monkeypatch):
-    """上游 vendor 失败(如 FRED 无 key、polymarket SSL)应降级返回空,不抛错中断整轮分析。"""
+def test_route_to_vendor_keeps_numeric_requested_symbol(monkeypatch):
+    """数字股票代码也是合法 ticker，不能因全是数字而复用缓存标的。"""
+    stock = type("Stock", (), {"symbol": "300624"})()
+    monkeypatch.setattr(
+        ta,
+        "_serve_from_panwatch",
+        lambda method_name, symbol, kwargs, args=(): f"served:{symbol}",
+    )
+
+    with ta.panwatch_data_context({"stock": stock, "klines": _sample_klines(4)}):
+        out = ta._patched_route_to_vendor("get_stock_data", "300624", "2026-06-18")
+
+    assert out == "served:300624"
+
+
+def test_route_to_vendor_rejects_cached_snapshot_for_different_numeric_symbol(monkeypatch):
+    """缓存快照与请求标的不一致时，不能静默把万兴科技数据当成其它股票。"""
+    stock = type("Stock", (), {"symbol": "601238"})()
+    monkeypatch.setattr(
+        ta,
+        "_serve_from_panwatch",
+        lambda method_name, symbol, kwargs, args=(): "wrong cached data",
+    )
+
+    with ta.panwatch_data_context({"stock": stock, "klines": _sample_klines(4)}):
+        out = ta._patched_route_to_vendor("get_stock_data", "300624", "2026-06-18")
+
+    assert "DATA_UNAVAILABLE" in out
+    assert "300624" in out
+
+
+def test_route_to_vendor_marks_expected_upstream_outage_as_data_unavailable(monkeypatch):
+    """已知外部数据不可用应给 LLM 明确信号，而不是吞成空字符串。"""
 
     def boom(method_name, *a, **k):
         raise RuntimeError("FRED_API_KEY environment variable is not set")
 
     monkeypatch.setattr(ta, "_real_route_to_vendor", boom)
-    # get_macro_indicators:首参是指标名(非 A股/港股) → 走上游 passthrough → boom → 降级空
+    # get_macro_indicators:首参是指标名(非 A股/港股) → 走上游 passthrough → 明确数据不可用
     out = ta._patched_route_to_vendor("get_macro_indicators", "fed_funds_rate", "2026-06-18", 30)
-    assert out == ""
+    assert "DATA_UNAVAILABLE" in out
+    assert "FRED_API_KEY" in out
+
+
+def test_route_to_vendor_propagates_programming_errors(monkeypatch):
+    """调用契约/实现错误不能伪装成数据缺失，否则会掩盖升级回归。"""
+
+    def boom(method_name, *a, **k):
+        raise TypeError("unexpected keyword argument 'vendor'")
+
+    monkeypatch.setattr(ta, "_real_route_to_vendor", boom)
+
+    import pytest
+    with pytest.raises(TypeError, match="unexpected keyword"):
+        ta._patched_route_to_vendor("get_macro_indicators", "fed_funds_rate", "2026-06-18", 30)
+
+
+def test_route_to_vendor_does_not_misclassify_generic_not_set_error(monkeypatch):
+    """只有数据源配置缺失才可降级，内部状态未设置仍应暴露。"""
+
+    def boom(method_name, *a, **k):
+        raise RuntimeError("internal state not set")
+
+    monkeypatch.setattr(ta, "_real_route_to_vendor", boom)
+
+    import pytest
+    with pytest.raises(RuntimeError, match="internal state not set"):
+        ta._patched_route_to_vendor("get_macro_indicators", "fed_funds_rate", "2026-06-18", 30)
