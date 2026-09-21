@@ -3,7 +3,12 @@ import { Plus, Trash2, Pencil, Search, X, TrendingUp, Bot, Play, RefreshCw, Wall
 import { fetchAPI, stocksApi, type AIService, type NotifyChannel } from '@panwatch/api'
 import { klinesApi } from '@panwatch/api/klines'
 import { useLocalStorage } from '@/lib/utils'
-import { loadPortfolioPageData } from '@/lib/portfolio-page-data'
+import {
+  buildPortfolioStockKeys,
+  loadPortfolioPageBackgroundData,
+  loadPortfolioPageCoreData,
+  loadPortfolioPageQuoteData,
+} from '@/lib/portfolio-page-data'
 import { SuggestionBadge, type SuggestionInfo, type KlineSummary } from '@panwatch/biz-ui/components/suggestion-badge'
 import { buildKlineSuggestion } from '@/lib/kline-scorer'
 import { KlineSummaryDialog } from '@panwatch/biz-ui/components/kline-summary-dialog'
@@ -32,6 +37,7 @@ interface AgentResult {
 
 interface StockAgentInfo {
   agent_name: string
+  display_name?: string
   schedule: string
   ai_model_id: number | null
   notify_channel_ids: number[]
@@ -604,7 +610,7 @@ export default function StocksPage() {
     try {
       const params = new URLSearchParams({
         include_expired: 'true',
-        stock_keys: items.map(item => `${item.symbol}:${item.market}`).join(','),
+        stock_keys: buildPortfolioStockKeys(items),
       })
       return await fetchAPI<Record<string, PoolSuggestion>>(`/suggestions?${params.toString()}`, { signal })
     } catch (e) {
@@ -762,9 +768,41 @@ export default function StocksPage() {
     setPortfolioLoading(true)
 
     const run = (async () => {
-      const data = await loadPortfolioPageData({
+      const coreData = await loadPortfolioPageCoreData({
         loadStocks: requestSignal => fetchAPI<Stock[]>('/stocks', { signal: requestSignal }),
         loadPortfolio: requestSignal => fetchAPI<PortfolioSummary>('/portfolio/summary?include_quotes=false', { signal: requestSignal }),
+      }, signal)
+
+      if (signal.aborted) return
+
+      const quoteData = await loadPortfolioPageQuoteData({
+        buildQuoteItems: buildQuoteItemsFrom,
+        loadQuotes: requestQuotes,
+      }, coreData.stocks, coreData.portfolio, signal)
+
+      if (signal.aborted) return
+
+      const quoteMap = toQuoteMap(quoteData.quotes)
+      setStocks(coreData.stocks)
+      setPortfolioRaw(coreData.portfolio)
+      setQuotes(quoteMap)
+      setKlineSummaries({})
+      setPoolSuggestions({})
+      setPriceAlertSummaryMap({})
+      setPortfolio(mergePortfolioQuotes(coreData.portfolio, quoteMap))
+      const nextAccounts = coreData.portfolio.accounts.map(account => ({
+        id: account.id,
+        name: account.name,
+        available_funds: account.available_funds,
+        enabled: true,
+      }))
+      setAccounts(nextAccounts)
+      setExpandedAccounts(new Set(nextAccounts.map(account => account.id)))
+      if (quoteData.quotes.length > 0) setLastRefreshTime(new Date())
+      setLoading(false)
+      setPortfolioLoading(false)
+
+      void loadPortfolioPageBackgroundData({
         loadMarketStatus: async requestSignal => {
           try {
             return await fetchAPI<MarketStatus[]>('/stocks/markets/status', { signal: requestSignal })
@@ -774,37 +812,21 @@ export default function StocksPage() {
           }
         },
         buildQuoteItems: buildQuoteItemsFrom,
-        loadQuotes: requestQuotes,
         loadSuggestions: requestSuggestions,
         loadPriceAlerts: requestPriceAlerts,
         loadKlines: requestKlineSummaries,
-      }, signal)
-
-      const quoteMap = toQuoteMap(data.quotes)
-      setStocks(data.stocks)
-      setPortfolioRaw(data.portfolio)
-      setMarketStatus(data.marketStatus)
-      setQuotes(quoteMap)
-      setKlineSummaries(data.klines)
-      setPoolSuggestions(data.suggestions)
-      setPriceAlertSummaryMap(toPriceAlertSummaryMap(data.priceAlerts))
-      setPortfolio(mergePortfolioQuotes(data.portfolio, quoteMap))
-      const nextAccounts = data.portfolio.accounts.map(account => ({
-        id: account.id,
-        name: account.name,
-        available_funds: account.available_funds,
-        enabled: true,
-      }))
-      setAccounts(nextAccounts)
-      setExpandedAccounts(new Set(nextAccounts.map(account => account.id)))
-      if (data.quotes.length > 0) setLastRefreshTime(new Date())
+      }, coreData.stocks, coreData.portfolio, signal).then(data => {
+        if (signal.aborted) return
+        setMarketStatus(data.marketStatus)
+        setKlineSummaries(data.klines)
+        setPoolSuggestions(data.suggestions)
+        setPriceAlertSummaryMap(toPriceAlertSummaryMap(data.priceAlerts))
+      }).catch(error => {
+        if (!signal.aborted) console.warn('加载持仓页后台数据失败:', error)
+      })
     })().catch(error => {
       if (!signal.aborted) console.error('加载持仓页面数据失败:', error)
     }).finally(() => {
-      if (!signal.aborted) {
-        setLoading(false)
-        setPortfolioLoading(false)
-      }
       initialLoadPromiseRef.current = null
     })
 
@@ -2112,7 +2134,7 @@ export default function StocksPage() {
                                               const isRunning = runningAgents[stock.id] === sa.agent_name
                                               return (
                                                 <span key={sa.agent_name} className="inline-flex items-center gap-1">
-                                                  <Badge variant="default" className="text-[10px]">{agent?.display_name || sa.agent_name}</Badge>
+                                                  <Badge variant="default" className="text-[10px]">{sa.display_name || agent?.display_name || sa.agent_name}</Badge>
                                                   {isRunning && (
                                                     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
                                                       <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
@@ -2279,7 +2301,7 @@ export default function StocksPage() {
                                         const isRunning = runningAgents[stock.id] === sa.agent_name
                                         return (
                                           <span key={sa.agent_name} className="inline-flex items-center gap-1">
-                                            <Badge variant="secondary" className="text-[9px]">{agent?.display_name || sa.agent_name}</Badge>
+                                          <Badge variant="secondary" className="text-[9px]">{sa.display_name || agent?.display_name || sa.agent_name}</Badge>
                                             {isRunning && (
                                               <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
                                                 <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
