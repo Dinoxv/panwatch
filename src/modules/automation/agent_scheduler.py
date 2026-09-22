@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class AgentScheduler:
-    """Agent 调度器"""
+    """Bộ lập lịch Agent"""
 
     def __init__(self, timezone: str = "UTC"):
         self.scheduler = AsyncIOScheduler()
@@ -27,19 +27,19 @@ class AgentScheduler:
         self.context_builder: Callable[[str], AgentContext] | None = None
 
     def set_context_builder(self, builder: Callable[[str], AgentContext]):
-        """设置 context 构建函数（每次执行时动态构建）"""
+        """Đặt hàm dựng context (mỗi lần chạy dựng động)"""
         self.context_builder = builder
 
     def register(self, agent: BaseAgent, schedule: str, execution_mode: str = "batch"):
         """
-        注册 Agent 到调度器。
+        Đăng ký Agent vào bộ lập lịch.
 
         Args:
-            agent: Agent 实例
-            schedule: 调度表达式
-                - cron 格式: "分 时 日 月 周" (5 部分)
-                - interval 格式: "interval:3m" 或 "interval:30s"
-            execution_mode: 执行模式 batch/single（single 将逐只股票执行 run_single）
+            agent: thực thể Agent
+            schedule: biểu thức lịch chạy
+                - dạng cron: "phút giờ ngày tháng thứ" (5 phần)
+                - dạng interval: "interval:3m" hoặc "interval:30s"
+            execution_mode: chế độ chạy batch/single (single sẽ chạy run_single lần lượt cho từng mã)
         """
         self.agents[agent.name] = agent
         self.execution_modes[agent.name] = execution_mode or "batch"
@@ -63,7 +63,7 @@ class AgentScheduler:
     # NOTE: logic bóc cron/interval gom hết về src/core/schedule_parser.py
 
     async def _run_agent(self, agent_name: str):
-        """执行指定 Agent（动态构建 context）"""
+        """Chạy Agent đã chỉ định (dựng context động)"""
         if not self.context_builder:
             logger.error("context_builder 未设置")
             return
@@ -176,11 +176,11 @@ class AgentScheduler:
             )
 
     async def trigger_now(self, agent_name: str):
-        """立即执行某个 Agent（手动触发）"""
+        """Chạy ngay một Agent (kích hoạt tay)"""
         await self._run_agent(agent_name)
 
     def start(self):
-        """启动调度器"""
+        """Khởi chạy bộ lập lịch"""
         self.scheduler.start()
         from src.platform.scheduling.scheduler_registry import register
         register("agent", self.scheduler)
@@ -192,6 +192,6 @@ class AgentScheduler:
             logger.info(f"  - {job.name}: 下次执行 {job.next_run_time}")
 
     def shutdown(self):
-        """关闭调度器"""
+        """Tắt bộ lập lịch"""
         self.scheduler.shutdown()
         logger.info("调度器已关闭")

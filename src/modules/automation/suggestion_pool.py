@@ -1,4 +1,4 @@
-"""建议池管理 - 汇总各 Agent 建议"""
+"""Quản lý kho khuyến nghị - gom khuyến nghị của các Agent"""
 
 import logging
 from datetime import datetime, timedelta
@@ -60,23 +60,23 @@ def save_suggestion(
     meta: dict | None = None,
 ) -> bool:
     """
-    保存 Agent 建议到建议池
+    Lưu khuyến nghị của Agent vào kho khuyến nghị
 
     Args:
-        stock_symbol: 股票代码
-        stock_name: 股票名称
-        action: 操作类型 (buy/add/reduce/sell/hold/watch/alert/avoid)
-        action_label: 操作中文标签
-        agent_name: Agent 名称
-        signal: 信号描述
-        reason: 建议理由
-        agent_label: Agent 中文名称（可选，自动推断）
-        expires_hours: 过期时间（小时），不指定则使用默认配置
-        prompt_context: Prompt 上下文摘要
-        ai_response: AI 原始响应
+        stock_symbol: mã cổ phiếu
+        stock_name: tên cổ phiếu
+        action: loại thao tác (buy/add/reduce/sell/hold/watch/alert/avoid)
+        action_label: nhãn hiển thị của thao tác
+        agent_name: tên Agent
+        signal: mô tả tín hiệu
+        reason: lý do khuyến nghị
+        agent_label: tên hiển thị của Agent (tùy chọn, tự suy ra)
+        expires_hours: thời gian hết hạn (giờ), không truyền thì dùng cấu hình mặc định
+        prompt_context: tóm tắt ngữ cảnh Prompt
+        ai_response: phản hồi gốc của AI
 
     Returns:
-        是否保存成功
+        lưu thành công hay không
     """
     db = SessionLocal()
     try:
@@ -202,15 +202,15 @@ def get_suggestions_for_stock(
     limit: int = 10,
 ) -> list[dict]:
     """
-    获取某只股票的建议列表
+    Lấy danh sách khuyến nghị của một mã
 
     Args:
-        stock_symbol: 股票代码
-        include_expired: 是否包含已过期建议
-        limit: 返回数量限制
+        stock_symbol: mã cổ phiếu
+        include_expired: có lấy cả khuyến nghị đã hết hạn không
+        limit: giới hạn số bản ghi trả về
 
     Returns:
-        建议列表，按时间倒序
+        danh sách khuyến nghị, xếp theo thời gian giảm dần
     """
     db = SessionLocal()
     try:
@@ -243,11 +243,11 @@ def get_latest_suggestions(
     include_expired: bool = False,
 ) -> dict[str, dict]:
     """
-    获取所有股票的最新建议（每只股票只返回最新的一条）
+    Lấy khuyến nghị mới nhất của mọi mã (mỗi mã chỉ trả về bản mới nhất)
 
     Args:
-        stock_symbols: 股票代码列表，None 表示所有
-        include_expired: 是否包含已过期建议
+        stock_symbols: danh sách mã cổ phiếu, None nghĩa là tất cả
+        include_expired: có lấy cả khuyến nghị đã hết hạn không
 
     Returns:
         {symbol: suggestion_dict}
@@ -317,7 +317,7 @@ def get_latest_suggestions(
 
 
 def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dict:
-    """将 StockSuggestion 转换为字典（时间使用 ISO 格式带时区）"""
+    """Đổi StockSuggestion sang dict (thời gian dùng định dạng ISO kèm múi giờ)"""
     if now is None:
         now = utc_now()
 
@@ -374,13 +374,13 @@ def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dic
 
 def cleanup_expired_suggestions(days: int = 7) -> int:
     """
-    清理过期的建议记录
+    Dọn các bản ghi khuyến nghị đã hết hạn
 
     Args:
-        days: 清理多少天前的记录
+        days: dọn bản ghi cũ hơn bao nhiêu ngày
 
     Returns:
-        删除的记录数
+        số bản ghi đã xóa
     """
     db = SessionLocal()
     try:

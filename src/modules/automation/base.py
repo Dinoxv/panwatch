@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PositionInfo:
-    """单个持仓信息"""
+    """Thông tin một vị thế"""
 
     account_id: int
     account_name: str
@@ -31,13 +31,13 @@ class PositionInfo:
 
     @property
     def cost_value(self) -> float:
-        """持仓成本"""
+        """Giá vốn vị thế"""
         return self.cost_price * self.quantity
 
 
 @dataclass
 class AccountInfo:
-    """账户信息"""
+    """Thông tin tài khoản"""
 
     id: int
     name: str
@@ -46,42 +46,42 @@ class AccountInfo:
 
     @property
     def total_cost(self) -> float:
-        """账户总持仓成本"""
+        """Tổng giá vốn vị thế của tài khoản"""
         return sum(p.cost_value for p in self.positions)
 
 
 @dataclass
 class PortfolioInfo:
-    """持仓组合信息"""
+    """Thông tin danh mục vị thế"""
 
     accounts: list[AccountInfo] = field(default_factory=list)
 
     @property
     def total_available_funds(self) -> float:
-        """总可用资金"""
+        """Tổng tiền khả dụng"""
         return sum(a.available_funds for a in self.accounts)
 
     @property
     def total_cost(self) -> float:
-        """总持仓成本"""
+        """Tổng giá vốn vị thế"""
         return sum(a.total_cost for a in self.accounts)
 
     @property
     def all_positions(self) -> list[PositionInfo]:
-        """所有持仓列表"""
+        """Danh sách mọi vị thế"""
         result = []
         for acc in self.accounts:
             result.extend(acc.positions)
         return result
 
     def get_positions_for_stock(self, symbol: str) -> list[PositionInfo]:
-        """获取某只股票在各账户的持仓"""
+        """Lấy vị thế của một mã ở từng tài khoản"""
         return [p for p in self.all_positions if p.symbol == symbol]
 
     def get_aggregated_position(self, symbol: str) -> dict | None:
         """
-        获取某只股票的汇总持仓（合并所有账户）
-        返回: {"symbol", "name", "total_quantity", "avg_cost", "total_cost", "trading_style", "positions"}
+        Lấy vị thế gộp của một mã (gộp mọi tài khoản)
+        Trả về: {"symbol", "name", "total_quantity", "avg_cost", "total_cost", "trading_style", "positions"}
         """
         positions = self.get_positions_for_stock(symbol)
         if not positions:
@@ -109,12 +109,12 @@ class PortfolioInfo:
         }
 
     def has_position(self, symbol: str) -> bool:
-        """是否持有某只股票"""
+        """Có đang nắm giữ mã này không"""
         return any(p.symbol == symbol for p in self.all_positions)
 
 
 class AgentContext:
-    """Agent 运行时上下文"""
+    """Ngữ cảnh lúc chạy của Agent"""
 
     def __init__(
         self,
@@ -137,11 +137,12 @@ class AgentContext:
 
     @property
     def model_label(self) -> str:
-        """实际使用的模型标签。
+        """Nhãn mô hình thực sự đã dùng.
 
-        failover 客户端会把真正跑通的候选记在 used_model_label;若不存在(普通
-        AIClient)则回退到路由选定的主模型标签。这样 footer 与 agent_runs 落库
-        都能反映"实际用了哪个模型",路由过程透明可观测。
+        Máy khách failover ghi lại ứng viên thực sự chạy trót lọt vào used_model_label;
+        không có (AIClient thường) thì lùi về nhãn mô hình chính mà bộ định tuyến đã chọn.
+        Nhờ vậy cả footer lẫn phần ghi xuống agent_runs đều phản ánh "thực tế đã dùng mô
+        hình nào", quá trình định tuyến trở nên trong suốt và quan sát được.
         """
         used = getattr(self.ai_client, "used_model_label", "")
         return used or self._primary_model_label
@@ -153,7 +154,7 @@ class AgentContext:
 
 @dataclass
 class AnalysisResult:
-    """分析结果"""
+    """Kết quả phân tích"""
 
     agent_name: str
     title: str
@@ -167,7 +168,7 @@ class AnalysisResult:
 
 
 class BaseAgent(ABC):
-    """Agent 抽象基类"""
+    """Lớp cơ sở trừu tượng của Agent"""
 
     name: str = ""
     display_name: str = ""
@@ -175,13 +176,13 @@ class BaseAgent(ABC):
 
     @abstractmethod
     async def collect(self, context: AgentContext) -> dict:
-        """采集数据"""
+        """Thu thập dữ liệu"""
         ...
 
     @abstractmethod
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
         """
-        构建 prompt。
+        Dựng prompt.
 
         Returns:
             (system_prompt, user_content)
@@ -189,7 +190,7 @@ class BaseAgent(ABC):
         ...
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """调用 AI 分析"""
+        """Gọi AI phân tích"""
         system_prompt, user_content = self.build_prompt(data, context)
         content = await context.ai_client.chat(system_prompt, user_content)
 
@@ -211,7 +212,7 @@ class BaseAgent(ABC):
         )
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """是否需要通知，子类可重写"""
+        """Có cần thông báo không, lớp con ghi đè được"""
         return True
 
     def _notify_dedupe_ttl_minutes(self, context: AgentContext) -> int:
@@ -244,7 +245,7 @@ class BaseAgent(ABC):
         return default
 
     async def run(self, context: AgentContext) -> AnalysisResult:
-        """标准执行流程"""
+        """Luồng chạy chuẩn"""
         logger.info(f"Agent [{self.display_name}] 开始执行")
 
         try:

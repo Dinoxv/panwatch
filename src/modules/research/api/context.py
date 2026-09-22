@@ -1,4 +1,4 @@
-"""上下文与后验评估 API。"""
+"""API ngữ cảnh và hậu kiểm."""
 
 from __future__ import annotations
 

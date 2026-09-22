@@ -47,7 +47,7 @@ def _parse_market(market: str) -> MarketCode:
 
 @router.post("/batch")
 def insights_batch(payload: InsightsBatchRequest):
-    """聚合返回行情 + K线摘要 + 最新建议"""
+    """Trả về gộp bảng giá + tóm tắt nến + khuyến nghị mới nhất"""
     if not payload.items:
         return []
 
@@ -134,7 +134,7 @@ _VERDICTS = ("不适合", "谨慎", "适合")  # Dài trước ngắn sau: '不�
 
 
 def _parse_verdict(text: str) -> str:
-    """从 AI 回复粗解析结论标签;命中不到返回'未知'。"""
+    """Đọc thô nhãn kết luận từ câu trả lời của AI; không khớp được thì trả 'Không rõ'."""
     head = (text or "")[:120]
     for v in _VERDICTS:
         if v in head:
@@ -143,7 +143,7 @@ def _parse_verdict(text: str) -> str:
 
 
 async def _fetch_fundamental_context(symbol: str, market: str) -> str:
-    """基本面摘要:PE / 换手率 / 市值 / 今日振幅(取自实时行情,失败返回空)。"""
+    """Tóm tắt mặt cơ bản: P/E / tỷ lệ sang tay / vốn hóa / biên độ hôm nay (lấy từ bảng giá thời gian thực, hỏng thì trả rỗng)."""
     try:
         mc = MarketCode(market) if market in ("CN", "HK", "US") else MarketCode.CN
         rows = await asyncio.to_thread(md_quote_rows, [symbol], mc.value)
@@ -169,7 +169,7 @@ async def _fetch_fundamental_context(symbol: str, market: str) -> str:
 
 
 async def _fetch_message_context(db: Session, symbol: str, market: str) -> str:
-    """消息面摘要:近 3 天新闻/公告标题 + 本地最近 AI 建议/分析(失败降级为空)。"""
+    """Tóm tắt mặt tin tức: tiêu đề tin/công bố 3 ngày gần nhất + khuyến nghị/phân tích AI gần nhất ở cục bộ (hỏng thì hạ xuống rỗng)."""
     parts: list[str] = []
     try:
         from src.platform.marketdata.collectors.news_collector import NewsCollector
@@ -201,7 +201,7 @@ async def _fetch_message_context(db: Session, symbol: str, market: str) -> str:
 
 @router.post("/add-position-eval")
 async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(get_db)):
-    """加仓快速评估:按服务端口径算摊薄成本 + 让 AI 给 适合/谨慎/不适合 结论。"""
+    """Đánh giá nhanh việc mua thêm: tính giá vốn bình quân theo khẩu độ phía server + để AI đưa kết luận hợp/thận trọng/không hợp."""
     market = _parse_market(req.market).value
     cur_q = max(0.0, float(req.current_quantity or 0))
     cur_c = max(0.0, float(req.current_cost or 0))
@@ -282,7 +282,7 @@ def _parse_tone(text: str) -> str:
 
 
 async def _fetch_recent_announcements(symbol: str, name: str, limit: int = 5) -> list[dict]:
-    """取近 7 天公告/新闻(优先东财公告),失败返回 []。"""
+    """Lấy công bố/tin tức 7 ngày gần nhất (ưu tiên công bố Đông Tài), hỏng thì trả []."""
     try:
         from src.platform.marketdata.collectors.news_collector import NewsCollector
 
@@ -312,7 +312,7 @@ class AnnouncementEvalRequest(BaseModel):
 
 @router.post("/announcement-eval")
 async def announcement_eval(req: AnnouncementEvalRequest, db: Session = Depends(get_db)):
-    """近期公告 → AI 逐条判利好/利空/中性 + 一句话。降级:无全文则用标题。"""
+    """Công bố gần đây → AI xét từng bản là thuận lợi/bất lợi/trung tính + một câu. Hạ cấp: không có toàn văn thì dùng tiêu đề."""
     market = _parse_market(req.market).value
     cache_key = f"{market}:{req.symbol}"
     cached = _ANN_CACHE.get(cache_key)

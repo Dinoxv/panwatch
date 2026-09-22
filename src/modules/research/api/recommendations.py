@@ -1,4 +1,4 @@
-"""推荐相关 API（入场候选榜）。"""
+"""API liên quan tới gợi ý (bảng ứng viên vào lệnh)."""
 
 from datetime import datetime, timezone
 import logging
@@ -370,7 +370,7 @@ def strategy_factor_ic(
     days: int = Query(90, ge=7, le=365, description="回看快照天数"),
     horizon: int = Query(5, ge=1, le=60, description="持有期(交易日)"),
 ):
-    """各因子的 IC/IR 有效性评估(StrategyFactorSnapshot × StrategyOutcome)。"""
+    """Đánh giá hiệu lực IC/IR của từng nhân tố (StrategyFactorSnapshot × StrategyOutcome)."""
     return evaluate_factor_ic(days=days, horizon=horizon)
 
 

@@ -1,4 +1,4 @@
-"""技术分析 Agent - 多模态 K 线图分析"""
+"""Agent phân tích kỹ thuật - phân tích đồ thị nến đa phương thức"""
 
 import logging
 from datetime import datetime
@@ -15,10 +15,10 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "chart_an
 
 class ChartAnalystAgent(BaseAgent):
     """
-    技术分析 Agent
+    Agent phân tích kỹ thuật
 
-    使用多模态 AI 分析 K 线图截图，输出技术分析报告。
-    需要支持 Vision 的 AI 模型（如 GPT-4V、GLM-4V 等）。
+    Dùng AI đa phương thức phân tích ảnh chụp đồ thị nến rồi xuất báo cáo phân tích kỹ thuật.
+    Cần mô hình AI có hỗ trợ Vision (như GPT-4V, GLM-4V…).
     """
 
     name = "chart_analyst"
@@ -28,13 +28,13 @@ class ChartAnalystAgent(BaseAgent):
     def __init__(self, period: str = "daily"):
         """
         Args:
-            period: K线周期 (daily/weekly/monthly)
+            period: chu kỳ nến (daily/weekly/monthly)
         """
         self.period = period
         self._collector: ScreenshotCollector | None = None
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集自选股 K 线图截图"""
+        """Thu thập ảnh chụp đồ thị nến của mã theo dõi"""
         if not context.watchlist:
             logger.warning("自选股列表为空，跳过截图采集")
             return {"screenshots": [], "watchlist": []}
@@ -89,7 +89,7 @@ class ChartAnalystAgent(BaseAgent):
             self._collector = None
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建技术分析 Prompt"""
+        """Dựng Prompt phân tích kỹ thuật"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         lines = []
@@ -168,7 +168,7 @@ class ChartAnalystAgent(BaseAgent):
         return system_prompt, user_content
 
     def _period_label(self, period: str) -> str:
-        """周期中文标签"""
+        """Nhãn hiển thị của chu kỳ"""
         return {
             "daily": "日K",
             "weekly": "周K",
@@ -177,9 +177,9 @@ class ChartAnalystAgent(BaseAgent):
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
         """
-        重写分析方法以支持多模态
+        Ghi đè phương thức phân tích để hỗ trợ đa phương thức
 
-        将截图作为图片传给 AI
+        Đưa ảnh chụp cho AI dưới dạng ảnh
         """
         system_prompt, user_content = self.build_prompt(data, context)
 
@@ -218,7 +218,7 @@ class ChartAnalystAgent(BaseAgent):
         )
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """有截图且有内容时通知"""
+        """Có ảnh chụp và có nội dung thì mới thông báo"""
         screenshots = result.raw_data.get("screenshots", [])
         return len(screenshots) > 0 and len(result.content) > 50
 
@@ -226,9 +226,9 @@ class ChartAnalystAgent(BaseAgent):
         self, context: AgentContext, stock_symbol: str
     ) -> AnalysisResult | None:
         """
-        单只模式执行：只分析指定的一只股票
+        Chạy ở chế độ từng mã: chỉ phân tích đúng một mã đã chỉ định
 
-        用于逐只分析场景，每只股票独立截图、分析和通知
+        Dùng cho tình huống phân tích lần lượt, mỗi mã chụp ảnh, phân tích và thông báo riêng
         """
         # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist

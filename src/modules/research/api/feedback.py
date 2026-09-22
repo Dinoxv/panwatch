@@ -41,7 +41,7 @@ def feedback_stats(
     days: int = Query(14, ge=1, le=365),
     db: Session = Depends(get_db),
 ):
-    """反馈统计（基础版）"""
+    """Thống kê phản hồi (bản nền)"""
     since = datetime.now(timezone.utc) - timedelta(days=days)
     # SQLite: date(created_at) yields YYYY-MM-DD
     day_col = func.date(SuggestionFeedback.created_at)

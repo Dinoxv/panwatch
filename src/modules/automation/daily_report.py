@@ -47,17 +47,17 @@ def get_market_data():
 
 
 class DailyReportAgent(BaseAgent):
-    """盘后日报 Agent"""
+    """Agent nhật báo sau phiên"""
 
     name = "daily_report"
     display_name = "收盘复盘"
     description = "每日收盘后生成自选股日报，包含大盘概览、个股分析和明日关注"
 
     async def _fetch_index_for_market(self, market_code: MarketCode) -> list[IndexData]:
-        """按 market 取大盘指数。
+        """Lấy chỉ số chung theo market.
 
-        直接走 marketdata 新包(index_quotes)。
-        与旧 _get_cn_index 口径一致：仅 CN 出数，其余市场返回空 list。
+        Đi thẳng vào gói marketdata mới (index_quotes).
+        Cùng khẩu độ với _get_cn_index cũ: chỉ CN ra số, các thị trường khác trả list rỗng.
         """
         if market_code != MarketCode.CN:
             return []
@@ -78,7 +78,7 @@ class DailyReportAgent(BaseAgent):
         ]
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集大盘指数 + 自选股结构化数据包（行情/技术/资金/新闻/持仓）"""
+        """Thu thập gói dữ liệu có cấu trúc của chỉ số chung + mã theo dõi (bảng giá/kỹ thuật/dòng tiền/tin tức/vị thế)"""
 
         all_indices: list[IndexData] = []
         markets = []
@@ -132,7 +132,7 @@ class DailyReportAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建日报 Prompt"""
+        """Dựng Prompt nhật báo"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định

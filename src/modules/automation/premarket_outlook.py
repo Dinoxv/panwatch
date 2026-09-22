@@ -1,4 +1,4 @@
-"""盘前分析 Agent - 开盘前展望今日走势"""
+"""Agent phân tích trước phiên - nhìn trước diễn biến hôm nay khi chưa mở cửa"""
 
 import logging
 import re
@@ -41,14 +41,14 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "premarke
 
 
 class PremarketOutlookAgent(BaseAgent):
-    """盘前分析 Agent"""
+    """Agent phân tích trước phiên"""
 
     name = "premarket_outlook"
     display_name = "盘前分析"
     description = "开盘前综合昨日分析和隔夜信息，展望今日走势"
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集盘前数据"""
+        """Thu thập dữ liệu trước phiên"""
         trace_id = (
             get_log_context().get("trace_id")
             or datetime.now().strftime("%m%d%H%M%S%f")[-10:]
@@ -214,7 +214,7 @@ class PremarketOutlookAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建盘前分析 Prompt"""
+        """Dựng Prompt phân tích trước phiên"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
