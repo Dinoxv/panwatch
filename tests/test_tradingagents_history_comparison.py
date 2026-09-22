@@ -55,7 +55,7 @@ def test_find_close_on_or_after_exact_match():
 
 def test_find_close_on_or_after_weekend_skips_to_monday():
     """目标日是周末/节假日 → 找下一个交易日"""
-    klines = {"2026-05-15": 10.5, "2026-05-18": 11.0}  # 16/17 是周末
+    klines = {"2026-05-15": 10.5, "2026-05-18": 11.0}  # 16/17 là cuối tuần
     result = _find_close_on_or_after(klines, "2026-05-16")
     assert result == ("2026-05-18", 11.0)
 
@@ -71,7 +71,7 @@ def test_find_close_after_n_trading_days():
     """从基准日往后 N 个交易日找收盘价"""
     sorted_dates = ["2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21"]
     klines = {d: 10.0 + i for i, d in enumerate(sorted_dates)}
-    # 从 5-15 往后 3 个交易日 = 5-20 → close=13.0
+    # Từ 5-15 tiến 3 phiên giao dịch = 5-20 → close=13,0
     assert _find_close_after_n_trading_days(sorted_dates, "2026-05-15", 3, klines) == 13.0
 
 
@@ -104,16 +104,16 @@ def test_compute_stats_hit_rates_per_action():
     assert stats["sell_hit_rate"] == 1.0
     assert stats["hold_hit_rate"] == 1.0
     assert stats["overall_hit_rate"] == 0.75
-    # (5-2-3+0.5)/4 = 0.125,Python round() 银行家舍入到偶数 → 0.12
+    # (5-2-3+0,5)/4 = 0,125; round() của Python làm tròn kiểu ngân hàng về số chẵn → 0,12
     assert stats["avg_return_20d_pct"] == 0.12
 
 
 def test_compute_stats_skips_items_without_20d_return():
     """未到 20 天的最新决策不参与统计"""
     items = [
-        {"action": "buy", "return_20d_pct": None, "hit_20d": None},  # 刚发生
+        {"action": "buy", "return_20d_pct": None, "hit_20d": None},  # Vừa xảy ra
         {"action": "buy", "return_20d_pct": 5.0, "hit_20d": True},
     ]
     stats = _compute_stats(items)
     assert stats["total"] == 2
-    assert stats["buy_hit_rate"] == 1.0  # 仅基于第 2 条
+    assert stats["buy_hit_rate"] == 1.0  # Chỉ dựa trên bản ghi thứ 2

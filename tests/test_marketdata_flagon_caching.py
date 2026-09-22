@@ -27,7 +27,7 @@ def _mk_bars(n: int) -> list[Bar]:
 
 
 class _FakeMarketData:
-    """假的 marketdata.MarketData,只实现 klines(),记录调用次数。"""
+    """marketdata.MarketData giả, chỉ cài đặt klines() và đếm số lần được gọi."""
 
     def __init__(self, bars: list[Bar]):
         self.bars = bars
@@ -58,8 +58,8 @@ def test_flagon_kline_insufficient_bars_triggers_cooldown(monkeypatch):
     monkeypatch.setattr(kc, "get_market_data", lambda: fake)
 
     col = kc.KlineCollector(MarketCode.US)
-    out1 = col.get_klines("AAPL", days=100)  # 只拿到 5 < need(100) → 冷却
-    out2 = col.get_klines("AAPL", days=100)  # 冷却窗口内,应直接服务缓存,不再调用包
+    out1 = col.get_klines("AAPL", days=100)  # Chỉ lấy được 5 < need (100) → vào thời gian chờ
+    out2 = col.get_klines("AAPL", days=100)  # Trong cửa sổ chờ thì phục vụ thẳng từ bộ đệm, không gọi vào gói nữa
 
     assert fake.calls == 1, f"冷却窗口内不应重复调用包,实际 {fake.calls} 次"
     assert len(out1) == 5

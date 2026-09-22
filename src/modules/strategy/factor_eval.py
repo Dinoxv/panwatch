@@ -1,11 +1,13 @@
-"""因子有效性评估(Phase 2):IC / IR。
+"""Đánh giá hiệu lực nhân tố (Phase 2): IC / IR.
 
-回答「哪些因子在 A 股真正有 alpha」—— 把 StrategyFactorSnapshot(每个信号的因子分)
-与 StrategyOutcome(前向收益)按 signal_run_id 关联,算每个因子的:
-- IC(信息系数):因子值与未来收益的 Spearman 秩相关(全样本)
-- IR(信息比率):按快照日分组的 IC 序列的 mean/std
+Trả lời câu hỏi «nhân tố nào thật sự có alpha ở cổ phiếu A» — nối
+StrategyFactorSnapshot (điểm nhân tố của từng tín hiệu) với StrategyOutcome (lợi nhuận
+tiến về trước) theo signal_run_id, rồi tính cho mỗi nhân tố:
+- IC (hệ số thông tin): tương quan hạng Spearman giữa giá trị nhân tố và lợi nhuận tương lai (toàn mẫu)
+- IR (tỷ lệ thông tin): mean/std của chuỗi IC gom theo ngày ảnh chụp
 
-纯 Python 实现相关系数(不引入 scipy/alphalens),与回测内核一致的轻量约束。
+Hệ số tương quan cài đặt bằng Python thuần (không kéo scipy/alphalens), cùng ràng buộc
+nhẹ như lõi kiểm thử lịch sử.
 """
 
 from __future__ import annotations
@@ -19,19 +21,19 @@ from src.platform.persistence.models import StrategyFactorSnapshot, StrategyOutc
 
 logger = logging.getLogger(__name__)
 
-# 参与评估的因子字段(对应 StrategyFactorSnapshot 列)
+# Các trường nhân tố tham gia đánh giá (ứng với cột của StrategyFactorSnapshot)
 FACTOR_FIELDS = (
     "alpha_score",
     "catalyst_score",
     "quality_score",
-    "risk_penalty",   # 惩罚项,IC 预期为负
-    "crowd_penalty",  # 惩罚项,IC 预期为负
+    "risk_penalty",   # Thành phần phạt, kỳ vọng IC âm
+    "crowd_penalty",  # Thành phần phạt, kỳ vọng IC âm
     "final_score",
 )
 
 
 def pearson(xs: list[float], ys: list[float]) -> float | None:
-    """Pearson 线性相关系数;样本 < 3 或零方差返回 None。"""
+    """Hệ số tương quan tuyến tính Pearson; mẫu < 3 hoặc phương sai bằng 0 thì trả None."""
     n = len(xs)
     if n < 3 or n != len(ys):
         return None
@@ -46,7 +48,7 @@ def pearson(xs: list[float], ys: list[float]) -> float | None:
 
 
 def _rankdata(values: list[float]) -> list[float]:
-    """平均秩(1-based;并列取平均)。"""
+    """Hạng bình quân (bắt đầu từ 1; đồng hạng thì lấy trung bình)."""
     order = sorted(range(len(values)), key=lambda i: values[i])
     ranks = [0.0] * len(values)
     i = 0
@@ -62,7 +64,7 @@ def _rankdata(values: list[float]) -> list[float]:
 
 
 def spearman(xs: list[float], ys: list[float]) -> float | None:
-    """Spearman 秩相关 = 对秩做 Pearson。"""
+    """Tương quan hạng Spearman = chạy Pearson trên hạng."""
     if len(xs) < 3 or len(xs) != len(ys):
         return None
     return pearson(_rankdata(xs), _rankdata(ys))
@@ -72,20 +74,20 @@ def evaluate_factor_ic(
     *, days: int = 90, horizon: int = 5, min_samples: int = 20, min_period_samples: int = 5,
     market: str | None = None, db=None,
 ) -> dict:
-    """计算各因子的 IC/IR。
+    """Tính IC/IR của từng nhân tố.
 
     Args:
-        days: 回看快照天数
-        horizon: 用哪个持有期(交易日)的 outcome
-        min_samples: 全样本 IC 的最小样本量
-        min_period_samples: 单日 IC 的最小样本量(用于 IR 的时序序列)
+        days: nhìn lại bao nhiêu ngày ảnh chụp
+        horizon: dùng outcome của kỳ nắm giữ nào (phiên giao dịch)
+        min_samples: cỡ mẫu tối thiểu cho IC toàn mẫu
+        min_period_samples: cỡ mẫu tối thiểu cho IC một ngày (dùng cho chuỗi thời gian của IR)
     """
     own = db is None
     db = db or SessionLocal()
     try:
         cutoff = (date.today() - timedelta(days=max(7, int(days)))).strftime("%Y-%m-%d")
-        # 防泄漏(point-in-time):只纳入持有期已走完的样本
-        # (snapshot_date + horizon 日历日 <= today),杜绝偷看未实现收益。
+        # Chống rò rỉ dữ liệu tương lai (point-in-time): chỉ lấy các mẫu đã đi hết kỳ nắm giữ
+        # (snapshot_date + horizon ngày lịch <= hôm nay), triệt tiêu việc nhìn trộm lợi nhuận chưa thành hiện thực.
         horizon_cutoff = (date.today() - timedelta(days=int(horizon))).strftime("%Y-%m-%d")
         query = (
             db.query(StrategyFactorSnapshot, StrategyOutcome.outcome_return_pct)

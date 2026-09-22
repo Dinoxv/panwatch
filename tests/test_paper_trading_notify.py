@@ -103,7 +103,7 @@ def _make_account(**kwargs):
 
 
 # ---------------------------------------------------------------------------
-# 盘前计划去重测试
+# Test khử trùng lặp cho kế hoạch trước phiên
 # ---------------------------------------------------------------------------
 
 
@@ -149,12 +149,12 @@ class TestPremarketDedup(unittest.TestCase):
         title, body = _format_premarket_plan(signals, account)
 
         self.assertIn("盘前计划", title)
-        # 股票只出现 1 次（symbol 出现在 "002837.CN" 和 URL 中）
+        # Mỗi mã chỉ xuất hiện 1 lần (symbol nằm trong "002837.CN" và trong URL)
         lines_with_stock = [l for l in body.split("\n") if "002837" in l]
         self.assertEqual(len(lines_with_stock), 1)
-        # 显示中文策略名 + 数量
+        # Hiển thị tên chiến lược + số lượng
         self.assertIn("趋势延续 等4个策略", body)
-        # 包含雪球链接
+        # Có chứa liên kết Xueqiu
         self.assertIn("xueqiu.com", body)
 
     def test_premarket_plan_no_signals(self):
@@ -165,7 +165,7 @@ class TestPremarketDedup(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 消息格式化测试（dict 输入）
+# Test định dạng thông điệp (đầu vào là dict)
 # ---------------------------------------------------------------------------
 
 
@@ -193,8 +193,8 @@ class TestMessageFormat(unittest.TestCase):
         self.assertIn("104.00", body)
         self.assertIn("130.00", body)
         self.assertIn("100.0", body)  # rank_score
-        self.assertIn("趋势延续", body)  # 中文策略名
-        self.assertIn("xueqiu.com", body)  # 股票链接
+        self.assertIn("趋势延续", body)  # Tên chiến lược dạng chữ
+        self.assertIn("xueqiu.com", body)  # Liên kết cổ phiếu
 
     def test_entry_message_no_signal(self):
         """建仓通知 — 无信号时不报错"""
@@ -234,7 +234,7 @@ class TestMessageFormat(unittest.TestCase):
         self.assertIn("113.00", body)
         self.assertIn("120.00", body)
         self.assertIn("3天", body)
-        self.assertIn("xueqiu.com", body)  # 股票链接
+        self.assertIn("xueqiu.com", body)  # Liên kết cổ phiếu
 
     def test_exit_message_loss(self):
         """平仓通知 — 亏损时显示负号和止损"""
@@ -264,7 +264,7 @@ class TestMessageFormat(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 序列化函数测试
+# Test các hàm chuyển đổi sang dict
 # ---------------------------------------------------------------------------
 
 

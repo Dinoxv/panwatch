@@ -1,4 +1,4 @@
-"""首页聚合 API（轻量版：不包含机会消息中心）。"""
+"""API gộp cho trang chủ (bản nhẹ: không gồm trung tâm tin cơ hội)."""
 
 from __future__ import annotations
 
@@ -225,7 +225,7 @@ def get_dashboard_overview(
     )
     risk_items = risk_items[: int(risk_limit)]
 
-    # Portfolio quick stats (DB-only, no实时行情请求).
+    # Portfolio quick stats (DB-only, không gọi giá thời gian thực).
     positions = (
         db.query(Position, Stock)
         .join(Stock, Position.stock_id == Stock.id)
@@ -258,7 +258,7 @@ def get_dashboard_overview(
         or 0.0
     )
 
-    # Market pulse from latest market scan snapshot (stable even without外网).
+    # Market pulse from latest market scan snapshot (ổn định ngay cả khi không có mạng ngoài).
     pulse_query = db.query(MarketScanSnapshot)
     if snapshot_date:
         pulse_query = pulse_query.filter(MarketScanSnapshot.snapshot_date == snapshot_date)
@@ -392,7 +392,7 @@ def get_dashboard_overview(
 logger = logging.getLogger(__name__)
 
 
-# ── 今日必读 AI 策展(Phase C)────────────────────────────────────────────
+# ── AI tuyển chọn tin phải đọc hôm nay (Phase C) ────────────────────────
 class CurateCandidate(BaseModel):
     type: str
     symbol: str = ""
@@ -409,7 +409,7 @@ class CurateRequest(BaseModel):
 
 @router.post("/curate")
 async def curate_today(req: CurateRequest, db: Session = Depends(get_db)):
-    """把首页候选事件交 AI 排序+精炼,返回 [{index, importance, why}];AI 失败按原序兜底。"""
+    """Giao các sự kiện ứng viên của trang chủ cho AI xếp hạng + chắt lọc, trả về [{index, importance, why}]; AI hỏng thì hứng bằng thứ tự gốc."""
     cands = req.candidates[:20]
     if not cands:
         return {"items": []}
@@ -446,7 +446,7 @@ async def curate_today(req: CurateRequest, db: Session = Depends(get_db)):
     except Exception as e:
         logger.debug(f"curate AI 失败,按原序兜底: {e}")
 
-    if not items:  # 兜底:原序 + 递减重要度
+    if not items:  # Dự phòng: giữ thứ tự gốc + mức quan trọng giảm dần
         items = [
             {"index": i, "importance": max(0, 100 - i * 5), "why": c.signal or ""}
             for i, c in enumerate(cands)
@@ -457,7 +457,7 @@ async def curate_today(req: CurateRequest, db: Session = Depends(get_db)):
 
 @router.get("/brief")
 def get_brief(type: str = Query("eod", description="premarket | eod"), db: Session = Depends(get_db)):
-    """盘前/盘后 AI 简报(复用 premarket_outlook / daily_report agent 的最新报告)。"""
+    """Bản tin AI trước/sau phiên (dùng lại báo cáo mới nhất của agent premarket_outlook / daily_report)."""
     agent = "premarket_outlook" if type == "premarket" else "daily_report"
     label = "盘前分析" if type == "premarket" else "收盘复盘"
     row = (

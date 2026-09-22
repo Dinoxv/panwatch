@@ -1,4 +1,4 @@
-"""模拟盘 API 端点。"""
+"""Điểm cuối API của mô phỏng bàn giao dịch."""
 
 import logging
 from datetime import datetime, timezone
@@ -49,9 +49,9 @@ class ToggleBody(BaseModel):
 
 
 class UpdateSettingsBody(BaseModel):
-    excluded_markets: list[str] | None = None  # 兼容旧字段
-    market_allocations: dict[str, float] | None = None  # {"CN":0.5,...}，合计 ≤ 1
-    initial_capital: float | None = None  # 总资金（>0 时按差额增/减资）
+    excluded_markets: list[str] | None = None  # Tương thích trường cũ
+    market_allocations: dict[str, float] | None = None  # {"CN":0.5,...}, tổng ≤ 1
+    initial_capital: float | None = None  # Tổng vốn (lớn hơn 0 thì tăng / giảm vốn theo phần chênh lệch)
 
 
 def _serialize_account_dict(
@@ -97,7 +97,7 @@ def _serialize_account_dict(
 def _build_equity_curve(
     db: Session, acc: PaperTradingAccount, market: str | None
 ) -> tuple[list[dict], float, float]:
-    """构建收益曲线，返回 (curve, peak, max_drawdown_pct)。market=None 为全市场。"""
+    """Dựng đường lợi nhuận, trả về (curve, peak, max_drawdown_pct). market=None là toàn thị trường."""
     ratio = market_allocations_or_default(acc).get(market, 0.0) if market else 1.0
     base = acc.initial_capital * ratio if market else acc.initial_capital
 
@@ -169,7 +169,7 @@ def _build_equity_curve(
 
 
 def _account_summary(db: Session, acc: PaperTradingAccount, market: str | None) -> dict:
-    """账户汇总。market=None 为全账户（沿用引擎维护的回撤）；否则按该市场子池口径。"""
+    """Tổng hợp tài khoản. market=None là toàn tài khoản (dùng mức sụt giảm do engine giữ); ngược lại theo khẩu độ kho con của thị trường đó."""
     if not market or market not in ALL_MARKETS:
         open_positions = (
             db.query(PaperTradingPosition)
@@ -234,7 +234,7 @@ def _account_summary(db: Session, acc: PaperTradingAccount, market: str | None) 
 
 
 def _strategy_performance(db: Session, market: str | None) -> list[dict]:
-    """按策略聚合绩效（已平仓 + 持仓中），可按市场过滤。"""
+    """Gộp hiệu quả theo chiến lược (đã đóng + đang nắm giữ), lọc được theo thị trường."""
     tq = db.query(PaperTradingTrade)
     if market:
         tq = tq.filter(PaperTradingTrade.stock_market == market)
@@ -418,13 +418,13 @@ def get_metrics(market: str | None = None, db: Session = Depends(get_db)):
 
 @router.get("/diagnostics")
 def get_diagnostics():
-    """组合诊断(只读):集中度/市场与策略分布/风险提示。"""
+    """Soi danh mục (chỉ đọc): mức tập trung/phân bố theo thị trường và chiến lược/cảnh báo rủi ro."""
     return diagnose_paper_portfolio()
 
 
 @router.get("/backends")
 def get_backends():
-    """可用回测后端探测(builtin 永远可用;vectorbt/rqalpha/qlib 视安装情况)。"""
+    """Dò các backend kiểm thử lịch sử dùng được (builtin luôn có; vectorbt/rqalpha/qlib tùy tình hình cài đặt)."""
     return available_backends()
 
 
@@ -467,7 +467,7 @@ def update_settings(body: UpdateSettingsBody, db: Session = Depends(get_db)):
         if total > 1.0 + 1e-9:
             raise HTTPException(400, f"投资比例合计不能超过 100%（当前 {round(total * 100)}%）")
         acc.market_allocations = alloc
-        # 同步派生 excluded_markets（比例 0 即排除），兼容旧读取
+        # Suy đồng bộ ra excluded_markets (tỷ trọng 0 là bị loại), giữ tương thích với cách đọc cũ
         acc.excluded_markets = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
     elif body.excluded_markets is not None:
         valid = {"CN", "HK", "US"}
@@ -487,13 +487,13 @@ def update_settings(body: UpdateSettingsBody, db: Session = Depends(get_db)):
 
 @router.post("/scan")
 async def manual_scan():
-    """手动触发一次模拟盘扫描（建仓 + 平仓检查）。"""
+    """Kích hoạt tay một lượt quét mô phỏng (kiểm mở vị thế + đóng vị thế)."""
     result = await ENGINE.scan_once()
     return result
 
 
 # ---------------------------------------------------------------------------
-# 跟单通知设置
+# Cài đặt thông báo sao chép lệnh
 # ---------------------------------------------------------------------------
 
 _NOTIFY_KEYS = [
@@ -515,7 +515,7 @@ _NOTIFY_DEFAULTS = {
 
 @router.get("/notify-settings")
 def get_notify_settings(db: Session = Depends(get_db)):
-    """返回当前通知配置 + 可用渠道列表。"""
+    """Trả về cấu hình thông báo hiện tại + danh sách kênh dùng được."""
     rows = db.query(AppSettings).filter(AppSettings.key.in_(_NOTIFY_KEYS)).all()
     settings = dict(_NOTIFY_DEFAULTS)
     for r in rows:
@@ -540,7 +540,7 @@ class NotifySettingsBody(BaseModel):
 
 @router.post("/notify-settings")
 def update_notify_settings(body: NotifySettingsBody, db: Session = Depends(get_db)):
-    """更新通知配置。"""
+    """Cập nhật cấu hình thông báo."""
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     for key, value in updates.items():
         row = db.query(AppSettings).filter(AppSettings.key == key).first()
@@ -554,7 +554,7 @@ def update_notify_settings(body: NotifySettingsBody, db: Session = Depends(get_d
 
 @router.post("/notify-test")
 async def test_notify():
-    """发送测试通知。"""
+    """Gửi thông báo thử."""
     from src.modules.paper_trading.paper_trading_notifier import send_test_notification
     result = await send_test_notification()
     if not result.get("success"):
@@ -564,7 +564,7 @@ async def test_notify():
 
 @router.post("/premarket-plan")
 async def trigger_premarket_plan():
-    """手动触发盘前计划通知。"""
+    """Kích hoạt tay thông báo kế hoạch trước phiên."""
     from src.modules.paper_trading.paper_trading_notifier import send_premarket_plan
     await send_premarket_plan()
     return {"ok": True}
@@ -572,7 +572,7 @@ async def trigger_premarket_plan():
 
 @router.post("/daily-summary")
 async def trigger_daily_summary():
-    """手动触发日终摘要通知。"""
+    """Kích hoạt tay thông báo tóm tắt cuối ngày."""
     from src.modules.paper_trading.paper_trading_notifier import send_daily_summary
     await send_daily_summary()
     return {"ok": True}

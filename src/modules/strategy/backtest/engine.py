@@ -1,17 +1,18 @@
-"""轻量事件式回测内核(纯 Python,无第三方依赖)。
+"""Lõi kiểm thử lịch sử theo sự kiện, nhẹ (thuần Python, không phụ thuộc bên thứ ba).
 
-职责:给定信号 + 历史 K 线 → 模拟「信号次日开盘入场、逐日止损/止盈/到期平仓」,
-扣 A 股交易成本,产出每笔交易、净值曲线与绩效指标。
+Nhiệm vụ: cho trước tín hiệu + nến lịch sử → mô phỏng «vào lệnh lúc mở cửa phiên sau
+tín hiệu, mỗi phiên kiểm cắt lỗ/chốt lời/đóng khi tới hạn», trừ chi phí giao dịch cổ
+phiếu A, rồi xuất ra từng lệnh, đường giá trị ròng và các chỉ tiêu hiệu quả.
 
-设计取舍(Phase 0):
-- 入场:信号日之后的**下一交易日开盘价**入场(无未来函数);T+1 起才可平仓(符合 A 股)。
-- 平仓(event):逐日检查止损/止盈;同日双触保守判为先止损;达最大持有交易日按收盘平。
-- 跳空:开盘已越过止损/止盈则按开盘价成交(gap)。
-- 仓位:默认每笔固定名义资金,买 A 股 100 股整数倍(可注入 sizer 供 Phase 1 替换)。
-- 净值曲线:按平仓日累积已实现盈亏(简化);并发持仓的逐日浮动 mark 留作后续扩展。
-- 涨跌停无法成交约束未建模(TODO:需前收 + 板块判定)。
+Đánh đổi thiết kế (Phase 0):
+- Vào lệnh: **giá mở cửa của phiên giao dịch kế tiếp** sau ngày tín hiệu (không có hàm nhìn trước tương lai); từ T+1 mới đóng được (đúng lệ cổ phiếu A).
+- Đóng lệnh (event): mỗi phiên kiểm cắt lỗ/chốt lời; cùng phiên chạm cả hai thì thận trọng xử là cắt lỗ trước; tới số phiên nắm giữ tối đa thì đóng theo giá đóng cửa.
+- Nhảy giá: mở cửa đã vượt qua mức cắt lỗ/chốt lời thì khớp theo giá mở cửa (gap).
+- Tỷ trọng: mặc định mỗi lệnh một lượng vốn danh nghĩa cố định, mua cổ phiếu A theo bội số 100 cổ (tiêm sizer được để Phase 1 thay).
+- Đường giá trị ròng: cộng dồn lãi lỗ đã thực hiện theo ngày đóng lệnh (đơn giản hóa); phần mark lãi lỗ tạm tính theo ngày cho nhiều vị thế song song để mở rộng sau.
+- Ràng buộc không khớp được khi chạm trần/sàn chưa mô hình hóa (TODO: cần giá tham chiếu + xét nhóm ngành).
 
-另提供 horizon_return():复刻 strategy_engine.evaluate_strategy_outcomes 口径,用于交叉验证。
+Còn cung cấp horizon_return(): sao lại khẩu độ của strategy_engine.evaluate_strategy_outcomes, dùng để đối chiếu chéo.
 """
 
 from __future__ import annotations
@@ -21,6 +22,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable
 
+from src.platform.marketdata.bars import (
+    base_index_on_or_before,
+    bar_after_n_trading_days,
+    close_series,
+)
 from src.modules.strategy.backtest import metrics as M
 from src.modules.strategy.backtest.cost_model import CostModel
 from src.modules.strategy.backtest.data_adapter import PriceBar, first_index_after
@@ -30,15 +36,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Signal:
-    """一条待回测信号(对齐 StrategySignalRun 的可执行字段)。"""
+    """Một tín hiệu chờ kiểm thử lịch sử (khớp các trường chạy được của StrategySignalRun)."""
 
     symbol: str
     market: str
-    signal_date: str                  # YYYY-MM-DD(信号产生日)
-    entry_price: float | None = None  # None = 用下一交易日开盘价
+    signal_date: str                  # YYYY-MM-DD (ngày phát tín hiệu)
+    entry_price: float | None = None  # None = dùng giá mở cửa phiên giao dịch kế tiếp
     stop_loss: float | None = None
     target_price: float | None = None
-    holding_days: int = 10            # 最大持有交易日(event 模式)
+    holding_days: int = 10            # Số phiên giao dịch nắm giữ tối đa (chế độ event)
 
 
 @dataclass
@@ -71,7 +77,7 @@ PositionSizer = Callable[[float], int]  # price -> qty
 
 
 def fixed_cash_sizer(cash_per_trade: float, lot: int = 100) -> PositionSizer:
-    """每笔固定名义资金,买入 lot 的整数倍。"""
+    """Mỗi lệnh một lượng vốn danh nghĩa cố định, mua theo bội số của lot."""
 
     def _size(price: float) -> int:
         if price <= 0:
@@ -103,7 +109,7 @@ class Backtester:
         self.sizer = sizer or fixed_cash_sizer(cash_per_trade, lot)
 
     def run_single(self, signal: Signal, bars: list[PriceBar]) -> BTTrade | None:
-        """单信号回测:下一交易日开盘入场,逐日止损/止盈/到期平仓。"""
+        """Kiểm thử lịch sử cho một tín hiệu: vào lệnh lúc mở cửa phiên kế tiếp, mỗi phiên kiểm cắt lỗ/chốt lời/đóng khi tới hạn."""
         if not bars:
             return None
         ei = first_index_after(bars, signal.signal_date)
@@ -123,19 +129,19 @@ class Backtester:
 
         exit_price = exit_date = exit_reason = None
         held = 0
-        # T+1 起逐日检查(入场日当天不可卖)
+        # Kiểm tra từng phiên kể từ T+1 (ngày vào lệnh không được bán)
         for j in range(ei + 1, len(bars)):
             held = j - ei
             bar = bars[j]
             if stop and stop > 0:
-                if bar.open <= stop:  # 跳空跌破
+                if bar.open <= stop:  # Nhảy giá thủng xuống
                     exit_price, exit_date, exit_reason = bar.open, bar.date, "stop_loss"
                     break
                 if bar.low <= stop:
                     exit_price, exit_date, exit_reason = stop, bar.date, "stop_loss"
                     break
             if target and target > 0:
-                if bar.open >= target:  # 跳空冲高
+                if bar.open >= target:  # Nhảy giá vọt lên
                     exit_price, exit_date, exit_reason = bar.open, bar.date, "target"
                     break
                 if bar.high >= target:
@@ -169,9 +175,9 @@ class Backtester:
     def run(
         self, signals: list[Signal], bars_by_symbol: dict
     ) -> BacktestResult:
-        """批量回测,聚合净值曲线与绩效指标。
+        """Kiểm thử lịch sử hàng loạt, gộp đường giá trị ròng và các chỉ tiêu hiệu quả.
 
-        bars_by_symbol: 键可为 (symbol, market) 或 symbol。
+        bars_by_symbol: khóa có thể là (symbol, market) hoặc symbol.
         """
         trades: list[BTTrade] = []
         skipped = 0
@@ -207,25 +213,25 @@ class Backtester:
 
 
 def horizon_return(signal: Signal, bars: list[PriceBar], horizon_days: int) -> float | None:
-    """复刻 strategy_engine.evaluate_strategy_outcomes 口径,用于交叉验证。
+    """Sao lại đúng khẩu độ của strategy_engine.evaluate_strategy_outcomes, dùng để đối chiếu chéo.
 
-    base = signal.entry_price;target_day = signal_date + horizon_days(自然日);
-    outcome = 最近 <= target_day 的收盘价;return% = (outcome-base)/base*100。
+    base = signal.entry_price; outcome = giá đóng cửa sau đúng `horizon_days`
+    **phiên giao dịch** kể từ phiên gần nhất không muộn hơn signal_date;
+    return% = (outcome - base) / base * 100.
+
+    Đếm theo phiên chứ không theo ngày tự nhiên: chuỗi bar chính là lịch giao
+    dịch, nên cuối tuần, nghỉ lễ và phiên đình chỉ không ăn vào horizon. Trả None
+    khi chuỗi chưa đủ phiên để chốt.
     """
     snap = _parse_day(signal.signal_date)
     base = signal.entry_price
     if snap is None or not bars or not base or base <= 0:
         return None
-    target_day = snap + timedelta(days=int(horizon_days))
-    outcome = None
-    for b in bars:
-        d = _parse_day(b.date)
-        if d is None:
-            continue
-        if d <= target_day:
-            outcome = b.close
-        else:
-            break
-    if outcome is None:
+    rows = close_series(bars)
+    base_index = base_index_on_or_before(rows, snap)
+    if base_index is None:
         return None
-    return (outcome - base) / base * 100.0
+    bar = bar_after_n_trading_days(rows, base_index, horizon_days)
+    if bar is None:
+        return None
+    return (bar[1] - base) / base * 100.0

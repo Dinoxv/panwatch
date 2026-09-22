@@ -100,29 +100,29 @@ export function KlineSummaryDialog({
 
     const add = (text: string, delta: number) => { items.push({ text, delta }); localScore += delta }
 
-    if (s.trend?.includes('多头')) add('均线多头排列，趋势偏强', 2)
-    else if (s.trend?.includes('空头')) add('均线空头排列，趋势偏弱', -2)
+    if (s.trend?.includes('多头')) add('Các đường trung bình xếp tăng, xu thế thiên mạnh', 2)
+    else if (s.trend?.includes('空头')) add('Các đường trung bình xếp giảm, xu thế thiên yếu', -2)
 
-    if (s.macd_status?.includes('金叉')) add('MACD 金叉，短线动能偏强', 2)
-    if (s.macd_status?.includes('死叉')) add('MACD 死叉，短线动能转弱', -2)
-    if (typeof s.macd_hist === 'number') add(`MACD 柱体${s.macd_hist > 0 ? '为正' : s.macd_hist < 0 ? '为负' : '接近0'}`, s.macd_hist > 0 ? 1 : s.macd_hist < 0 ? -1 : 0)
+    if (s.macd_status?.includes('金叉')) add('MACD cắt lên, động lượng ngắn hạn thiên mạnh', 2)
+    if (s.macd_status?.includes('死叉')) add('MACD cắt xuống, động lượng ngắn hạn chuyển yếu', -2)
+    if (typeof s.macd_hist === 'number') add(`Thanh MACD ${s.macd_hist > 0 ? 'dương' : s.macd_hist < 0 ? 'âm' : 'gần 0'}`, s.macd_hist > 0 ? 1 : s.macd_hist < 0 ? -1 : 0)
 
-    if (s.rsi_status?.includes('超卖')) add('RSI 超卖，可能存在反弹', 1)
-    else if (s.rsi_status?.includes('偏强')) add('RSI 偏强，买盘占优', 1)
-    else if (s.rsi_status?.includes('超买')) add('RSI 超买，注意回调风险', -1)
-    else if (s.rsi_status?.includes('偏弱')) add('RSI 偏弱，短线承压', -1)
+    if (s.rsi_status?.includes('超卖')) add('RSI quá bán, có thể bật lại', 1)
+    else if (s.rsi_status?.includes('偏强')) add('RSI mạnh, bên mua chiếm ưu thế', 1)
+    else if (s.rsi_status?.includes('超买')) add('RSI quá mua, coi chừng nhịp điều chỉnh', -1)
+    else if (s.rsi_status?.includes('偏弱')) add('RSI yếu, ngắn hạn chịu áp lực', -1)
 
-    if (s.kdj_status?.includes('金叉')) add('KDJ 金叉，短线转强', 1)
-    if (s.kdj_status?.includes('死叉')) add('KDJ 死叉，短线转弱', -1)
+    if (s.kdj_status?.includes('金叉')) add('KDJ cắt lên, ngắn hạn chuyển mạnh', 1)
+    if (s.kdj_status?.includes('死叉')) add('KDJ cắt xuống, ngắn hạn chuyển yếu', -1)
 
-    if (s.boll_status?.includes('突破上轨')) add('突破布林上轨，趋势强势', 1)
-    else if (s.boll_status?.includes('跌破下轨')) add('跌破布林下轨，走势偏弱', -1)
+    if (s.boll_status?.includes('突破上轨')) add('Vượt dải Bollinger trên, xu thế mạnh', 1)
+    else if (s.boll_status?.includes('跌破下轨')) add('Thủng dải Bollinger dưới, diễn biến thiên yếu', -1)
 
-    if (s.volume_trend?.includes('放量')) add('放量配合，资金参与度提升', 1)
-    else if (s.volume_trend?.includes('缩量')) add('缩量，动能不足', -1)
+    if (s.volume_trend?.includes('放量')) add('Khối lượng bùng lên đồng thuận, dòng tiền tham gia nhiều hơn', 1)
+    else if (s.volume_trend?.includes('缩量')) add('Khối lượng cạn, thiếu động lượng', -1)
 
-    if (s.last_close != null && s.support != null && s.support > 0 && s.last_close <= s.support * 1.02) add('价格接近支撑位，止跌反弹概率提升', 1)
-    if (s.last_close != null && s.resistance != null && s.resistance > 0 && s.last_close >= s.resistance * 0.98) add('价格接近压力位，上行空间受限', -1)
+    if (s.last_close != null && s.support != null && s.support > 0 && s.last_close <= s.support * 1.02) add('Giá sát vùng hỗ trợ, xác suất chặn đà giảm rồi bật lại tăng lên', 1)
+    if (s.last_close != null && s.resistance != null && s.resistance > 0 && s.last_close >= s.resistance * 0.98) add('Giá sát vùng kháng cự, dư địa đi lên bị chặn', -1)
 
     return { ...scored, score: localScore, items }
   }
@@ -157,23 +157,23 @@ export function KlineSummaryDialog({
     const s = effectiveSummary
     const parts: string[] = []
     const items = []
-    if (s.trend) items.push(`趋势${s.trend}`)
+    if (s.trend) items.push(`Xu thế ${s.trend}`)
     if (s.macd_status) items.push(`MACD${s.macd_status}${s.macd_hist != null ? `(hist=${s.macd_hist.toFixed(3)})` : ''}`)
     if (s.rsi_status) items.push(`RSI${s.rsi_status}${s.rsi6 != null ? `(${s.rsi6.toFixed(0)})` : ''}`)
     if (s.kdj_status) items.push(`KDJ${s.kdj_status}${s.kdj_k != null ? `(K=${s.kdj_k.toFixed(1)},D=${s.kdj_d?.toFixed(1)},J=${s.kdj_j?.toFixed(1)})` : ''}`)
-    if (s.boll_status) items.push(`布林${s.boll_status}${s.boll_width != null ? `(带宽${s.boll_width.toFixed(1)}%)` : ''}`)
-    if (s.volume_trend) items.push(`量能${s.volume_trend}${s.volume_ratio != null ? `(${s.volume_ratio.toFixed(1)}x)` : ''}`)
-    if (items.length) parts.push(`技术指标：${items.join('，')}`)
-    if (s.support != null) parts.push(`支撑位：${s.support.toFixed(2)}`)
-    if (s.resistance != null) parts.push(`压力位：${s.resistance.toFixed(2)}`)
-    if (s.last_close != null) parts.push(`收盘价：${s.last_close.toFixed(2)}`)
-    if (s.change_5d != null) parts.push(`5日涨跌：${s.change_5d.toFixed(2)}%`)
-    if (s.change_20d != null) parts.push(`20日涨跌：${s.change_20d.toFixed(2)}%`)
-    if (s.ma5 != null) parts.push(`均线：MA5=${s.ma5.toFixed(2)} MA10=${s.ma10?.toFixed(2)} MA20=${s.ma20?.toFixed(2)} MA60=${s.ma60?.toFixed(2)}`)
+    if (s.boll_status) items.push(`Bollinger ${s.boll_status}${s.boll_width != null ? `(bề rộng dải ${s.boll_width.toFixed(1)}%)` : ''}`)
+    if (s.volume_trend) items.push(`Khối lượng ${s.volume_trend}${s.volume_ratio != null ? `(${s.volume_ratio.toFixed(1)}x)` : ''}`)
+    if (items.length) parts.push(`Chỉ báo kỹ thuật: ${items.join(', ')}`)
+    if (s.support != null) parts.push(`Vùng hỗ trợ: ${s.support.toFixed(2)}`)
+    if (s.resistance != null) parts.push(`Vùng kháng cự: ${s.resistance.toFixed(2)}`)
+    if (s.last_close != null) parts.push(`Giá đóng cửa: ${s.last_close.toFixed(2)}`)
+    if (s.change_5d != null) parts.push(`Tăng giảm 5 ngày: ${s.change_5d.toFixed(2)}%`)
+    if (s.change_20d != null) parts.push(`Tăng giảm 20 ngày: ${s.change_20d.toFixed(2)}%`)
+    if (s.ma5 != null) parts.push(`Đường trung bình: MA5=${s.ma5.toFixed(2)} MA10=${s.ma10?.toFixed(2)} MA20=${s.ma20?.toFixed(2)} MA60=${s.ma60?.toFixed(2)}`)
     if (suggestion) {
-      parts.push(`技术评分：${suggestion.action_label}(score=${suggestion.score})，信号：${suggestion.signal || '中性'}`)
+      parts.push(`Điểm kỹ thuật: ${suggestion.action_label}(score=${suggestion.score}), tín hiệu: ${suggestion.signal || 'Trung tính'}`)
       if (suggestion.items.length) {
-        parts.push(`评分依据：${suggestion.items.map(e => `${e.text}(${e.delta > 0 ? '+' : ''}${e.delta})`).join('；')}`)
+        parts.push(`Căn cứ chấm điểm: ${suggestion.items.map(e => `${e.text}(${e.delta > 0 ? '+' : ''}${e.delta})`).join('; ')}`)
       }
     }
     window.dispatchEvent(new CustomEvent('panwatch-open-chat', {
@@ -189,15 +189,15 @@ export function KlineSummaryDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>K线 / 技术指标</DialogTitle>
+          <DialogTitle>Nến / chỉ báo kỹ thuật</DialogTitle>
           <DialogDescription>
             <div className="space-y-0.5">
               <div>{stockName ? `${stockName} (${symbol})` : symbol}</div>
               {(effectiveSummary?.timeframe || effectiveSummary?.computed_at || effectiveSummary?.asof) && (
                 <div className="text-[11px] text-muted-foreground/70">
-                  {effectiveSummary?.timeframe ? `周期: ${effectiveSummary.timeframe}` : '周期: 1d'}
-                  {effectiveSummary?.asof ? ` · 数据截至: ${effectiveSummary.asof}` : ''}
-                  {effectiveSummary?.computed_at ? ` · 计算时间: ${formatLocalDateTime(effectiveSummary.computed_at)}` : ''}
+                  {effectiveSummary?.timeframe ? `Khung: ${effectiveSummary.timeframe}` : 'Khung: 1d'}
+                  {effectiveSummary?.asof ? ` · dữ liệu tính tới: ${effectiveSummary.asof}` : ''}
+                  {effectiveSummary?.computed_at ? ` · thời điểm tính: ${formatLocalDateTime(effectiveSummary.computed_at)}` : ''}
                 </div>
               )}
             </div>
@@ -205,11 +205,11 @@ export function KlineSummaryDialog({
         </DialogHeader>
 
         {!initialSummary && loading ? (
-          <div className="text-[12px] text-muted-foreground">加载中...</div>
+          <div className="text-[12px] text-muted-foreground">Đang tải...</div>
         ) : error ? (
           <div className="text-[12px] text-rose-500">{error}</div>
         ) : !effectiveSummary ? (
-          <div className="text-[12px] text-muted-foreground">暂无数据</div>
+          <div className="text-[12px] text-muted-foreground">Chưa có dữ liệu</div>
         ) : (
           <div className="space-y-3">
             {suggestion && (
@@ -221,7 +221,7 @@ export function KlineSummaryDialog({
                     size="sm"
                   />
                   <span className="text-[10px] text-muted-foreground">
-                    {hasPosition ? '已持仓' : '未持仓'} · score {suggestion.score}
+                    {hasPosition ? 'Đang nắm giữ' : 'Chưa nắm giữ'} · score {suggestion.score}
                   </span>
                 </div>
                 <div className="mt-2 text-[12px] text-foreground font-medium">
@@ -248,41 +248,41 @@ export function KlineSummaryDialog({
                 )}
 
                 <div className="mt-2 text-[10px] text-muted-foreground/70">
-                  仅基于技术指标规则生成，非投资建议
+                  Chỉ dựng từ quy tắc chỉ báo kỹ thuật, không phải khuyến nghị đầu tư
                 </div>
               </div>
             )}
 
             <div className="text-[10px] text-muted-foreground/60">
-              提示：悬停指标标签可查看详细说明
+              Mẹo: rê chuột lên nhãn chỉ báo để xem giải thích chi tiết
             </div>
 
             <div className="flex flex-wrap gap-2 text-[11px]">
               {effectiveSummary.trend && (
                 <HoverPopover
-                  title="趋势（均线排列）"
+                  title="Xu thế (cách xếp đường trung bình)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        趋势标签来自均线（MA5/MA10/MA20）的相对位置，基于日K收盘价计算。MA越短越敏感，越长越平滑。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Nhãn xu thế lấy từ vị trí tương đối của các đường trung bình (MA5/MA10/MA20), tính trên giá đóng cửa nến ngày. MA càng ngắn càng nhạy, càng dài càng mượt.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">常见解读：</span>
+                        <span className="font-medium text-foreground">Cách đọc thường gặp:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">多头排列</span>（MA5 &gt; MA10 &gt; MA20）：上升趋势更“顺”，回调通常先看 MA5/MA10 的支撑。</li>
-                          <li><span className="font-medium text-foreground">空头排列</span>（MA5 &lt; MA10 &lt; MA20）：下降趋势占优，反弹到 MA10/MA20 往往遇到压力。</li>
-                          <li><span className="font-medium text-foreground">均线交织</span>：震荡/换手期，信号更依赖成交量与关键价位。</li>
+                          <li><span className="font-medium text-foreground">Xếp tăng</span>(MA5 &gt; MA10 &gt; MA20): xu hướng đi lên «thuận» hơn, nhịp chỉnh thường nhìn hỗ trợ ở MA5/MA10 trước.</li>
+                          <li><span className="font-medium text-foreground">Xếp giảm</span>(MA5 &lt; MA10 &lt; MA20): xu hướng đi xuống chiếm ưu thế, bật lại tới MA10/MA20 thường gặp kháng cự.</li>
+                          <li><span className="font-medium text-foreground">Đường trung bình đan xen</span>: giai đoạn giằng co/sang tay, tín hiệu phụ thuộc nhiều hơn vào khối lượng và các mốc giá then chốt.</li>
                         </ul>
                       </div>
-                      <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.trend}</div>
+                      <div className="text-[10px] text-muted-foreground/70">Hiện tại:{effectiveSummary.trend}</div>
                       {(effectiveSummary.ma5 != null || effectiveSummary.ma10 != null || effectiveSummary.ma20 != null || effectiveSummary.ma60 != null) && (
                         <div className="text-[10px] text-muted-foreground/70">
-                          均线：MA5≈{effectiveSummary.ma5 != null ? effectiveSummary.ma5.toFixed(2) : '—'}；MA10≈{effectiveSummary.ma10 != null ? effectiveSummary.ma10.toFixed(2) : '—'}；MA20≈{effectiveSummary.ma20 != null ? effectiveSummary.ma20.toFixed(2) : '—'}；MA60≈{effectiveSummary.ma60 != null ? effectiveSummary.ma60.toFixed(2) : '—'}
+                          Đường trung bình: MA5≈{effectiveSummary.ma5 != null ? effectiveSummary.ma5.toFixed(2) : '—'}; MA10≈{effectiveSummary.ma10 != null ? effectiveSummary.ma10.toFixed(2) : '—'}; MA20≈{effectiveSummary.ma20 != null ? effectiveSummary.ma20.toFixed(2) : '—'}; MA60≈{effectiveSummary.ma60 != null ? effectiveSummary.ma60.toFixed(2) : '—'}
                         </div>
                       )}
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：均线属于滞后指标，更适合“过滤趋势”，不建议单独作为进出场依据。
+                        Lưu ý: đường trung bình là chỉ báo trễ, hợp để «lọc xu thế» hơn, không nên dùng riêng làm căn cứ vào ra lệnh.
                       </div>
                     </div>
                   }
@@ -294,26 +294,26 @@ export function KlineSummaryDialog({
 
               {effectiveSummary.macd_status && (
                 <HoverPopover
-                  title="MACD（趋势/动能）"
+                  title="MACD (xu thế/động lượng)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        MACD 由两条线（DIF/DEA）与柱体（hist）组成。常见口径：DIF=EMA12-EMA26，DEA=EMA(DIF,9)，hist≈(DIF-DEA)*2。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        MACD gồm hai đường (DIF/DEA) và thanh (hist). Khẩu độ thường gặp: DIF=EMA12-EMA26, DEA=EMA(DIF,9), hist≈(DIF-DEA)*2.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">金叉</span>：DIF 上穿 DEA，短线动能由弱转强。</li>
-                          <li><span className="font-medium text-foreground">死叉</span>：DIF 下穿 DEA，短线动能由强转弱。</li>
-                          <li><span className="font-medium text-foreground">柱体正/负</span>：正值通常表示多头动能占优；负值通常表示空头动能占优。</li>
+                          <li><span className="font-medium text-foreground">Cắt lên</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
+                          <li><span className="font-medium text-foreground">Cắt xuống</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
+                          <li><span className="font-medium text-foreground">Thanh dương/âm</span>: giá trị dương thường cho thấy động lượng bên mua trội hơn; giá trị âm thường cho thấy động lượng bên bán trội hơn.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.macd_status}{effectiveSummary.macd_hist != null ? `，柱体${effectiveSummary.macd_hist > 0 ? '为正' : effectiveSummary.macd_hist < 0 ? '为负' : '接近0'} (hist≈${effectiveSummary.macd_hist.toFixed(3)})` : ''}
+                        Hiện tại: {effectiveSummary.macd_status}{effectiveSummary.macd_hist != null ? `, thanh ${effectiveSummary.macd_hist > 0 ? 'dương' : effectiveSummary.macd_hist < 0 ? 'âm' : 'gần 0'} (hist≈${effectiveSummary.macd_hist.toFixed(3)})` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：MACD 在震荡区间容易频繁“假交叉”，通常需要结合趋势（均线）与量价确认。
+                        Lưu ý: trong vùng giằng co, MACD hay «cắt giả» liên tục, thường phải kết hợp xu thế (đường trung bình) và giá-khối lượng để xác nhận.
                       </div>
                     </div>
                   }
@@ -325,27 +325,27 @@ export function KlineSummaryDialog({
 
               {effectiveSummary.rsi_status && (
                 <HoverPopover
-                  title="RSI（相对强弱）"
+                  title="RSI (sức mạnh tương đối)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        RSI 用于衡量一段时间内上涨与下跌力度的相对强弱（0-100）。这里展示的是 RSI6（近6个交易日）。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        RSI dùng để đo sức mạnh tương đối giữa lực tăng và lực giảm trong một khoảng thời gian (0-100). Ở đây hiện RSI6 (6 phiên giao dịch gần nhất).
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">项目内阈值：</span>
+                        <span className="font-medium text-foreground">Ngưỡng dùng trong dự án:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li>RSI6 &gt; 80：超买（回撤风险更高）</li>
-                          <li>RSI6 70-80：偏强（动能偏多）</li>
-                          <li>RSI6 &lt; 20：超卖（可能反弹，但下跌趋势中可长期超卖）</li>
-                          <li>RSI6 20-30：偏弱（动能偏空）</li>
+                          <li>RSI6 &gt; 80: quá mua (rủi ro điều chỉnh cao hơn)</li>
+                          <li>RSI6 70-80: thiên mạnh (động lượng nghiêng mua)</li>
+                          <li>RSI6 &lt; 20: quá bán (có thể bật lại, nhưng trong xu hướng giảm vẫn quá bán kéo dài được)</li>
+                          <li>RSI6 20-30: thiên yếu (động lượng nghiêng bán)</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.rsi_status}{effectiveSummary.rsi6 != null ? `，RSI6≈${effectiveSummary.rsi6.toFixed(0)}` : ''}
+                        Hiện tại: {effectiveSummary.rsi_status}{effectiveSummary.rsi6 != null ? `, RSI6≈${effectiveSummary.rsi6.toFixed(0)}` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：超买不等于立刻下跌、超卖不等于立刻反弹；更可靠的用法是结合趋势和关键位看“背离/衰竭”。
+                        Lưu ý: quá mua không có nghĩa là giảm ngay, quá bán không có nghĩa là bật lại ngay; cách dùng đáng tin hơn là kết hợp xu thế và mốc then chốt để nhìn «phân kỳ/cạn lực».
                       </div>
                     </div>
                   }
@@ -361,23 +361,23 @@ export function KlineSummaryDialog({
 
               {effectiveSummary?.kdj_status && (
                 <HoverPopover
-                  title="KDJ（随机指标）"
+                  title="KDJ (chỉ báo ngẫu nhiên)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        KDJ 属于动量类指标，反映价格在一段区间内所处位置（类似随机振荡器）。常用信号是 K 与 D 的金叉/死叉。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        KDJ thuộc nhóm chỉ báo động lượng, phản ánh giá đang nằm ở đâu trong một biên độ (giống bộ dao động ngẫu nhiên). Tín hiệu hay dùng là K cắt lên/cắt xuống D.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">金叉</span>：短线转强的提示，配合上升趋势更有效。</li>
-                          <li><span className="font-medium text-foreground">死叉</span>：短线转弱的提示，配合下降趋势更有效。</li>
-                          <li>J 值极端（&gt;100 或 &lt;0）时，常被视为“超买/超卖”，但在强趋势里可能失真。</li>
+                          <li><span className="font-medium text-foreground">Cắt lên</span>: dấu hiệu ngắn hạn chuyển mạnh, đi cùng xu hướng tăng thì hiệu quả hơn.</li>
+                          <li><span className="font-medium text-foreground">Cắt xuống</span>: dấu hiệu ngắn hạn chuyển yếu, đi cùng xu hướng giảm thì hiệu quả hơn.</li>
+                          <li>Khi giá trị J cực đoan (&gt;100 hoặc &lt;0) thường được coi là «quá mua/quá bán», nhưng trong xu thế mạnh có thể sai lệch.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：{effectiveSummary.kdj_status}</div>
+                        <div>Hiện tại: {effectiveSummary.kdj_status}</div>
                         {(effectiveSummary.kdj_k != null || effectiveSummary.kdj_d != null || effectiveSummary.kdj_j != null) && (
                           <div>
                             K≈{effectiveSummary.kdj_k != null ? effectiveSummary.kdj_k.toFixed(1) : '—'}{' '}
@@ -387,7 +387,7 @@ export function KlineSummaryDialog({
                         )}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：震荡行情里 KDJ 可能频繁反复，建议与支撑/压力位结合使用。
+                        Lưu ý: trong thị trường giằng co, KDJ có thể đảo qua đảo lại liên tục, nên dùng kèm vùng hỗ trợ/kháng cự.
                       </div>
                     </div>
                   }
@@ -399,25 +399,25 @@ export function KlineSummaryDialog({
 
               {effectiveSummary?.volume_trend && (
                 <HoverPopover
-                  title="量能（放量/缩量）"
+                  title="Khối lượng (bùng/cạn)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        量能用于判断行情“是否有成交支撑”。这里的量能趋势来自 volume_ratio（当日量 / 近5日均量）。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Khối lượng dùng để xét diễn biến «có khớp lệnh đỡ hay không». Xu thế khối lượng ở đây lấy từ volume_ratio (khối lượng hôm nay / khối lượng bình quân 5 phiên gần nhất).
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">怎么解读：</span>
+                        <span className="font-medium text-foreground">Đọc thế nào:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">放量</span>：通常表示参与度提升；若上涨放量更利于趋势延续。</li>
-                          <li><span className="font-medium text-foreground">缩量</span>：可能表示观望/衰竭；若下跌缩量，有时是抛压减弱的信号。</li>
+                          <li><span className="font-medium text-foreground">Khối lượng bùng</span>: thường cho thấy mức tham gia tăng lên; nếu tăng giá kèm khối lượng bùng thì càng thuận cho xu thế đi tiếp.</li>
+                          <li><span className="font-medium text-foreground">Khối lượng cạn</span>: có thể cho thấy đang đứng ngoài/cạn lực; nếu giảm giá mà khối lượng cạn, đôi khi là dấu hiệu áp lực bán đã nhẹ đi.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.volume_trend}{effectiveSummary.volume_ratio != null ? `，量比≈${effectiveSummary.volume_ratio.toFixed(1)}x` : ''}
+                        Hiện tại: {effectiveSummary.volume_trend}{effectiveSummary.volume_ratio != null ? `, tỷ lệ khối lượng≈${effectiveSummary.volume_ratio.toFixed(1)}x` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：量能的意义需要结合价格方向（价涨量增/价涨量缩/价跌量增/价跌量缩）综合判断。
+                        Lưu ý: ý nghĩa của khối lượng phải xét cùng chiều giá (giá tăng khối lượng tăng / giá tăng khối lượng cạn / giá giảm khối lượng tăng / giá giảm khối lượng cạn) mới đủ.
                       </div>
                     </div>
                   }
@@ -433,36 +433,36 @@ export function KlineSummaryDialog({
 
               {effectiveSummary?.boll_status && (
                 <HoverPopover
-                  title="布林带（波动/通道）"
+                  title="Dải Bollinger (biến động/kênh giá)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        布林带由中轨（通常是 MA20）和上下轨（中轨±2倍标准差）组成，用于刻画价格通道与波动变化。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Dải Bollinger gồm dải giữa (thường là MA20) và dải trên dải dưới (dải giữa ±2 lần độ lệch chuẩn), dùng để mô tả kênh giá và mức biến động.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">突破上轨</span>：短期偏强，但也可能“冲高回落”，需结合量能确认。</li>
-                          <li><span className="font-medium text-foreground">跌破下轨</span>：短期偏弱，但在恐慌下跌时也可能出现超跌反弹。</li>
-                          <li>带宽收口常见于波动收敛，之后容易出现方向选择；带宽开口表示波动放大。</li>
+                          <li><span className="font-medium text-foreground">Vượt dải trên</span>: ngắn hạn thiên mạnh, nhưng cũng có thể «vọt lên rồi rơi lại», cần khối lượng xác nhận.</li>
+                          <li><span className="font-medium text-foreground">Thủng dải dưới</span>: ngắn hạn thiên yếu, nhưng lúc rơi hoảng loạn cũng có thể bật lại do giảm quá đà.</li>
+                          <li>Bề rộng dải bóp lại hay gặp khi biến động co cụm, sau đó dễ chọn hướng; bề rộng dải mở ra là biến động phình to.</li>
                         </ul>
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">项目内带宽阈值：</span>
+                        <span className="font-medium text-foreground">Ngưỡng bề rộng dải dùng trong dự án:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li>带宽 &lt; 5：收口窄幅（更偏盘整/酝酿）</li>
-                          <li>带宽 &gt; 15：开口放大（波动扩张）</li>
-                          <li>其他：正常波动</li>
+                          <li>Bề rộng &lt; 5: bóp hẹp (thiên về đi ngang/tích lũy)</li>
+                          <li>Bề rộng &gt; 15: mở rộng (biến động phình to)</li>
+                          <li>Khác: biến động bình thường</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
                         <div>
-                          当前：{effectiveSummary.boll_status}{effectiveSummary.boll_width != null ? `，带宽≈${effectiveSummary.boll_width.toFixed(1)}%` : ''}
+                          Hiện tại: {effectiveSummary.boll_status}{effectiveSummary.boll_width != null ? `, bề rộng dải≈${effectiveSummary.boll_width.toFixed(1)}%` : ''}
                         </div>
                         {(effectiveSummary.boll_upper != null || effectiveSummary.boll_mid != null || effectiveSummary.boll_lower != null) && (
                           <div>
-                            上轨≈{effectiveSummary.boll_upper != null ? effectiveSummary.boll_upper.toFixed(2) : '—'}；中轨≈{effectiveSummary.boll_mid != null ? effectiveSummary.boll_mid.toFixed(2) : '—'}；下轨≈{effectiveSummary.boll_lower != null ? effectiveSummary.boll_lower.toFixed(2) : '—'}
+                            Dải trên≈{effectiveSummary.boll_upper != null ? effectiveSummary.boll_upper.toFixed(2) : '—'}; dải giữa≈{effectiveSummary.boll_mid != null ? effectiveSummary.boll_mid.toFixed(2) : '—'}; dải dưới≈{effectiveSummary.boll_lower != null ? effectiveSummary.boll_lower.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
@@ -470,7 +470,7 @@ export function KlineSummaryDialog({
                   }
                   trigger={
                     <TechnicalBadge
-                      label={`布林 ${effectiveSummary.boll_status}`}
+                      label={`Bollinger ${effectiveSummary.boll_status}`}
                       tone={effectiveSummary.boll_status === '突破上轨' ? 'bullish' : effectiveSummary.boll_status === '跌破下轨' ? 'bearish' : 'neutral'}
                       help
                     />
@@ -480,20 +480,20 @@ export function KlineSummaryDialog({
 
               {effectiveSummary?.kline_pattern && (
                 <HoverPopover
-                  title="K线形态（局部结构）"
+                  title="Hình mẫu nến (cấu trúc cục bộ)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        形态来自对最近1-2根K线的形状识别（如十字星、锤子线、吞没等），属于“局部信号”。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Hình mẫu nhận từ hình dạng 1-2 cây nến gần nhất (như doji, nến búa, nến nhấn chìm…), thuộc nhóm «tín hiệu cục bộ».
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
-                        多数形态需要结合趋势、量能与关键位确认。比如锤子线出现在下跌末端更有意义；吞没形态更看重“前后两根K线对比”。
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
+                        Phần lớn hình mẫu cần xu thế, khối lượng và mốc then chốt xác nhận. Ví dụ nến búa xuất hiện ở cuối nhịp giảm thì có ý nghĩa hơn; nến nhấn chìm thì coi trọng «đối chiếu hai cây nến trước sau».
                       </div>
-                      <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.kline_pattern}</div>
+                      <div className="text-[10px] text-muted-foreground/70">Hiện tại:{effectiveSummary.kline_pattern}</div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：单根K线形态误判率较高，建议仅作提示，不建议孤立决策。
+                        Lưu ý: hình mẫu một cây nến đơn lẻ sai khá nhiều, nên chỉ coi là gợi ý, không nên quyết định đơn độc.
                       </div>
                     </div>
                   }
@@ -507,48 +507,48 @@ export function KlineSummaryDialog({
             <div className="flex flex-wrap gap-2 text-[11px]">
               {effectiveSummary && effectiveSummary.support != null && (
                 <HoverPopover
-                  title="支撑位（关键支撑区）"
+                  title="Vùng hỗ trợ (vùng hỗ trợ then chốt)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        支撑位可以理解为“买盘更容易出现”的价格区域。接近支撑时，价格更可能出现止跌、反弹或盘整。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Vùng hỗ trợ có thể hiểu là vùng giá «bên mua dễ xuất hiện hơn». Khi sát hỗ trợ, giá dễ chặn đà giảm, bật lại hoặc đi ngang hơn.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">本项目如何算：</span>
-                        当前弹窗里的支撑（support）来自最近20个交易日区间内的最低价（min low），属于中期级别的参考位。
+                        <span className="font-medium text-foreground">Dự án này tính thế nào:</span>
+                        Hỗ trợ (support) trong hộp thoại hiện tại lấy từ giá thấp nhất (min low) trong 20 phiên giao dịch gần nhất, thuộc mốc tham chiếu cỡ trung hạn.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">怎么用：</span>
+                        <span className="font-medium text-foreground">Dùng thế nào:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li>更偏向“区域”而不是精确到1分钱的一条线，常见做法是允许一定误差（例如±1%~2%）。</li>
-                          <li>接近支撑时，若出现缩量止跌/放量反弹，信号通常更可靠；若放量跌破，则支撑可能失效并转为压力。</li>
-                          <li>适合用于设置止损/止盈/加减仓区间：用关键位去约束风险，而不是预测最高点最低点。</li>
+                          <li>Nên xem là một «vùng» chứ không phải một đường chính xác tới từng xu, cách làm thường gặp là cho phép sai số nhất định (ví dụ ±1%~2%).</li>
+                          <li>Khi sát hỗ trợ, nếu khối lượng cạn mà chặn được đà giảm/khối lượng bùng mà bật lại thì tín hiệu thường đáng tin hơn; nếu thủng xuống kèm khối lượng lớn thì hỗ trợ có thể mất hiệu lực và đổi vai thành kháng cự.</li>
+                          <li>Hợp để đặt vùng cắt lỗ/chốt lời/tăng giảm tỷ trọng: dùng mốc then chốt để bó rủi ro, chứ không phải để đoán đỉnh đoán đáy.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：支撑≈{effectiveSummary.support.toFixed(2)}</div>
+                        <div>Hiện tại: hỗ trợ≈{effectiveSummary.support.toFixed(2)}</div>
                         {effectiveSummary.last_close != null && effectiveSummary.support > 0 && (
                           <div>
-                            距离（以收盘价计）≈{(((effectiveSummary.last_close - effectiveSummary.support) / effectiveSummary.support) * 100).toFixed(2)}%
+                            Khoảng cách (tính theo giá đóng cửa)≈{(((effectiveSummary.last_close - effectiveSummary.support) / effectiveSummary.support) * 100).toFixed(2)}%
                             {' '}
-                            {effectiveSummary.last_close <= effectiveSummary.support * 1.02 ? '（接近支撑，评分规则会加分）' : ''}
+                            {effectiveSummary.last_close <= effectiveSummary.support * 1.02 ? '(sát hỗ trợ, quy tắc chấm điểm sẽ cộng điểm)' : ''}
                           </div>
                         )}
                         {(effectiveSummary.support_s != null || effectiveSummary.support_m != null || effectiveSummary.support_l != null) && (
                           <div>
-                            多级别：短期(5日)≈{effectiveSummary.support_s != null ? effectiveSummary.support_s.toFixed(2) : '—'}；中期(20日)≈{effectiveSummary.support_m != null ? effectiveSummary.support_m.toFixed(2) : '—'}；长期(60日)≈{effectiveSummary.support_l != null ? effectiveSummary.support_l.toFixed(2) : '—'}
+                            Nhiều cấp: ngắn hạn (5 ngày)≈{effectiveSummary.support_s != null ? effectiveSummary.support_s.toFixed(2) : '—'}; trung hạn (20 ngày)≈{effectiveSummary.support_m != null ? effectiveSummary.support_m.toFixed(2) : '—'}; dài hạn (60 ngày)≈{effectiveSummary.support_l != null ? effectiveSummary.support_l.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：支撑/压力是“统计出的关键位”，不是必然会反转的点位；趋势很强时可直接击穿。
+                        Lưu ý: hỗ trợ/kháng cự là «mốc then chốt rút ra từ thống kê», không phải điểm chắc chắn sẽ đảo chiều; xu thế mạnh thì xuyên thẳng qua được.
                       </div>
                     </div>
                   }
                   trigger={
                     <TechnicalBadge
-                      label={`支撑 ${effectiveSummary.support.toFixed(2)}`}
+                      label={`Hỗ trợ ${effectiveSummary.support.toFixed(2)}`}
                       tone="bearish"
                       help
                     />
@@ -557,48 +557,48 @@ export function KlineSummaryDialog({
               )}
               {effectiveSummary && effectiveSummary.resistance != null && (
                 <HoverPopover
-                  title="压力位（关键压力区）"
+                  title="Vùng kháng cự (vùng kháng cự then chốt)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
-                        压力位可以理解为“卖盘更容易出现”的价格区域。接近压力时，上行更容易受阻、回落或进入震荡。
+                        <span className="font-medium text-foreground">Là gì:</span>
+                        Vùng kháng cự có thể hiểu là vùng giá «bên bán dễ xuất hiện hơn». Khi sát kháng cự, đà đi lên dễ bị chặn, rơi lại hoặc chuyển sang giằng co.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">本项目如何算：</span>
-                        当前弹窗里的压力（resistance）来自最近20个交易日区间内的最高价（max high），属于中期级别的参考位。
+                        <span className="font-medium text-foreground">Dự án này tính thế nào:</span>
+                        Kháng cự (resistance) trong hộp thoại hiện tại lấy từ giá cao nhất (max high) trong 20 phiên giao dịch gần nhất, thuộc mốc tham chiếu cỡ trung hạn.
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">怎么用：</span>
+                        <span className="font-medium text-foreground">Dùng thế nào:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li>越接近压力，追涨的性价比越低；更常见的策略是等“放量突破后回踩不破”再考虑。</li>
-                          <li>若放量突破压力并站稳，原压力往往会“角色互换”变成新的支撑。</li>
-                          <li>压力附近可用来规划分批止盈/减仓，或观察是否出现量价背离、冲高回落等风险信号。</li>
+                          <li>Càng sát kháng cự, mua đuổi càng kém lợi; chiến lược thường gặp hơn là chờ «bứt phá kèm khối lượng rồi kiểm tra lại không thủng» mới cân nhắc.</li>
+                          <li>Nếu bứt phá kháng cự kèm khối lượng lớn rồi đứng vững, kháng cự cũ thường «đổi vai» thành hỗ trợ mới.</li>
+                          <li>Quanh kháng cự có thể dùng để lên kế hoạch chốt lời/hạ tỷ trọng từng phần, hoặc quan sát xem có phân kỳ giá-khối lượng, vọt lên rồi rơi lại hay các dấu hiệu rủi ro khác không.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：压力≈{effectiveSummary.resistance.toFixed(2)}</div>
+                        <div>Hiện tại: kháng cự≈{effectiveSummary.resistance.toFixed(2)}</div>
                         {effectiveSummary.last_close != null && effectiveSummary.resistance > 0 && (
                           <div>
-                            距离（以收盘价计）≈{(((effectiveSummary.resistance - effectiveSummary.last_close) / effectiveSummary.resistance) * 100).toFixed(2)}%
+                            Khoảng cách (tính theo giá đóng cửa)≈{(((effectiveSummary.resistance - effectiveSummary.last_close) / effectiveSummary.resistance) * 100).toFixed(2)}%
                             {' '}
-                            {effectiveSummary.last_close >= effectiveSummary.resistance * 0.98 ? '（接近压力，评分规则会扣分）' : ''}
+                            {effectiveSummary.last_close >= effectiveSummary.resistance * 0.98 ? '(sát kháng cự, quy tắc chấm điểm sẽ trừ điểm)' : ''}
                           </div>
                         )}
                         {(effectiveSummary.resistance_s != null || effectiveSummary.resistance_m != null || effectiveSummary.resistance_l != null) && (
                           <div>
-                            多级别：短期(5日)≈{effectiveSummary.resistance_s != null ? effectiveSummary.resistance_s.toFixed(2) : '—'}；中期(20日)≈{effectiveSummary.resistance_m != null ? effectiveSummary.resistance_m.toFixed(2) : '—'}；长期(60日)≈{effectiveSummary.resistance_l != null ? effectiveSummary.resistance_l.toFixed(2) : '—'}
+                            Nhiều cấp: ngắn hạn (5 ngày)≈{effectiveSummary.resistance_s != null ? effectiveSummary.resistance_s.toFixed(2) : '—'}; trung hạn (20 ngày)≈{effectiveSummary.resistance_m != null ? effectiveSummary.resistance_m.toFixed(2) : '—'}; dài hạn (60 ngày)≈{effectiveSummary.resistance_l != null ? effectiveSummary.resistance_l.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        注意：突破是否有效，往往取决于“是否放量 + 是否能站稳/回踩确认”。单靠刺穿一瞬间容易假突破。
+                        Lưu ý: cú bứt phá có thật hay không thường phụ thuộc «có khối lượng không + có đứng vững/kiểm tra lại được không». Chỉ xuyên qua trong chốc lát thì rất dễ là bứt phá giả.
                       </div>
                     </div>
                   }
                   trigger={
                     <TechnicalBadge
-                      label={`压力 ${effectiveSummary.resistance.toFixed(2)}`}
+                      label={`Kháng cự ${effectiveSummary.resistance.toFixed(2)}`}
                       tone="bullish"
                       help
                     />
@@ -611,33 +611,33 @@ export function KlineSummaryDialog({
               <div className="flex gap-4 text-[11px] text-muted-foreground">
                 {effectiveSummary.change_5d != null && (
                   <HoverPopover
-                    title="5日涨跌幅（短期动量）"
+                    title="Biên độ 5 ngày (động lượng ngắn hạn)"
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
-                          5日涨跌幅表示最近5个交易日的整体收益率，用来快速观察短期动量强弱。
+                          <span className="font-medium text-foreground">Là gì:</span>
+                          Biên độ 5 ngày là tỷ suất lợi nhuận chung của 5 phiên giao dịch gần nhất, dùng để xem nhanh động lượng ngắn hạn mạnh hay yếu.
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">本项目如何算：</span>
-                          使用“今日收盘”对比“5个交易日前收盘”的变化：（Close[t]-Close[t-5]) / Close[t-5]。
+                          <span className="font-medium text-foreground">Dự án này tính thế nào:</span>
+                          Lấy «đóng cửa hôm nay» so với «đóng cửa 5 phiên giao dịch trước»: (Close[t]-Close[t-5]) / Close[t-5].
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">怎么解读：</span>
+                          <span className="font-medium text-foreground">Đọc thế nào:</span>
                           <ul className="list-disc pl-4 mt-1 space-y-1">
-                            <li>正值：短期偏强；配合放量/多头趋势时，更可能延续。</li>
-                            <li>负值：短期偏弱；若同时均线空头、MACD死叉，风险更大。</li>
-                            <li>过大的正涨幅也可能意味着“短期过热”，要防回撤；更建议结合支撑/压力位设定风控。</li>
+                            <li>Giá trị dương: ngắn hạn thiên mạnh; đi cùng khối lượng bùng/xu thế tăng thì càng dễ đi tiếp.</li>
+                            <li>Giá trị âm: ngắn hạn thiên yếu; nếu đồng thời đường trung bình xếp giảm, MACD cắt xuống thì rủi ro lớn hơn.</li>
+                            <li>Mức tăng dương quá lớn cũng có thể là «nóng quá trong ngắn hạn», phải phòng nhịp điều chỉnh; nên kết hợp vùng hỗ trợ/kháng cự để đặt kiểm soát rủi ro.</li>
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70">
-                          当前：{effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
+                          Hiện tại: {effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        5日{' '}
+                        5 ngày{' '}
                         <span className={effectiveSummary.change_5d >= 0 ? 'text-rose-500' : 'text-emerald-500'}>
                           {effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
                         </span>
@@ -647,33 +647,33 @@ export function KlineSummaryDialog({
                 )}
                 {effectiveSummary.change_20d != null && (
                   <HoverPopover
-                    title="20日涨跌幅（波段/一月动量）"
+                    title="Biên độ 20 ngày (động lượng đánh sóng/một tháng)"
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
-                          20日涨跌幅接近一个交易月的整体收益率，更偏向“波段趋势”的表现。
+                          <span className="font-medium text-foreground">Là gì:</span>
+                          Biên độ 20 ngày xấp xỉ tỷ suất lợi nhuận của một tháng giao dịch, thiên về thể hiện «xu thế đánh sóng» hơn.
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">本项目如何算：</span>
-                          使用“今日收盘”对比“20个交易日前收盘”的变化：（Close[t]-Close[t-20]) / Close[t-20]。
+                          <span className="font-medium text-foreground">Dự án này tính thế nào:</span>
+                          Lấy «đóng cửa hôm nay» so với «đóng cửa 20 phiên giao dịch trước»: (Close[t]-Close[t-20]) / Close[t-20].
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">怎么解读：</span>
+                          <span className="font-medium text-foreground">Đọc thế nào:</span>
                           <ul className="list-disc pl-4 mt-1 space-y-1">
-                            <li>正值且趋势多头：通常更偏顺势；回调时更关注支撑位与成交量。</li>
-                            <li>负值且趋势空头：通常更偏逆风；反弹到压力位附近更容易受阻。</li>
-                            <li>5日与20日分歧：可能代表“短期反弹/回调”发生在更大的趋势里，需谨慎辨别是否反转。</li>
+                            <li>Dương và xu thế xếp tăng: thường thuận chiều hơn; lúc chỉnh thì chú ý vùng hỗ trợ và khối lượng khớp lệnh.</li>
+                            <li>Âm và xu thế xếp giảm: thường ngược chiều hơn; bật lại tới gần vùng kháng cự dễ bị chặn.</li>
+                            <li>5 ngày và 20 ngày lệch nhau: có thể là «nhịp bật lại/nhịp chỉnh ngắn hạn» nằm trong một xu thế lớn hơn, phải cẩn thận phân biệt có đảo chiều hay không.</li>
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70">
-                          当前：{effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
+                          Hiện tại: {effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        20日{' '}
+                        20 ngày{' '}
                         <span className={effectiveSummary.change_20d >= 0 ? 'text-rose-500' : 'text-emerald-500'}>
                           {effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
                         </span>
@@ -683,36 +683,36 @@ export function KlineSummaryDialog({
                 )}
                 {effectiveSummary.amplitude != null && (
                   <HoverPopover
-                    title="振幅（波动强度）"
+                    title="Biên độ dao động (cường độ biến động)"
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
-                          振幅描述当天高低价之间的波动范围，用来衡量“波动有多大”。
+                          <span className="font-medium text-foreground">Là gì:</span>
+                          Biên độ dao động mô tả khoảng dao động giữa giá cao và giá thấp trong ngày, dùng để đo «biến động lớn tới đâu».
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">本项目如何算：</span>
-                          今日振幅≈(High-Low)/Low。数值越大，表示盘中波动越剧烈、风险与机会都更大。
+                          <span className="font-medium text-foreground">Dự án này tính thế nào:</span>
+                          Biên độ hôm nay≈(High-Low)/Low. Số càng lớn thì trong phiên càng dao động dữ, rủi ro lẫn cơ hội đều lớn hơn.
                         </div>
                         <div>
-                          <span className="font-medium text-foreground">怎么解读：</span>
+                          <span className="font-medium text-foreground">Đọc thế nào:</span>
                           <ul className="list-disc pl-4 mt-1 space-y-1">
-                            <li>高振幅常见于放量突破、恐慌下跌、消息驱动等；需要配合量能和趋势判断“是扩张还是崩盘”。</li>
-                            <li>低振幅常见于盘整/收敛期；若布林带同时收口，后续更可能出现方向选择。</li>
-                            <li>振幅高时更建议降低仓位/更严格止损；避免用“同一套止损距离”应对不同波动。</li>
+                            <li>Biên độ cao hay gặp ở bứt phá kèm khối lượng, rơi hoảng loạn, tin tức dẫn dắt…; phải kết hợp khối lượng và xu thế để xét «đang phình ra hay đang sụp».</li>
+                            <li>Biên độ thấp hay gặp ở giai đoạn đi ngang/co cụm; nếu dải Bollinger cũng bóp lại thì sau đó càng dễ chọn hướng.</li>
+                            <li>Biên độ cao thì nên hạ tỷ trọng/cắt lỗ chặt hơn; tránh dùng «cùng một khoảng cắt lỗ» cho những mức biến động khác nhau.</li>
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                          <div>当前：{effectiveSummary.amplitude.toFixed(2)}%</div>
+                          <div>Hiện tại: {effectiveSummary.amplitude.toFixed(2)}%</div>
                           {effectiveSummary.amplitude_avg5 != null && (
-                            <div>近5日均值：{effectiveSummary.amplitude_avg5.toFixed(2)}%</div>
+                            <div>Bình quân 5 phiên gần nhất: {effectiveSummary.amplitude_avg5.toFixed(2)}%</div>
                           )}
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        振幅: {effectiveSummary.amplitude.toFixed(2)}%
+                        Biên độ dao động: {effectiveSummary.amplitude.toFixed(2)}%
                       </span>
                     }
                   />
@@ -722,29 +722,29 @@ export function KlineSummaryDialog({
 
             <details className="group">
               <summary className="text-[11px] text-muted-foreground cursor-pointer hover:text-foreground">
-                建议/评分规则说明 <span className="text-[10px]">(点击展开)</span>
+                Giải thích quy tắc khuyến nghị/chấm điểm <span className="text-[10px]">(bấm để mở)</span>
               </summary>
               <div className="mt-2 text-[11px] text-muted-foreground whitespace-pre-wrap bg-accent/20 rounded p-2 space-y-2">
-                <div className="font-medium text-foreground">建议规则（按是否持仓）</div>
+                <div className="font-medium text-foreground">Quy tắc khuyến nghị (theo có nắm giữ hay không)</div>
                 <div className="space-y-1">
-                  <div>未持仓：score ≥ 3 → 买入；score ≤ -2 → 回避；其他 → 观望</div>
-                  <div>已持仓：score ≥ 3 → 加仓；score ≥ 1 → 持有；score ≤ -3 → 卖出；score ≤ -1 → 减仓；其他 → 观望</div>
+                  <div>Chưa nắm giữ: score ≥ 3 → mua vào; score ≤ -2 → tránh ra; còn lại → đứng ngoài quan sát</div>
+                  <div>Đang nắm giữ: score ≥ 3 → gia tăng tỷ trọng; score ≥ 1 → nắm giữ; score ≤ -3 → bán ra; score ≤ -1 → hạ tỷ trọng; còn lại → đứng ngoài quan sát</div>
                 </div>
-                <div className="font-medium text-foreground">评分规则（各项累加，0 为中性）</div>
+                <div className="font-medium text-foreground">Quy tắc chấm điểm (cộng dồn từng mục, 0 là trung tính)</div>
                 <div className="space-y-1">
-                  <div>趋势（均线）：多头排列 +2；空头排列 -2</div>
-                  <div>MACD：金叉 +2；死叉 -2；柱体为正 +1；柱体为负 -1</div>
-                  <div>RSI：超卖 +1；偏强 +1；超买 -1；偏弱 -1</div>
-                  <div>KDJ：金叉 +1；死叉 -1</div>
-                  <div>布林：突破上轨 +1；跌破下轨 -1</div>
-                  <div>量能：放量 +1；缩量 -1</div>
-                  <div>支撑/压力：收盘价 ≤ 支撑×1.02 → +1；收盘价 ≥ 压力×0.98 → -1</div>
+                  <div>Xu thế (đường trung bình): xếp tăng +2; xếp giảm -2</div>
+                  <div>MACD: cắt lên +2; cắt xuống -2; thanh dương +1; thanh âm -1</div>
+                  <div>RSI: quá bán +1; thiên mạnh +1; quá mua -1; thiên yếu -1</div>
+                  <div>KDJ: cắt lên +1; cắt xuống -1</div>
+                  <div>Bollinger: vượt dải trên +1; thủng dải dưới -1</div>
+                  <div>Khối lượng: bùng +1; cạn -1</div>
+                  <div>Hỗ trợ/kháng cự: đóng cửa ≤ hỗ trợ×1.02 → +1; đóng cửa ≥ kháng cự×0.98 → -1</div>
                 </div>
               </div>
             </details>
 
             <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleAskAI}>
-              <Sparkles className="w-3.5 h-3.5 mr-1" /> 问 AI 分析这些指标
+              <Sparkles className="w-3.5 h-3.5 mr-1" /> Hỏi AI phân tích các chỉ báo này
             </Button>
 
           </div>

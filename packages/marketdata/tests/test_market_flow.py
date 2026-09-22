@@ -59,7 +59,7 @@ class TestDatacenterGetHelper:
 
 
 # ---------------------------------------------------------------------------
-# 龙虎榜(市场级)
+# Bảng giao dịch đột biến (cấp thị trường)
 # ---------------------------------------------------------------------------
 
 class TestDragonTiger:
@@ -132,7 +132,7 @@ class TestDragonTiger:
 
 
 # ---------------------------------------------------------------------------
-# 融资融券(按 symbol)
+# Giao dịch ký quỹ (theo symbol)
 # ---------------------------------------------------------------------------
 
 class TestMargin:
@@ -149,7 +149,7 @@ class TestMargin:
         }
 
     def test_takes_latest_of_multiple_days(self, monkeypatch):
-        # 构造某只多日(sortTypes=-1 已降序,data[0] 即最新)
+        # Dựng dữ liệu nhiều ngày của một mã (sortTypes=-1 đã sắp giảm dần nên data[0] là mới nhất)
         rows = [self._row("2026-07-16"), self._row("2026-07-15"), self._row("2026-07-14")]
         monkeypatch.setattr(mf, "market_get", lambda *a, **k: _datacenter_payload(rows))
         out = mf.EastmoneyMarginVendor().fetch([Symbol.parse("600519", market="CN")], {})
@@ -209,7 +209,7 @@ class TestMargin:
 
 
 # ---------------------------------------------------------------------------
-# 股东户数(按 symbol)
+# Số lượng cổ đông (theo symbol)
 # ---------------------------------------------------------------------------
 
 class TestShareholders:
@@ -255,7 +255,7 @@ class TestShareholders:
 
 
 # ---------------------------------------------------------------------------
-# 分红(按 symbol,返回全部历史)
+# Cổ tức (theo symbol, trả toàn bộ lịch sử)
 # ---------------------------------------------------------------------------
 
 class TestDividend:
@@ -321,7 +321,7 @@ class TestDividend:
 
 
 # ---------------------------------------------------------------------------
-# MarketData 客户端方法(单源 Engine 出数)
+# Các phương thức của client MarketData (lấy dữ liệu qua Engine một nguồn)
 # ---------------------------------------------------------------------------
 
 class TestClientMethods:

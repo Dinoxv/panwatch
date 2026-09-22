@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import src.platform.persistence.models  # noqa: F401  注册 ORM 模型
+import src.platform.persistence.models  # noqa: F401  đăng ký mô hình ORM
 from src.platform.persistence.database import Base
 
 
@@ -17,7 +17,7 @@ def _mem_db():
     return sessionmaker(bind=engine)()
 
 
-# --------------------------- 纯函数:compute_target ---------------------------
+# --------------------------- Hàm thuần: compute_target ---------------------
 
 def test_compute_target_additive_positive_ir():
     """加分因子 + 正 IR:目标权重 > 1(IR 优先,clamp 到上限 1.4)。"""
@@ -39,7 +39,7 @@ def test_compute_target_penalty_good_negative_ic_raises_weight():
     """惩罚因子 IC 为负(惩罚有效)→ 翻符号后提权。"""
     from src.modules.strategy.factor_calibration import compute_target
 
-    # risk_penalty ir=-0.5 → term=-1.0 → 惩罚翻符号 +1.0 → 1.4
+    # risk_penalty ir=-0,5 → term=-1,0 → phần phạt đảo dấu thành +1,0 → 1,4
     assert abs(compute_target("risk_penalty", ic=-0.04, ir=-0.5) - 1.4) < 1e-9
 
 
@@ -47,7 +47,7 @@ def test_compute_target_penalty_failing_positive_ic_lowers_weight():
     """惩罚因子 IC 翻正(惩罚失效)→ 翻符号后降权。"""
     from src.modules.strategy.factor_calibration import compute_target
 
-    # risk_penalty ir=+0.5 → term=1.0 → 翻符号 -1.0 → 1 - 0.4 = 0.6
+    # risk_penalty ir=+0,5 → term=1,0 → đảo dấu thành -1,0 → 1 - 0,4 = 0,6
     assert abs(compute_target("risk_penalty", ic=0.04, ir=0.5) - 0.6) < 1e-9
 
 
@@ -58,7 +58,7 @@ def test_compute_target_returns_none_when_no_ic_ir():
     assert compute_target("alpha_score", ic=None, ir=None) is None
 
 
-# --------------------------- 纯函数:blend ---------------------------
+# --------------------------- Hàm thuần: blend ---------------------------
 
 def test_blend_ema():
     """EMA 平滑:blend(1.0, 1.4, alpha=0.35) = 1.14。"""
@@ -81,7 +81,7 @@ def test_blend_clamps_low():
     assert blend(0.55, 0.0, alpha=0.35, lo=0.5, hi=1.5) == 0.5
 
 
-# --------------------------- DB:evaluate_factor_ic 市场过滤/防泄漏 ---------------------------
+# ------------- DB: evaluate_factor_ic lọc theo thị trường / chống rò rỉ ----
 
 def _seed_pair(db, sid, *, market, snapshot_date, alpha=0.0, ret=0.0,
                horizon=5, status="evaluated"):
@@ -129,9 +129,9 @@ def test_evaluate_factor_ic_excludes_unelapsed_horizon():
 
     db = _mem_db()
     try:
-        for i in range(1, 5):  # 4 条足够老
+        for i in range(1, 5):  # 4 bản ghi đủ cũ
             _seed_pair(db, i, market="CN", snapshot_date=_old_date(), alpha=float(i), ret=float(i))
-        # 1 条「今天」的泄漏样本
+        # 1 mẫu rò rỉ của «hôm nay»
         _seed_pair(db, 99, market="CN", snapshot_date=date.today().strftime("%Y-%m-%d"),
                    alpha=9.0, ret=9.0)
         db.commit()
@@ -152,7 +152,7 @@ def test_calibrate_moves_weight_from_ic_and_audits():
     db = _mem_db()
     try:
         d = _old_date()
-        for i in range(1, 7):  # 6 条,alpha 与 ret 单调一致
+        for i in range(1, 7):  # 6 bản ghi, alpha và ret đồng biến
             _seed_pair(db, i, market="CN", snapshot_date=d, alpha=float(i), ret=float(i))
         db.commit()
 

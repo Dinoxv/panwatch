@@ -66,7 +66,7 @@ def export_template(
     include_internal: bool = Query(default=True),
     db: Session = Depends(get_db),
 ):
-    """导出当前配置为可导入的配置包 JSON"""
+    """Xuất cấu hình hiện tại thành JSON gói cấu hình nhập lại được"""
     settings_rows = (
         db.query(AppSettings).filter(AppSettings.key.in_(sorted(_SETTINGS_KEYS))).all()
     )
@@ -139,7 +139,7 @@ def import_template(
     ),
     db: Session = Depends(get_db),
 ):
-    """导入配置包。默认 merge：仅更新/创建 payload 中包含的对象。"""
+    """Nhập gói cấu hình. Mặc định merge: chỉ cập nhật/tạo những đối tượng có trong payload."""
 
     if payload.version != 1:
         raise HTTPException(400, f"不支持的配置包版本: {payload.version}")

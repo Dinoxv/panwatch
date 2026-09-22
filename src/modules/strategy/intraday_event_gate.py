@@ -36,7 +36,7 @@ def _safe_float(v: Any) -> float | None:
         return None
 
 
-# ATR 自适应异动默认倍数:涨跌幅 >= k×ATR% 视为相对个股自身波动的异动。
+# Bội số mặc định cho ngưỡng biến động thích ứng theo ATR: biên độ >= k×ATR% thì coi là bất thường so với chính dao động của mã.
 DEFAULT_ATR_K = 1.5
 
 
@@ -45,10 +45,10 @@ def adaptive_price_threshold(
     fixed_threshold: float,
     k: float = DEFAULT_ATR_K,
 ) -> float:
-    """返回自适应价格异动阈值 = max(固定阈值, k×ATR%)。
+    """Trả về ngưỡng biến động giá thích nghi = max(ngưỡng cố định, k×ATR%).
 
-    ATR% 缺失/非正(None/0/负/异常)时退回固定阈值,保证不丢失原有行为。
-    固定阈值始终作为下限(floor),避免极低波动个股阈值过松。
+    ATR% thiếu/không dương (None/0/âm/lỗi) thì lùi về ngưỡng cố định, đảm bảo không mất hành vi vốn có.
+    Ngưỡng cố định luôn là cận dưới (floor), tránh mã biến động cực thấp có ngưỡng quá lỏng.
     """
     fixed = _safe_float(fixed_threshold) or 0.0
     ap = _safe_float(atr_pct)
@@ -63,11 +63,11 @@ def is_abnormal_move(
     k: float = DEFAULT_ATR_K,
     fixed_threshold: float = 0.0,
 ) -> bool:
-    """判断今日涨跌幅相对个股自身波动率是否异常。
+    """Xét xem biên độ hôm nay có bất thường so với chính độ biến động của mã không.
 
-    规则:|change_pct| >= max(固定阈值, k×ATR%) 即异动。
-    - atr_pct 为 None/0 时回退到 fixed_threshold(保留原有固定阈值行为)。
-    - 任一入参异常一律按"非异动"返回 False(fail-soft,不阻断 agent)。
+    Quy tắc: |change_pct| >= max(ngưỡng cố định, k×ATR%) là biến động bất thường.
+    - atr_pct bằng None/0 thì lùi về fixed_threshold (giữ hành vi ngưỡng cố định vốn có).
+    - Tham số nào bất thường thì nhất loạt trả False, coi là "không bất thường" (fail-soft, không chặn agent).
     """
     cp = _safe_float(change_pct)
     if cp is None:

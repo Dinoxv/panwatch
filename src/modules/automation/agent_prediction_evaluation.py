@@ -1,6 +1,7 @@
-"""Agent 建议后验复盘的纯计算逻辑。
+"""Phần tính toán thuần của việc ôn lại khuyến nghị Agent.
 
-这里集中维护“什么算命中”与 horizon 记录聚合，API 与前端都不自行复制规则。
+Ở đây giữ tập trung định nghĩa "thế nào là trúng" và cách gộp bản ghi horizon, để API
+lẫn frontend đều không tự chép lại quy tắc.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ _FLAT_ACTIONS = {"hold", "watch"}
 
 
 def classify_prediction_hit(action: str, return_pct: float | None) -> bool | None:
-    """按公开政策判断建议方向是否命中；无可判定结果时返回 None。"""
+    """Xét theo chính sách công khai xem hướng khuyến nghị có trúng không; không xét được thì trả None."""
     if return_pct is None:
         return None
     try:
@@ -62,10 +63,11 @@ def _legacy_group_base_key(row: Any) -> str:
 
 
 def _legacy_group_ids(rows: Sequence[Any]) -> dict[int, str]:
-    """为无持久化分组 ID 的历史行按旧写入顺序配对 horizon。
+    """Ghép cặp horizon cho các dòng lịch sử không có ID nhóm lưu bền, theo thứ tự ghi cũ.
 
-    旧实现按 1/5 日逐条提交，创建时间既可能相同也可能跨秒，不能作为身份。
-    以数据库自增 ID 的写入顺序将同一建议的不同 horizon 归入同一个临时组。
+    Bản cũ gửi lần lượt từng bản 1/5 ngày, thời điểm tạo có thể trùng nhau mà cũng có thể
+    lệch giây, nên không dùng làm danh tính được. Ở đây dựa vào thứ tự ghi của ID tự tăng
+    trong cơ sở dữ liệu để gom các horizon của cùng một khuyến nghị vào một nhóm tạm.
     """
     result: dict[int, str] = {}
 
@@ -101,8 +103,8 @@ def _legacy_group_ids(rows: Sequence[Any]) -> dict[int, str]:
                 "key": f"legacy:{base_key}:{record_id or index}",
                 "horizons": set(),
                 "last_id": record_id,
-                # 同一键未凑齐至少两个 horizon 又出现新记录时，无法知道
-                # 后续结果属于哪次建议；宁可不配对，也不能交叉污染结果。
+                # Khi cùng một khóa chưa đủ ít nhất hai horizon mà đã có bản ghi mới, không thể biết
+                # kết quả sau thuộc về lần khuyến nghị nào; thà không ghép cặp còn hơn để kết quả nhiễm chéo.
                 "ambiguous": bool(
                     same_base_as_previous
                     and (previous["ambiguous"] or len(previous["horizons"]) < 2)
@@ -139,7 +141,7 @@ def _outcome_payload(row: Any) -> dict[str, Any]:
 
 
 def group_prediction_outcomes(rows: Sequence[Any]) -> list[dict[str, Any]]:
-    """把一条建议的多个 horizon 记录 pivot 成单行复盘数据。"""
+    """Pivot nhiều bản ghi horizon của một khuyến nghị thành một dòng dữ liệu ôn lại."""
     grouped: dict[str, dict[str, Any]] = {}
     legacy_group_ids = _legacy_group_ids(rows)
 
@@ -179,7 +181,7 @@ def group_prediction_outcomes(rows: Sequence[Any]) -> list[dict[str, Any]]:
 
 
 def summarize_prediction_groups(groups: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    """统计默认交易日口径的覆盖、命中和收益，样本不足时明确标记。"""
+    """Thống kê mức phủ, mức trúng và lợi nhuận theo khẩu độ phiên giao dịch mặc định, mẫu chưa đủ thì đánh dấu rõ."""
     horizon_stats: dict[str, dict[str, Any]] = {}
     pending_count = 0
 

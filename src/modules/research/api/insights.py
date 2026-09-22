@@ -23,7 +23,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# 公告解读缓存(公告不变,长 TTL)
+# Bộ đệm diễn giải công bố thông tin (công bố không đổi nên TTL dài)
 _ANN_CACHE = TTLCache(default_ttl_sec=21600)  # 6h
 
 router = APIRouter()
@@ -47,11 +47,11 @@ def _parse_market(market: str) -> MarketCode:
 
 @router.post("/batch")
 def insights_batch(payload: InsightsBatchRequest):
-    """聚合返回行情 + K线摘要 + 最新建议"""
+    """Trả về gộp bảng giá + tóm tắt nến + khuyến nghị mới nhất"""
     if not payload.items:
         return []
 
-    # 1) 批量行情（按市场）
+    # 1) Lấy giá hàng loạt (theo thị trường)
     market_items: dict[MarketCode, list[str]] = {}
     for it in payload.items:
         market_code = _parse_market(it.market)
@@ -65,7 +65,7 @@ def insights_batch(payload: InsightsBatchRequest):
             items = []
         quotes_by_market[market_code] = {item["symbol"]: item for item in items}
 
-    # 2) K线摘要（逐只，带 60s 简易缓存）
+    # 2) Tóm tắt nến (từng mã, kèm bộ đệm đơn giản 60s)
     kline_by_symbol: dict[str, dict] = {}
     now = time.time()
     TTL = 60.0
@@ -91,11 +91,11 @@ def insights_batch(payload: InsightsBatchRequest):
             _KLINE_CACHE[cache_key] = (now, summary)
         kline_by_symbol[cache_key] = summary
 
-    # 3) 最新建议（建议池）
+    # 3) Khuyến nghị mới nhất (lấy từ kho khuyến nghị)
     stock_keys = [(it.symbol, _parse_market(it.market).value) for it in payload.items]
     latest_sugs = get_latest_suggestions(stock_keys=stock_keys, include_expired=False)
 
-    # 4) 合并返回
+    # 4) Gộp lại rồi trả về
     results = []
     for it in payload.items:
         market_code = _parse_market(it.market)
@@ -130,11 +130,11 @@ class AddPositionEvalRequest(BaseModel):
     model_id: int | None = None
 
 
-_VERDICTS = ("不适合", "谨慎", "适合")  # 先长后短:'不适合' 含 '适合',顺序不能反
+_VERDICTS = ("不适合", "谨慎", "适合")  # Dài trước ngắn sau: '不适合' chứa '适合', không được đảo thứ tự
 
 
 def _parse_verdict(text: str) -> str:
-    """从 AI 回复粗解析结论标签;命中不到返回'未知'。"""
+    """Đọc thô nhãn kết luận từ câu trả lời của AI; không khớp được thì trả 'Không rõ'."""
     head = (text or "")[:120]
     for v in _VERDICTS:
         if v in head:
@@ -143,7 +143,7 @@ def _parse_verdict(text: str) -> str:
 
 
 async def _fetch_fundamental_context(symbol: str, market: str) -> str:
-    """基本面摘要:PE / 换手率 / 市值 / 今日振幅(取自实时行情,失败返回空)。"""
+    """Tóm tắt mặt cơ bản: P/E / tỷ lệ sang tay / vốn hóa / biên độ hôm nay (lấy từ bảng giá thời gian thực, hỏng thì trả rỗng)."""
     try:
         mc = MarketCode(market) if market in ("CN", "HK", "US") else MarketCode.CN
         rows = await asyncio.to_thread(md_quote_rows, [symbol], mc.value)
@@ -169,7 +169,7 @@ async def _fetch_fundamental_context(symbol: str, market: str) -> str:
 
 
 async def _fetch_message_context(db: Session, symbol: str, market: str) -> str:
-    """消息面摘要:近 3 天新闻/公告标题 + 本地最近 AI 建议/分析(失败降级为空)。"""
+    """Tóm tắt mặt tin tức: tiêu đề tin/công bố 3 ngày gần nhất + khuyến nghị/phân tích AI gần nhất ở cục bộ (hỏng thì hạ xuống rỗng)."""
     parts: list[str] = []
     try:
         from src.platform.marketdata.collectors.news_collector import NewsCollector
@@ -201,7 +201,7 @@ async def _fetch_message_context(db: Session, symbol: str, market: str) -> str:
 
 @router.post("/add-position-eval")
 async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(get_db)):
-    """加仓快速评估:按服务端口径算摊薄成本 + 让 AI 给 适合/谨慎/不适合 结论。"""
+    """Đánh giá nhanh việc mua thêm: tính giá vốn bình quân theo khẩu độ phía server + để AI đưa kết luận hợp/thận trọng/không hợp."""
     market = _parse_market(req.market).value
     cur_q = max(0.0, float(req.current_quantity or 0))
     cur_c = max(0.0, float(req.current_cost or 0))
@@ -217,7 +217,7 @@ async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(g
     dilute_pct = (dilute_abs / cur_c * 100) if is_add and cur_c > 0 else 0.0
     action = "加仓" if is_add else "建仓"
 
-    # 上下文:实时行情 + 基本面 + 技术面 + 消息面(新闻/公告/本地观点)
+    # Ngữ cảnh: giá thời gian thực + cơ bản + kỹ thuật + tin tức (tin / công bố thông tin / quan điểm nội bộ)
     realtime = await fetch_realtime_context(req.symbol, market)
     fundamental = await _fetch_fundamental_context(req.symbol, market)
     technical = await fetch_technical_context(req.symbol, market)
@@ -269,7 +269,7 @@ async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(g
     }
 
 
-# ── 公告/财报 利好利空解读(Phase B)──────────────────────────────────────
+# ── Diễn giải công bố thông tin / báo cáo tài chính theo hướng tích cực - tiêu cực (Phase B) ──
 _ANN_TONES = ("利好", "利空", "中性")
 
 
@@ -282,7 +282,7 @@ def _parse_tone(text: str) -> str:
 
 
 async def _fetch_recent_announcements(symbol: str, name: str, limit: int = 5) -> list[dict]:
-    """取近 7 天公告/新闻(优先东财公告),失败返回 []。"""
+    """Lấy công bố/tin tức 7 ngày gần nhất (ưu tiên công bố Đông Tài), hỏng thì trả []."""
     try:
         from src.platform.marketdata.collectors.news_collector import NewsCollector
 
@@ -312,7 +312,7 @@ class AnnouncementEvalRequest(BaseModel):
 
 @router.post("/announcement-eval")
 async def announcement_eval(req: AnnouncementEvalRequest, db: Session = Depends(get_db)):
-    """近期公告 → AI 逐条判利好/利空/中性 + 一句话。降级:无全文则用标题。"""
+    """Công bố gần đây → AI xét từng bản là thuận lợi/bất lợi/trung tính + một câu. Hạ cấp: không có toàn văn thì dùng tiêu đề."""
     market = _parse_market(req.market).value
     cache_key = f"{market}:{req.symbol}"
     cached = _ANN_CACHE.get(cache_key)
@@ -324,7 +324,7 @@ async def announcement_eval(req: AnnouncementEvalRequest, db: Session = Depends(
     anns = await _fetch_recent_announcements(req.symbol, name)
     if not anns:
         result = {"symbol": req.symbol, "market": market, "items": []}
-        _ANN_CACHE.set(cache_key, result, ttl_sec=600)  # 无数据短缓存
+        _ANN_CACHE.set(cache_key, result, ttl_sec=600)  # Bộ đệm ngắn cho trường hợp không có dữ liệu
         return result
 
     top = anns[:3]

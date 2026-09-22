@@ -34,8 +34,8 @@ _HEADERS = {
     "User-Agent": _UA,
 }
 
-# sgt(深股通)近期不可靠,可能出现量级异常(远超合理"亿元"净买入范围)的脏值;
-# 超过此绝对值阈值一律视为异常丢弃。阈值本身是防御性经验值,非精确业务规则。
+# sgt (kênh Thâm Quyến) gần đây không đáng tin, có thể xuất hiện giá trị rác sai độ lớn (vượt xa khoảng mua ròng hợp lý tính bằng trăm triệu);
+# vượt ngưỡng trị tuyệt đối này thì nhất loạt coi là bất thường và loại bỏ. Bản thân ngưỡng là con số kinh nghiệm mang tính phòng thủ, không phải quy tắc nghiệp vụ chính xác.
 _SGT_MAX_ABS = 2000.0
 
 

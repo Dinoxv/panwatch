@@ -13,9 +13,9 @@ class Market(str, Enum):
     US = "US"
 
 
-_CN_RE = re.compile(r"^[036]\d{5}$")   # 6 位,0/3/6 开头
-_HK_RE = re.compile(r"^\d{5}$")        # 5 位数字
-_US_RE = re.compile(r"^[A-Z.]{1,6}$")  # 1-6 位字母(含指数 .DJI)
+_CN_RE = re.compile(r"^[036]\d{5}$")   # 6 chữ số, bắt đầu bằng 0/3/6
+_HK_RE = re.compile(r"^\d{5}$")        # 5 chữ số
+_US_RE = re.compile(r"^[A-Z.]{1,6}$")  # 1-6 chữ cái (gồm cả chỉ số .DJI)
 
 
 def _detect_market(code: str) -> Market:
@@ -26,7 +26,7 @@ def _detect_market(code: str) -> Market:
         return Market.HK
     if _US_RE.match(c):
         return Market.US
-    # 兜底:6 位数字当 CN,其余当 US
+    # Dự phòng: 6 chữ số coi là CN, còn lại coi là US
     return Market.CN if c.isdigit() and len(c) == 6 else Market.US
 
 
@@ -61,7 +61,7 @@ class Symbol:
     def to_yfinance(self) -> str:
         if self.market == Market.HK:
             return f"{int(self.code):04d}.HK" if self.code.isdigit() else f"{self.code}.HK"
-        return self.code  # US 直接用;CN 由 vendor.supports_markets 拦截,不会走到这
+        return self.code  # US dùng thẳng; CN đã bị vendor.supports_markets chặn nên không chạy tới đây
 
     def to_eastmoney_secid(self) -> str:
         if self.market == Market.HK:

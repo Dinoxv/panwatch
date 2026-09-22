@@ -1,13 +1,13 @@
-"""统一 API 响应格式中间件"""
+"""Middleware định dạng phản hồi API thống nhất"""
 import json
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 
 class ResponseWrapperMiddleware:
-    """将所有 /api/ 响应包装为标准格式: {code, success, data, message}
+    """Bọc mọi phản hồi /api/ thành định dạng chuẩn: {code, success, data, message}
 
-    使用纯 ASGI 实现，避免 BaseHTTPMiddleware 的已知 streaming hang 问题。
+    Cài đặt bằng ASGI thuần, tránh lỗi treo streaming đã biết của BaseHTTPMiddleware.
     """
 
     def __init__(self, app: ASGIApp):
@@ -21,8 +21,8 @@ class ResponseWrapperMiddleware:
         status_code = 200
         response_headers: list[tuple[bytes, bytes]] = []
         body_parts: list[bytes] = []
-        # SSE（text/event-stream）响应必须逐块直通：
-        # 缓冲会把流式打成一次性返回，导致前端收不到增量事件
+        # Phản hồi SSE (text/event-stream) bắt buộc phải chuyển thẳng từng khối:
+        # đệm lại sẽ biến luồng thành một lần trả duy nhất, khiến giao diện không nhận được sự kiện bổ sung
         passthrough = False
 
         async def capture_send(message):
@@ -45,10 +45,10 @@ class ResponseWrapperMiddleware:
         await self.app(scope, receive, capture_send)
 
         if passthrough:
-            # 流式响应已经边生成边转发完毕
+            # Phản hồi dạng luồng đã vừa sinh vừa chuyển tiếp xong
             return
 
-        # 检查是否 JSON 响应
+        # Kiểm tra có phải phản hồi JSON không
         content_type = ""
         for key, value in response_headers:
             if key.lower() == b"content-type":
@@ -58,7 +58,7 @@ class ResponseWrapperMiddleware:
         body = b"".join(body_parts)
 
         if "application/json" not in content_type:
-            # 非 JSON 响应，原样返回
+            # Không phải JSON thì trả nguyên trạng
             await send({"type": "http.response.start", "status": status_code, "headers": response_headers})
             await send({"type": "http.response.body", "body": body})
             return
@@ -71,7 +71,7 @@ class ResponseWrapperMiddleware:
             return
 
         if 200 <= status_code < 300:
-            # 允许业务层在 2xx 中显式返回 success/code/message
+            # Cho phép tầng nghiệp vụ trả tường minh success/code/message trong dải 2xx
             if isinstance(original_data, dict) and "success" in original_data:
                 success = bool(original_data.get("success"))
                 raw_code = original_data.get("code")
@@ -85,7 +85,7 @@ class ResponseWrapperMiddleware:
                     code = 1
 
                 if success:
-                    # 统一成功返回：message 为空
+                    # Chuẩn hóa phản hồi thành công: message để rỗng
                     message = ""
                     data = original_data.get("data")
                     if data is None:
@@ -95,7 +95,7 @@ class ResponseWrapperMiddleware:
                             if k not in ("code", "success", "message")
                         }
                 else:
-                    # 统一失败返回：data 为空
+                    # Chuẩn hóa phản hồi thất bại: data để rỗng
                     message = str(original_data.get("message") or "failed")
                     data = None
 
@@ -106,7 +106,7 @@ class ResponseWrapperMiddleware:
                     "message": message,
                 }
             else:
-                # 默认 2xx 视为成功
+                # Mặc định coi 2xx là thành công
                 wrapped = {"code": 0, "success": True, "data": original_data, "message": ""}
         else:
             detail = original_data.get("detail", original_data) if isinstance(original_data, dict) else original_data
@@ -132,7 +132,7 @@ class ResponseWrapperMiddleware:
 
         new_body = json.dumps(wrapped, ensure_ascii=False).encode()
 
-        # 更新 content-length header
+        # Cập nhật header content-length
         new_headers = []
         for key, value in response_headers:
             if key.lower() == b"content-length":

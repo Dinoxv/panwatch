@@ -1,4 +1,4 @@
-"""模拟盘跟单通知：建仓/平仓实时推送、盘前计划、日终摘要。"""
+"""Thông báo sao chép lệnh của mô phỏng: đẩy thời gian thực khi mở/đóng vị thế, kế hoạch trước phiên, tóm tắt cuối ngày."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from src.platform.persistence.models import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# 配置读取
+# Đọc cấu hình
 # ---------------------------------------------------------------------------
 
 _CONFIG_KEYS = {
@@ -32,7 +32,7 @@ _CONFIG_KEYS = {
 
 
 def _load_config() -> dict[str, str]:
-    """从 AppSettings 表读取 pt_notify_* 配置。"""
+    """Đọc cấu hình pt_notify_* từ bảng AppSettings."""
     db = SessionLocal()
     try:
         rows = (
@@ -61,11 +61,11 @@ def _is_mode_enabled(mode_key: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# 渠道构建
+# Dựng kênh
 # ---------------------------------------------------------------------------
 
 def _build_notifier() -> NotifierManager | None:
-    """根据配置构建 NotifierManager，无可用渠道时返回 None。"""
+    """Dựng NotifierManager theo cấu hình, không có kênh nào dùng được thì trả None."""
     cfg = _load_config()
     if cfg.get("pt_notify_enabled", "").lower() != "true":
         return None
@@ -81,7 +81,7 @@ def _build_notifier() -> NotifierManager | None:
                 .all()
             )
         else:
-            # 未指定渠道时使用默认渠道
+            # Không chỉ định kênh thì dùng kênh mặc định
             channels = (
                 db.query(NotifyChannel)
                 .filter(NotifyChannel.enabled.is_(True), NotifyChannel.is_default.is_(True))
@@ -101,7 +101,7 @@ def _build_notifier() -> NotifierManager | None:
 
 
 # ---------------------------------------------------------------------------
-# 消息格式化
+# Định dạng thông điệp
 # ---------------------------------------------------------------------------
 
 EXIT_REASON_LABELS = {
@@ -124,23 +124,23 @@ STRATEGY_NAME_MAP = {
 
 
 def _strategy_label(code: str) -> str:
-    """策略代码转中文名称。"""
+    """Đổi mã chiến lược sang tên hiển thị."""
     return STRATEGY_NAME_MAP.get(code, code)
 
 
 def _stock_display(symbol: str, market: str, name: str = "") -> str:
-    """生成带链接的股票显示文本，点击代码跳转到行情页。"""
+    """Dựng chữ hiển thị của mã kèm liên kết, bấm vào mã thì nhảy sang trang bảng giá."""
     from src.modules.administration.stock_link import stock_link_markdown
     label = f"{name} " if name else ""
     return f"{label}({stock_link_markdown(symbol, market)})"
 
 
 def _format_entry_message(pos: dict, sig: dict | None) -> tuple[str, str]:
-    """格式化建仓通知，返回 (title, body)。pos/sig 为序列化后的 dict。"""
+    """Định dạng thông báo mở vị thế, trả về (title, body). pos/sig là dict đã tuần tự hóa."""
     name = pos.get("stock_name") or pos["stock_symbol"]
     title = f"【模拟盘建仓】{name}"
 
-    # 盈亏比
+    # Tỷ lệ lãi trên lỗ
     rr_str = ""
     entry_price = pos.get("entry_price", 0)
     stop_loss = pos.get("stop_loss", 0)
@@ -172,7 +172,7 @@ def _format_entry_message(pos: dict, sig: dict | None) -> tuple[str, str]:
 
 
 def _format_exit_message(pos: dict, trade: dict) -> tuple[str, str]:
-    """格式化平仓通知，返回 (title, body)。pos/trade 为序列化后的 dict。"""
+    """Định dạng thông báo đóng vị thế, trả về (title, body). pos/trade là dict đã tuần tự hóa."""
     name = pos.get("stock_name") or pos["stock_symbol"]
     pnl = trade["pnl"]
     pnl_sign = "+" if pnl >= 0 else ""
@@ -190,8 +190,8 @@ def _format_exit_message(pos: dict, trade: dict) -> tuple[str, str]:
 
 
 def _dedup_signals(signals: list[StrategySignalRun]) -> list[tuple[StrategySignalRun, int]]:
-    """按 (stock_symbol, stock_market) 去重，保留 rank_score 最高的信号。
-    返回 [(signal, strategy_count), ...]，已按 rank_score desc 排序。
+    """Gộp trùng theo (stock_symbol, stock_market), giữ tín hiệu có rank_score cao nhất.
+    Trả về [(signal, strategy_count), ...], đã xếp theo rank_score giảm dần.
     """
     seen: dict[tuple[str, str], tuple[StrategySignalRun, int]] = {}
     for sig in signals:
@@ -201,12 +201,12 @@ def _dedup_signals(signals: list[StrategySignalRun]) -> list[tuple[StrategySigna
         else:
             _, count = seen[key]
             seen[key] = (seen[key][0], count + 1)
-    # 已按 rank_score desc 查询，保留首次出现的顺序即可
+    # Đã truy vấn theo rank_score giảm dần, chỉ cần giữ thứ tự xuất hiện lần đầu
     return list(seen.values())
 
 
 def _format_premarket_plan(signals: list[StrategySignalRun], account: PaperTradingAccount) -> tuple[str, str]:
-    """格式化盘前计划，返回 (title, body)。信号会自动去重。"""
+    """Định dạng kế hoạch trước phiên, trả về (title, body). Tín hiệu sẽ tự gộp trùng."""
     title = "【模拟盘盘前计划】"
     if not signals:
         return title, "今日无候选股票"
@@ -236,8 +236,8 @@ def _format_daily_summary(
     positions: list[PaperTradingPosition],
     account: PaperTradingAccount,
 ) -> tuple[str, str]:
-    """格式化日终摘要，返回 (title, body)。"""
-    # 总资产
+    """Định dạng tóm tắt cuối ngày, trả về (title, body)."""
+    # Tổng tài sản
     positions_value = sum((p.current_price or p.entry_price) * p.quantity for p in positions)
     total_equity = account.current_capital + positions_value
     unrealized = sum(p.unrealized_pnl or 0 for p in positions)
@@ -245,7 +245,7 @@ def _format_daily_summary(
     title = "【模拟盘日终摘要】"
     lines = [f"总资产: {total_equity:,.2f}"]
 
-    # 当日平仓
+    # Đóng vị thế trong ngày
     if trades:
         day_pnl = sum(t.pnl for t in trades)
         pnl_sign = "+" if day_pnl >= 0 else ""
@@ -257,7 +257,7 @@ def _format_daily_summary(
     else:
         lines.append("\n当日无平仓操作")
 
-    # 持仓浮盈
+    # Lãi chưa thực hiện của vị thế
     if positions:
         u_sign = "+" if unrealized >= 0 else ""
         lines.append(f"\n持仓中 {len(positions)} 只, 浮动盈亏: {u_sign}{unrealized:,.2f}")
@@ -273,11 +273,11 @@ def _format_daily_summary(
 
 
 # ---------------------------------------------------------------------------
-# 触发函数
+# Hàm kích hoạt
 # ---------------------------------------------------------------------------
 
 async def notify_entry(pos: dict, sig: dict | None) -> None:
-    """建仓通知（异步，失败仅日志）。pos/sig 为序列化后的 dict。"""
+    """Thông báo mở vị thế (bất đồng bộ, hỏng thì chỉ ghi nhật ký). pos/sig là dict đã tuần tự hóa."""
     try:
         if not _is_mode_enabled("pt_notify_realtime"):
             return
@@ -291,7 +291,7 @@ async def notify_entry(pos: dict, sig: dict | None) -> None:
 
 
 async def notify_exit(pos: dict, trade: dict) -> None:
-    """平仓通知（异步，失败仅日志）。pos/trade 为序列化后的 dict。"""
+    """Thông báo đóng vị thế (bất đồng bộ, hỏng thì chỉ ghi nhật ký). pos/trade là dict đã tuần tự hóa."""
     try:
         if not _is_mode_enabled("pt_notify_realtime"):
             return
@@ -305,7 +305,7 @@ async def notify_exit(pos: dict, trade: dict) -> None:
 
 
 async def send_premarket_plan() -> None:
-    """盘前计划通知。"""
+    """Thông báo kế hoạch trước phiên."""
     try:
         if not _is_mode_enabled("pt_notify_premarket"):
             return
@@ -319,7 +319,7 @@ async def send_premarket_plan() -> None:
             if not account or not account.enabled:
                 return
 
-            # 按投资比例排除不投入（比例为 0）的市场
+            # Loại các thị trường không giải ngân (tỷ trọng bằng 0)
             from src.modules.paper_trading.paper_trading_engine import ALL_MARKETS, market_allocations_or_default
             alloc = market_allocations_or_default(account)
             excluded = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
@@ -345,7 +345,7 @@ async def send_premarket_plan() -> None:
 
 
 async def send_daily_summary() -> None:
-    """日终摘要通知。"""
+    """Thông báo tóm tắt cuối ngày."""
     try:
         if not _is_mode_enabled("pt_notify_summary"):
             return
@@ -363,7 +363,7 @@ async def send_daily_summary() -> None:
             now = datetime.now(timezone.utc)
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-            # 当日已平仓
+            # Đã đóng vị thế trong ngày
             trades = (
                 db.query(PaperTradingTrade)
                 .filter(PaperTradingTrade.closed_at >= today_start)
@@ -371,7 +371,7 @@ async def send_daily_summary() -> None:
                 .all()
             )
 
-            # 持仓中
+            # Đang nắm giữ
             positions = (
                 db.query(PaperTradingPosition)
                 .filter(PaperTradingPosition.status == "open")
@@ -387,7 +387,7 @@ async def send_daily_summary() -> None:
 
 
 async def send_test_notification() -> dict:
-    """发送测试通知，返回结果。"""
+    """Gửi thông báo thử, trả về kết quả."""
     mgr = _build_notifier()
     if not mgr:
         return {"success": False, "error": "通知未启用或无可用渠道"}

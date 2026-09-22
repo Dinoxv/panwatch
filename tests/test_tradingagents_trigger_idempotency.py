@@ -100,6 +100,6 @@ def test_running_status_but_stale_returns_none():
     log = _fake_log(now - timedelta(minutes=10))
     run = _fake_run("running")
     db = _setup_db(latest_log=log, run=run)
-    # 注意:当前实现 run.status in ('success','failed') 才提前 return,
-    # 'running' 但 stale 应该按 stale 处理 → None
+    # Lưu ý: bản cài đặt hiện tại chỉ return sớm khi run.status thuộc ('success','failed'),
+    # còn 'running' mà đã cũ thì phải xử lý như dữ liệu cũ → None
     assert find_active_tradingagents_trace(db, "601127") is None

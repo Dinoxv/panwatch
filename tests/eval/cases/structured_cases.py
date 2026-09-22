@@ -31,9 +31,9 @@ class StructuredEvalCase:
     text: str
     kind: str = "action"
     expect_parsed: bool = True
-    # 字段断言：值为普通值时做相等比较，为 callable 时做谓词校验
+    # Kiểm tra trường: giá trị thường thì so bằng, còn callable thì dùng làm vị từ kiểm tra
     expect_fields: dict = field(default_factory=dict)
-    # kind=strip 时的期望正文
+    # Phần thân kỳ vọng khi kind=strip
     expect_stripped: str | None = None
     notes: str = ""
 

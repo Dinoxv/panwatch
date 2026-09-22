@@ -41,7 +41,7 @@ def test_progress_sse_push_and_done(monkeypatch):
     """进度 SSE：快照变化才推 progress 事件，终态后推 done 并关流"""
     snapshots = [
         {"trace_id": "t1", "status": "running", "current_stage": "market_analyst"},
-        {"trace_id": "t1", "status": "running", "current_stage": "market_analyst"},  # 无变化，不推
+        {"trace_id": "t1", "status": "running", "current_stage": "market_analyst"},  # Không có thay đổi thì không đẩy
         {"trace_id": "t1", "status": "running", "current_stage": "trader"},
         {"trace_id": "t1", "status": "success", "current_stage": None},
     ]
@@ -63,7 +63,7 @@ def test_progress_sse_push_and_done(monkeypatch):
     body = asyncio.run(run())
     events = _parse_events(body)
     kinds = [e for e, _ in events]
-    # 4 次快照里只有 3 个不同 payload → 3 条 progress + 1 条 done
+    # Trong 4 ảnh chụp chỉ có 3 payload khác nhau → 3 sự kiện progress + 1 sự kiện done
     assert kinds == ["progress", "progress", "progress", "done"]
     assert events[0][1]["current_stage"] == "market_analyst"
     assert events[2][1]["status"] == "success"
@@ -120,9 +120,9 @@ def test_logs_sse_resume_from_last_event_id(monkeypatch):
     assert len(logs_events) == 1
     ids = [item["id"] for item in logs_events[0]["items"]]
     assert ids == [2, 3]
-    # 事件 id 用最后一条日志 id
+    # id của sự kiện lấy theo id của dòng nhật ký cuối
     assert "id: 3\nevent: logs\n" in body
-    # 超时后有 done 收尾
+    # Hết thời gian chờ thì có sự kiện done khép lại
     assert events[-1][0] == "done"
 
 
@@ -152,10 +152,10 @@ def test_logs_sse_filters(monkeypatch):
 def test_logs_sse_tail_only_new(monkeypatch):
     """日志 SSE：无 Last-Event-ID 时从当前最新开始，只 tail 增量"""
     factory = _make_log_db(monkeypatch)
-    # 时序阈值放宽以抗环境负载:该用例依赖"先建立基线快照、再插入增量"的先后关系,
-    # 原 0.05s 预留在高负载下可能让首轮基线轮询尚未跑完就插入,导致新日志被并入基线
-    # 而不被 tail(基线偶发 flaky,与本次改动无关)。加大 MAX_DURATION 与插入前等待,
-    # 给事件循环足够调度余量。
+    # Nới ngưỡng thời gian để chịu được tải của môi trường: test này phụ thuộc thứ tự "dựng ảnh chụp nền trước, chèn dữ liệu mới sau",
+    # mức dự phòng 0,05s cũ khi tải cao có thể khiến việc chèn xảy ra trước lúc vòng thăm dò nền đầu tiên chạy xong, làm nhật ký mới bị gộp vào nền
+    # và không được tail (test nền thỉnh thoảng chập chờn, không liên quan thay đổi lần này). Tăng MAX_DURATION và thời gian chờ trước khi chèn
+    # để event loop có đủ dư địa xếp lịch.
     monkeypatch.setattr(logs_api, "LOGS_SSE_POLL_SEC", 0.02)
     monkeypatch.setattr(logs_api, "LOGS_SSE_MAX_DURATION_SEC", 1.5)
 
@@ -172,7 +172,7 @@ def test_logs_sse_tail_only_new(monkeypatch):
                 received.append(chunk)
 
         task = asyncio.create_task(consume())
-        # 等首轮基线轮询稳妥跑完后再插入新日志(放宽到 0.3s 抗负载抖动)
+        # Chờ vòng thăm dò nền đầu tiên chạy xong hẳn rồi mới chèn nhật ký mới (nới lên 0,3s để chịu dao động tải)
         await asyncio.sleep(0.3)
         db = factory()
         db.add(LogEntry(
@@ -189,6 +189,6 @@ def test_logs_sse_tail_only_new(monkeypatch):
     body = asyncio.run(run())
     events = _parse_events(body)
     logs_events = [d for e, d in events if e == "logs"]
-    # 只有新插入的那条，存量 3 条不重放
+    # Chỉ có bản ghi vừa chèn, 3 bản ghi cũ không phát lại
     assert len(logs_events) == 1
     assert [i["message"] for i in logs_events[0]["items"]] == ["新增日志"]

@@ -63,7 +63,7 @@ class TestLLMAdapter(unittest.TestCase):
         config = build_ta_llm_config(
             ai_client, debate_rounds=2, selected_analysts=["market", "news"]
         )
-        # 用 openrouter 走标准 chat completions,避开 OpenAI Responses API 的兼容性问题
+        # Dùng openrouter để đi qua chat completions chuẩn, né vấn đề tương thích của OpenAI Responses API
         self.assertEqual(config["llm_provider"], "openrouter")
         self.assertEqual(config["backend_url"], "https://api.deepseek.com")
         self.assertEqual(config["deep_think_llm"], "deepseek-chat")
@@ -307,8 +307,8 @@ class TestToolkitAdapter(unittest.TestCase):
         self.assertTrue(is_a_share("600519"))
         self.assertTrue(is_a_share("000001"))
         self.assertFalse(is_a_share("AAPL"))
-        self.assertFalse(is_a_share("00700"))  # 港股 5 位
-        self.assertFalse(is_a_share("12345"))   # 5 位
+        self.assertFalse(is_a_share("00700"))  # Mã Hồng Kông 5 chữ số
+        self.assertFalse(is_a_share("12345"))   # 5 chữ số
         self.assertFalse(is_a_share(""))
 
     def test_panwatch_data_context_isolation(self):
@@ -321,9 +321,9 @@ class TestToolkitAdapter(unittest.TestCase):
 
     def test_patch_route_to_vendor_noop_when_lib_absent(self):
         """tradingagents 未安装 — patch 上下文 no-op,不抛异常"""
-        # 当 import 失败时,patch 应该静默 yield
+        # Khi import thất bại thì patch phải yield trong im lặng
         with patch_route_to_vendor():
-            pass  # 不应抛异常
+            pass  # Không được ném ngoại lệ
 
 
 # ============================================================================
@@ -399,7 +399,7 @@ class TestTradingAgentsAgent(unittest.TestCase):
 
     async def _run_analyze_unavailable(self):
         agent = TradingAgentsAgent()
-        # 强制标记不可用,验证 analyze 立即抛错而不会进入 propagate
+        # Ép đánh dấu là không khả dụng, kiểm chứng analyze ném lỗi ngay chứ không đi vào propagate
         agent._available = False
         agent._import_error = "mocked unavailable"
         context = MagicMock()

@@ -17,7 +17,7 @@ def _mem_db():
     return sessionmaker(bind=engine)()
 
 
-# --------------------------- classify_hint(纯函数)---------------------------
+# --------------------------- classify_hint (hàm thuần) ---------------------
 
 def test_hint_datasource_proxy():
     """CN 数据源连接类错误 → 提示代理 / trust_env。"""
@@ -75,7 +75,7 @@ def test_hint_system_scheduler():
     assert "调度" in h
 
 
-# --------------------------- 基础项探测(DB/磁盘/调度)---------------------------
+# ------------------- Thăm dò các mục cơ bản (DB / đĩa / lập lịch) ----------
 
 def test_probe_db_ok():
     """DB 探测对真实库执行 SELECT 1,应通。"""
@@ -93,7 +93,7 @@ def test_probe_disk_ok():
     r = asyncio.run(probe_disk())
     assert r["key"] == "sys:disk"
     assert r["status"] in ("ok", "slow", "fail")
-    assert r["note"]  # 显示可用/总量
+    assert r["note"]  # Hiển thị dung lượng khả dụng / tổng
 
 
 def test_probe_scheduler_empty_registry_ok():
@@ -143,7 +143,7 @@ def test_run_selfcheck_always_includes_system_items():
         db.close()
 
 
-# --------------------------- run_selfcheck(聚合)---------------------------
+# --------------------------- run_selfcheck (tổng hợp) ----------------------
 
 def test_run_selfcheck_aggregates(monkeypatch):
     """枚举启用项 → 并发 probe → 聚合 summary(total/ok/slow/fail)。"""
@@ -219,7 +219,7 @@ def test_list_selfcheck_items_no_probe(monkeypatch):
         items = selfcheck.list_selfcheck_items(db=db, include_system=False)
         assert {i["key"] for i in items} == {"ds:1", "nc:1"}
         assert all({"category", "key", "name", "group"} <= set(i) for i in items)
-        assert called["n"] == 0  # 没触发任何探测
+        assert called["n"] == 0  # Không kích hoạt phép thăm dò nào
     finally:
         db.close()
 
@@ -274,7 +274,7 @@ def test_run_selfcheck_keys_filter(monkeypatch):
         db.close()
 
 
-# --------------------------- 端点 ---------------------------
+# --------------------------- Endpoint ---------------------------
 
 def test_selfcheck_endpoint(monkeypatch):
     """端点调用 run_selfcheck 并原样返回看板。"""
@@ -285,7 +285,7 @@ def test_selfcheck_endpoint(monkeypatch):
                 "notify_send": notify_send}
 
     monkeypatch.setattr(health, "run_selfcheck", fake_run)
-    # 直接调用路由函数需显式传参(Query 默认值仅在 HTTP 请求时解析)
+    # Gọi thẳng hàm route thì phải truyền tham số tường minh (giá trị mặc định của Query chỉ được phân giải khi có request HTTP)
     res = asyncio.run(health.selfcheck(notify_send=True, list_only=False, keys=None))
     assert res["summary"]["total"] == 0
     assert res["notify_send"] is True
@@ -321,4 +321,4 @@ def test_doctor_print_report(capsys):
     assert "检查代理设置" in out and "❌" in out
 
 
-# 已移除:自检结果的定时告警 selfcheck_and_notify(用户要求自检不发结果通知);弹窗里「含真实发送通知」开关保留。
+# Đã gỡ: cảnh báo định kỳ theo kết quả tự kiểm tra selfcheck_and_notify (người dùng yêu cầu tự kiểm tra không gửi thông báo kết quả); công tắc «gửi thông báo thật» trong hộp thoại vẫn giữ.

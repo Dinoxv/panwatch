@@ -1,4 +1,4 @@
-"""新闻 API - 基于数据源配置"""
+"""API tin tức - dựa trên cấu hình nguồn dữ liệu"""
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -11,7 +11,7 @@ from src.platform.marketdata.collectors.news_collector import NewsCollector, New
 
 router = APIRouter()
 
-# 来源显示名称
+# Tên hiển thị của nguồn
 SOURCE_LABELS = {
     "xueqiu": "雪球",
     "eastmoney_news": "东财资讯",
@@ -42,26 +42,26 @@ async def get_news(
     db: Session = Depends(get_db),
 ):
     """
-    获取新闻列表（基于数据源配置）
+    Lấy danh sách tin tức (dựa trên cấu hình nguồn dữ liệu)
 
-    - symbols: 股票代码过滤，逗号分隔，空则获取所有自选股相关新闻
-    - names: 股票名称过滤，逗号分隔（前端直接传递名称，更稳定）
-    - hours: 时间范围
-    - limit: 返回数量限制
-    - filter_related: 是否只显示与自选股相关的新闻
+    - symbols: lọc theo mã cổ phiếu, ngăn cách bằng dấu phẩy, để trống thì lấy tin liên quan tới mọi mã theo dõi
+    - names: lọc theo tên cổ phiếu, ngăn cách bằng dấu phẩy (frontend truyền thẳng tên, ổn định hơn)
+    - hours: khoảng thời gian
+    - limit: giới hạn số bản ghi trả về
+    - filter_related: có chỉ hiện tin liên quan tới mã theo dõi không
     """
-    # 获取所有自选股（用于匹配）
+    # Lấy toàn bộ cổ phiếu theo dõi (để khớp)
     all_stocks = db.query(Stock).all()
     stock_map = {s.symbol: s.name for s in all_stocks}
     name_to_symbol = {s.name: s.symbol for s in all_stocks}
 
-    # 解析股票 - 优先使用 names 参数
+    # Bóc cổ phiếu — ưu tiên dùng tham số names
     if names:
-        # 前端直接传递股票名称
+        # Giao diện truyền thẳng tên cổ phiếu
         name_list = [n.strip() for n in names.split(",") if n.strip()]
-        # 转换为 symbol 列表（用于匹配和返回）
+        # Chuyển thành danh sách symbol (dùng để khớp và trả về)
         symbol_list = [name_to_symbol.get(n) for n in name_list if name_to_symbol.get(n)]
-        # 直接使用传入的名称构建 symbol_names
+        # Dùng luôn tên được truyền vào để dựng symbol_names
         passed_symbol_names = {name_to_symbol.get(n, ""): n for n in name_list if name_to_symbol.get(n)}
     elif symbols:
         symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
@@ -75,29 +75,29 @@ async def get_news(
 
     source_filters = {s.strip() for s in source.split(",") if s.strip()} if source else set()
 
-    # 构建匹配关键词（股票代码 + 股票名称）
+    # Dựng từ khóa khớp (mã cổ phiếu + tên cổ phiếu)
     keywords = set(symbol_list)
     for sym in symbol_list:
         if sym in stock_map:
             keywords.add(stock_map[sym])
 
-    # 基于数据源配置构建采集器，直接传递股票名称映射避免重复查库
+    # Dựng bộ thu thập theo cấu hình nguồn dữ liệu, truyền thẳng ánh xạ tên cổ phiếu để khỏi truy vấn lại cơ sở dữ liệu
     collector = NewsCollector.from_database()
     news_items = await collector.fetch_all(
         symbols=symbol_list,
         since_hours=hours,
-        symbol_names=passed_symbol_names,  # 直接传递已有的股票名称映射
+        symbol_names=passed_symbol_names,  # Truyền thẳng ánh xạ tên cổ phiếu đã có
     )
 
     def is_related(item: NewsItem) -> bool:
-        """判断新闻是否与自选股相关"""
-        # 公告类天然与股票相关
+        """Xét xem tin có liên quan tới mã theo dõi không"""
+        # Loại công bố thông tin thì đương nhiên gắn với cổ phiếu
         if item.source == "eastmoney":
             return True
-        # 已标记相关股票
+        # Đã được gắn mã liên quan
         if item.symbols and any(s in symbol_list for s in item.symbols):
             return True
-        # 标题或内容包含关键词
+        # Tiêu đề hoặc nội dung có chứa từ khóa
         text = item.title + (item.content or "")
         return any(kw in text for kw in keywords)
 
@@ -105,11 +105,11 @@ async def get_news(
     for item in news_items:
         if source_filters and item.source not in source_filters:
             continue
-        # 过滤不相关的新闻
+        # Lọc bỏ tin không liên quan
         if filter_related and not is_related(item):
             continue
 
-        # 标记匹配的股票
+        # Đánh dấu các mã khớp được
         matched_symbols = []
         text = item.title + (item.content or "")
         for sym, name in stock_map.items():
@@ -136,7 +136,7 @@ async def get_news(
 
 @router.get("/sources")
 def get_news_sources(db: Session = Depends(get_db)):
-    """获取已配置的新闻数据源列表"""
+    """Lấy danh sách nguồn dữ liệu tin tức đã cấu hình"""
     data_sources = (
         db.query(DataSource)
         .filter(DataSource.type == "news")

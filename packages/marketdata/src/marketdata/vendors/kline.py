@@ -25,9 +25,9 @@ def _days(config: dict, default: int = 60) -> int:
         return default
 
 
-# 腾讯 fqkline 对 count 有上限:实测 ≤800 正常返(800→801根),1000-2000 退化到 ~641,
-# ≥3000 直接返空(0根)。上层 want 常放大到 3000(为长历史/回测),若原样透传腾讯会返 0
-# → 每个标的都白白落到东财补全 → 东财一挂就没数据。故把请求 count 截到 800(取回最多)。
+# fqkline của Tencent có trần cho count: đo thực tế ≤800 trả bình thường (800 → 801 cây), 1000-2000 tụt còn ~641,
+# ≥3000 thì trả rỗng luôn (0 cây). Tầng trên hay đặt want lên 3000 (để có lịch sử dài / kiểm thử), truyền thẳng thì Tencent trả 0
+# → mã nào cũng rơi xuống EastMoney bù một cách vô ích → EastMoney hỏng là mất dữ liệu. Vậy nên cắt count của request xuống 800 (lấy về được nhiều nhất).
 _TENCENT_MAX_COUNT = 800
 
 
@@ -70,15 +70,15 @@ def fetch_tencent_kline_raw(tsym: str, days: int) -> list[Bar]:
     return out
 
 
-# 腾讯美股日K必须带交易所后缀(usTSLA.OQ=纳斯达克 / usBABA.N=纽交所);裸 us{CODE}
-# 只回"首日+最新"两根退化数据,错后缀只回 1 根。后缀无法从代码推断 → 依次试
-# .OQ/.N/裸,根数达标即命中并进程内记忆(下次直达,不再多请求)。
+# Nến ngày cổ phiếu Mỹ của Tencent bắt buộc kèm hậu tố sàn (usTSLA.OQ = Nasdaq / usBABA.N = NYSE); dạng trần us{CODE}
+# chỉ trả hai cây suy biến "ngày đầu + mới nhất", sai hậu tố thì chỉ trả 1 cây. Hậu tố không suy được từ mã → thử lần lượt
+# .OQ / .N / dạng trần, đủ số cây là khớp và ghi nhớ trong tiến trình (lần sau đi thẳng, không gọi thừa).
 _US_SUFFIX_CACHE: dict[str, str] = {}
 
 
 def _fetch_tencent_us_kline(code: str, days: int) -> list[Bar]:
     want = min(max(int(days or 1), 1), _TENCENT_MAX_COUNT)
-    ok_threshold = min(want, 5)  # 正常历史远多于 5 根;退化响应只有 1-2 根
+    ok_threshold = min(want, 5)  # Lịch sử bình thường nhiều hơn 5 cây rất nhiều; phản hồi suy biến chỉ có 1-2 cây
     cached = _US_SUFFIX_CACHE.get(code)
     suffixes = ([cached] if cached is not None else []) + [
         s for s in (".OQ", ".N", "") if s != cached
@@ -98,7 +98,7 @@ class TencentKlineVendor(KlineVendor):
     name = "tencent"
     supports_markets = {"CN", "HK", "US"}
 
-    _MAX_COUNT = _TENCENT_MAX_COUNT  # 兼容旧引用(测试/外部按类属性取)
+    _MAX_COUNT = _TENCENT_MAX_COUNT  # Tương thích tham chiếu cũ (kiểm thử / bên ngoài lấy theo thuộc tính lớp)
 
     def fetch(self, symbols: list[Symbol], config: dict) -> list[Bar]:
         if not symbols:

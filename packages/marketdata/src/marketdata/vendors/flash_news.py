@@ -84,13 +84,13 @@ def _extract_symbols(raw) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# cls(财联社)
+# cls (Cailianshe)
 # ---------------------------------------------------------------------------
 
 _CLS_URL = "https://www.cls.cn/v1/roll/get_roll_list"
 _CLS_HOST = "www.cls.cn"
 
-# cls "level" 字段的常见取值(A/B/C 或数字)→ importance;未识别一律 0。
+# Các giá trị thường gặp của trường "level" bên cls (A/B/C hoặc số) → importance; không nhận ra thì đều là 0.
 _CLS_LEVEL_MAP = {"A": 3, "B": 2, "C": 1}
 
 
@@ -172,7 +172,7 @@ class ClsFlashNewsVendor(_FlashNewsVendorBase):
 
 
 # ---------------------------------------------------------------------------
-# sina(新浪财经直播)
+# sina (bản tin trực tiếp của Sina Finance)
 # ---------------------------------------------------------------------------
 
 _SINA_URL = "https://zhibo.sina.com.cn/api/zhibo/feed"
@@ -252,7 +252,7 @@ class SinaFlashNewsVendor(_FlashNewsVendorBase):
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财快讯)
+# eastmoney (tin nhanh EastMoney)
 # ---------------------------------------------------------------------------
 
 _EM_URL = "https://np-weblist.eastmoney.com/comm/web/getFastNewsList"
@@ -271,7 +271,7 @@ class EastmoneyFlashNewsVendor(_FlashNewsVendorBase):
             "fastColumn": "102",
             "sortEnd": "",
             "pageSize": limit,
-            # 固定串占位(非随机/非时间戳),避免破坏离线测试可复现性。
+            # Chuỗi cố định làm giá trị giữ chỗ (không ngẫu nhiên, không dấu thời gian), để kiểm thử ngoại tuyến vẫn tái lập được.
             "req_trace": "marketdata",
         }
         headers = {"User-Agent": _UA, "Referer": "https://kuaixun.eastmoney.com/"}

@@ -5,7 +5,7 @@ interface DiagnosticsShareCardProps {
   open: boolean
   onClose: () => void
   diag: PortfolioDiagnostics
-  /** 可选:近 N 日相对大盘超额(%),有则展示在副指标里。 */
+  /** Tùy chọn: lợi nhuận vượt thị trường chung trong N phiên gần nhất (%), có thì hiện ở nhóm chỉ tiêu phụ. */
   excessReturn?: number | null
   benchmarkLabel?: string
 }
@@ -27,16 +27,17 @@ function pct(v?: number | null, digits = 1): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`
 }
 
-const MARKET_LABEL: Record<string, string> = { CN: 'A股', HK: '港股', US: '美股' }
+const MARKET_LABEL: Record<string, string> = { CN: 'Cổ phiếu A', HK: 'Cổ phiếu HK', US: 'Cổ phiếu Mỹ' }
 const marketLabel = (m: string) => MARKET_LABEL[m] || m
 
 /**
- * 集中度(HHI)定性:0~1,越高越集中。0.4+ 偏高,0.25~0.4 适中,<0.25 分散。
+ * Diễn giải mức tập trung (HHI): 0~1, càng cao càng tập trung.
+ * Từ 0,4 trở lên là cao; 0,25~0,4 là vừa phải; dưới 0,25 là phân tán.
  */
 function hhiBand(hhi: number): { label: string; color: string } {
-  if (hhi >= 0.4) return { label: '偏集中', color: NEUTRAL }
-  if (hhi >= 0.25) return { label: '适中', color: SLATE }
-  return { label: '较分散', color: DOWN }
+  if (hhi >= 0.4) return { label: 'Khá tập trung', color: NEUTRAL }
+  if (hhi >= 0.25) return { label: 'Vừa phải', color: SLATE }
+  return { label: 'Khá phân tán', color: DOWN }
 }
 
 function StatBox({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
@@ -60,8 +61,10 @@ function StatBox({ label, value, sub, color }: { label: string; value: string; s
 }
 
 /**
- * 组合体检卡。脱敏:只展示比例 / 数量 / 风险提示,绝不出现任何金额(¥)。
- * total_market_value 仅用于把 by_market 的市值换算成「占比 %」,数值本身不展示。
+ * Thẻ khám sức khỏe danh mục. Đã che thông tin nhạy cảm: chỉ hiện tỷ trọng /
+ * số lượng / cảnh báo rủi ro, tuyệt đối không hiện bất kỳ con số tiền nào.
+ * total_market_value chỉ dùng để quy giá trị thị trường trong by_market thành
+ * «tỷ trọng %», bản thân con số đó không được hiển thị.
  */
 export default function DiagnosticsShareCard({
   open,
@@ -79,14 +82,14 @@ export default function DiagnosticsShareCard({
   const hasExcess = excessReturn != null && isFinite(excessReturn)
 
   return (
-    <ShareCardDialog open={open} onClose={onClose} filename="组合体检卡">
+    <ShareCardDialog open={open} onClose={onClose} filename="Thẻ khám sức khỏe danh mục">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, color: SLATE }}>组合体检</div>
-        <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>持仓结构 · 风险</div>
+        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, color: SLATE }}>Khám danh mục</div>
+        <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>Cấu trúc vị thế · rủi ro</div>
       </div>
 
-      {/* Hero:集中度(HHI) */}
+      {/* Khối đầu: mức tập trung (HHI) */}
       <div
         style={{
           marginTop: 18,
@@ -99,7 +102,7 @@ export default function DiagnosticsShareCard({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, opacity: 0.92, flexShrink: 0 }}>
-            集中度(HHI)
+            Mức tập trung (HHI)
           </div>
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
             <span style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -110,27 +113,27 @@ export default function DiagnosticsShareCard({
         </div>
       </div>
 
-      {/* 关键指标 */}
+      {/* Chỉ tiêu then chốt */}
       <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
-        <StatBox label="持仓数" value={`${diag.position_count}`} sub="只" />
+        <StatBox label="Số vị thế" value={`${diag.position_count}`} sub="mã" />
         <StatBox
-          label="最大单仓占比"
+          label="Tỷ trọng vị thế lớn nhất"
           value={`${(diag.max_weight * 100).toFixed(0)}%`}
           color={diag.max_weight >= 0.4 ? NEUTRAL : SLATE}
         />
         {hasExcess && (
           <StatBox
-            label={`近期相对${benchmarkLabel || '大盘'}`}
+            label={`Gần đây so với ${benchmarkLabel || 'Thị trường chung'}`}
             value={pct(excessReturn)}
             color={signColor(excessReturn)}
           />
         )}
       </div>
 
-      {/* 市场分布 */}
+      {/* Phân bố thị trường */}
       {markets.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>市场分布</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>Phân bố thị trường</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {markets.map(({ m, w }) => (
               <div key={m}>
@@ -156,9 +159,9 @@ export default function DiagnosticsShareCard({
         </div>
       )}
 
-      {/* 风险提示 */}
+      {/* Cảnh báo rủi ro */}
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>风险提示</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>Cảnh báo rủi ro</div>
         {alerts.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {alerts.map((a, i) => (
@@ -193,7 +196,7 @@ export default function DiagnosticsShareCard({
               color: '#065f46',
             }}
           >
-            ✓ 集中度 / 分布未见明显风险
+            ✓ Mức tập trung / phân bố chưa thấy rủi ro rõ rệt
           </div>
         )}
       </div>

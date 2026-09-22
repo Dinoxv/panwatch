@@ -1,1 +1,1 @@
-"""PanWatch 的启动期装配：ASGI 应用、配置与进程级依赖。"""
+"""Phần lắp ráp lúc khởi động của PanWatch: ứng dụng ASGI, cấu hình và các phụ thuộc ở cấp tiến trình."""

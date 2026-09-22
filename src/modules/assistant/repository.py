@@ -25,8 +25,8 @@ from pan_agent import (
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-# 助手表由共享持久化平台注册；repository 是其唯一的模块内访问边界，
-# 不需要再经由一个只做 re-export 的 ``assistant.models`` 转发层。
+# Các bảng của trợ lý do tầng lưu trữ dùng chung đăng ký; repository là ranh giới truy cập duy nhất trong module,
+# nên không cần thêm một tầng chuyển tiếp ``assistant.models`` chỉ làm mỗi việc xuất lại.
 from src.platform.persistence.models import (
     AssistantContextSnapshot,
     AssistantTaskEvent,

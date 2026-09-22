@@ -1,4 +1,4 @@
-"""模拟盘引擎：自动按策略信号建仓/平仓，跟踪虚拟账户收益。"""
+"""Engine mô phỏng bàn giao dịch: tự mở/đóng vị thế theo tín hiệu chiến lược, bám lợi nhuận của tài khoản ảo."""
 
 from __future__ import annotations
 
@@ -23,21 +23,21 @@ from src.modules.strategy.backtest.cost_model import CostModel
 
 logger = logging.getLogger(__name__)
 
-# 模拟盘交易成本(A股口径,Phase 1)。与回测共用同一成本模型。
+# Chi phí giao dịch của mô phỏng (khẩu độ cổ phiếu A, Phase 1). Dùng chung mô hình chi phí với kiểm thử lịch sử.
 COST_MODEL = CostModel()
 
-# 建仓股数下限(A股一手)
+# Số cổ phiếu tối thiểu khi mở vị thế (một lô của cổ phiếu A)
 FIXED_QUANTITY = 100
 
-# 移动止损:浮盈超过 MIN_PROFIT_FOR_TRAILING 后启用,从持仓最高价回撤超 TRAILING_STOP_PCT 即离场
+# Cắt lỗ động: bật sau khi lãi chưa thực hiện vượt MIN_PROFIT_FOR_TRAILING; sụt quá TRAILING_STOP_PCT tính từ giá cao nhất của vị thế thì thoát lệnh
 MIN_PROFIT_FOR_TRAILING = 0.05
 TRAILING_STOP_PCT = 0.10
-# 时间止损:无 signal.holding_days 时的默认最大持有自然日
+# Dừng theo thời gian: số ngày tự nhiên nắm giữ tối đa mặc định khi tín hiệu không có signal.holding_days
 DEFAULT_TIME_STOP_DAYS = 20
 
 
 def _position_weight(rank_score: float) -> float:
-    """按信号强度分配单笔资金占该市场预算的比例(rank_score 越高投越多)。"""
+    """Phân bổ tỷ lệ vốn một lệnh trên ngân sách thị trường đó theo độ mạnh tín hiệu (rank_score càng cao rót càng nhiều)."""
     s = float(rank_score or 0.0)
     if s >= 85:
         return 0.25
@@ -57,16 +57,16 @@ def _compute_quantity(
     cost_model: CostModel,
     lot: int = FIXED_QUANTITY,
 ) -> int:
-    """按信号强度 + 市场预算计算建仓股数(lot 整数倍),受可用现金(含买入费)约束。
+    """Tính số cổ mở vị thế theo độ mạnh tín hiệu + ngân sách thị trường (bội số của lot), bị ràng buộc bởi tiền khả dụng (gồm cả phí mua).
 
-    返回 0 表示连最小一手都买不起,应跳过。
+    Trả 0 nghĩa là không đủ mua nổi một lô tối thiểu, nên bỏ qua.
     """
     if price <= 0:
         return 0
     target_cash = max(0.0, market_budget) * _position_weight(rank_score)
     qty = int((target_cash / price) // lot) * lot
     if qty < lot:
-        qty = lot  # 至少一手
+        qty = lot  # Tối thiểu một lô
     while qty >= lot:
         outlay = -cost_model.fill("buy", price, qty).cash_delta
         if outlay <= available_cash:
@@ -87,6 +87,14 @@ def _to_market(market: str) -> MarketCode:
 
 
 def _is_trading_time(market: str) -> bool:
+    """Thị trường của mã này có đang trong phiên không.
+
+    Bộ lập lịch chỉ chặn ở mức "cả ba thị trường đều nghỉ", nên vòng quét vẫn
+    chạy trong phiên Mỹ (21:30–04:00 giờ Bắc Kinh) khi A股/港股đã đóng cửa từ
+    lâu. Báo giá lúc đó là giá đóng cửa đóng băng và **không mang dấu thời
+    gian**, nên nếu không chặn theo từng thị trường, engine sẽ khớp lệnh tại một
+    mức giá đã trôi qua nhiều giờ — mức giá không còn đặt lệnh được nữa.
+    """
     mc = _to_market(market)
     market_def = MARKETS.get(mc)
     if not market_def:
@@ -104,7 +112,7 @@ def _safe_float(v: Any) -> float | None:
 
 
 # ---------------------------------------------------------------------------
-# 分市场资金配置（投资比例 → 子池现金）
+# Phân bổ vốn theo thị trường (tỷ trọng giải ngân → tiền của từng nhóm con)
 # ---------------------------------------------------------------------------
 
 ALL_MARKETS: tuple[str, ...] = ("CN", "HK", "US")
@@ -112,7 +120,7 @@ DEFAULT_ALLOCATIONS: dict[str, float] = {"CN": 0.5, "HK": 0.3, "US": 0.2}
 
 
 def normalize_allocations(raw: dict | None) -> dict[str, float]:
-    """补齐三市场、clamp 到 [0,1]，返回 {market: ratio}。"""
+    """Bù đủ ba thị trường, kẹp về [0,1], trả về {market: ratio}."""
     raw = raw or {}
     out: dict[str, float] = {}
     for m in ALL_MARKETS:
@@ -125,7 +133,7 @@ def normalize_allocations(raw: dict | None) -> dict[str, float]:
 
 
 def market_allocations_or_default(account: Any) -> dict[str, float]:
-    """账户未配置比例时回退默认配置，否则归一化已配置的比例。"""
+    """Tài khoản chưa cấu hình tỷ lệ thì lùi về cấu hình mặc định, ngược lại chuẩn hóa các tỷ lệ đã cấu hình."""
     raw = getattr(account, "market_allocations", None) or {}
     if not raw:
         return dict(DEFAULT_ALLOCATIONS)
@@ -133,12 +141,12 @@ def market_allocations_or_default(account: Any) -> dict[str, float]:
 
 
 def allocations_from_excluded(excluded: list[str] | None) -> dict[str, float]:
-    """迁移用：被排除市场比例置 0，其余市场按默认权重归一化到合计 1.0。"""
+    """Dùng cho migration: thị trường bị loại thì đặt tỷ lệ 0, các thị trường còn lại chuẩn hóa theo trọng số mặc định về tổng 1.0."""
     excluded_set = {str(m).upper() for m in (excluded or [])}
     weights = {m: DEFAULT_ALLOCATIONS[m] for m in ALL_MARKETS if m not in excluded_set}
     total = sum(weights.values())
     if total <= 0:
-        # 全部被排除：兜底投 A 股
+        # Bị loại hết: dự phòng dồn vào cổ phiếu A
         return {"CN": 1.0, "HK": 0.0, "US": 0.0}
     return {m: round(weights.get(m, 0.0) / total, 6) for m in ALL_MARKETS}
 
@@ -146,12 +154,12 @@ def allocations_from_excluded(excluded: list[str] | None) -> dict[str, float]:
 def compute_market_cash(
     initial_capital: float, ratio: float, realized_pnl: float, open_cost: float
 ) -> float:
-    """某市场可用现金 = 总资金×比例 + 该市场已实现盈亏 − 该市场持仓成本（纯函数，可单测）。"""
+    """Tiền khả dụng của một thị trường = tổng vốn×tỷ lệ + lãi lỗ đã thực hiện của thị trường đó − giá vốn vị thế của thị trường đó (hàm thuần, unit test được)."""
     return initial_capital * ratio + realized_pnl - open_cost
 
 
 def market_realized_open(db: Session, market: str) -> tuple[float, float]:
-    """返回 (该市场已实现盈亏合计, 该市场未平仓持仓成本合计)。"""
+    """Trả về (tổng lãi lỗ đã thực hiện của thị trường đó, tổng giá vốn vị thế chưa đóng của thị trường đó)."""
     realized = (
         db.query(func.coalesce(func.sum(PaperTradingTrade.pnl), 0.0))
         .filter(PaperTradingTrade.stock_market == market)
@@ -176,7 +184,7 @@ def market_realized_open(db: Session, market: str) -> tuple[float, float]:
 def market_available_cash(
     db: Session, account: PaperTradingAccount, market: str, alloc: dict | None = None
 ) -> float:
-    """某市场当前可用现金（用于建仓门槛与展示）。"""
+    """Tiền khả dụng hiện tại của một thị trường (dùng cho ngưỡng mở vị thế và phần hiển thị)."""
     alloc = alloc or market_allocations_or_default(account)
     ratio = alloc.get(market, 0.0)
     realized, open_cost = market_realized_open(db, market)
@@ -184,7 +192,7 @@ def market_available_cash(
 
 
 def _serialize_position(pos: PaperTradingPosition) -> dict:
-    """将 ORM Position 提取为 plain dict，避免 detached 问题。"""
+    """Rút ORM Position thành dict thuần, tránh vấn đề detached."""
     return {
         "id": pos.id,
         "stock_symbol": pos.stock_symbol,
@@ -202,7 +210,7 @@ def _serialize_position(pos: PaperTradingPosition) -> dict:
 
 
 def _serialize_trade(trade: PaperTradingTrade) -> dict:
-    """将 ORM Trade 提取为 plain dict。"""
+    """Rút ORM Trade thành dict thuần."""
     return {
         "id": trade.id,
         "stock_symbol": trade.stock_symbol,
@@ -220,7 +228,7 @@ def _serialize_trade(trade: PaperTradingTrade) -> dict:
 
 
 def _serialize_signal(sig: StrategySignalRun) -> dict:
-    """将 ORM Signal 提取为 plain dict。"""
+    """Rút ORM Signal thành dict thuần."""
     return {
         "id": sig.id,
         "stock_symbol": sig.stock_symbol,
@@ -235,7 +243,7 @@ def _serialize_signal(sig: StrategySignalRun) -> dict:
 
 
 class PaperTradingEngine:
-    """模拟盘扫描引擎。"""
+    """Engine quét của mô phỏng bàn giao dịch."""
 
     def _get_or_create_account(self, db: Session) -> PaperTradingAccount:
         account = db.query(PaperTradingAccount).first()
@@ -251,9 +259,9 @@ class PaperTradingEngine:
         return account
 
     def _fetch_quotes_map(self, symbols_markets: list[tuple[str, str]]) -> dict[tuple[str, str], dict]:
-        """批量获取报价，返回 {(market, symbol): quote_dict}
+        """Lấy báo giá hàng loạt, trả về {(market, symbol): quote_dict}
 
-        通过 QuoteOrchestrator 调度,支持多 provider 主备故障转移。
+        Điều phối qua QuoteOrchestrator, hỗ trợ chuyển dự phòng giữa nhiều provider.
         """
         grouped: dict[MarketCode, list[str]] = {}
         for symbol, market in symbols_markets:
@@ -275,8 +283,8 @@ class PaperTradingEngine:
     def _check_entries(
         self, db: Session, account: PaperTradingAccount,
     ) -> tuple[int, set[tuple[str, str]], list[tuple[PaperTradingPosition, StrategySignalRun | None]]]:
-        """检查可入场的策略信号，自动建仓。返回 (建仓数, 新建仓股票key集合, 建仓事件列表)。"""
-        # 查询最新活跃买入信号
+        """Kiểm các tín hiệu chiến lược vào lệnh được rồi tự mở vị thế. Trả về (số vị thế mở, tập khóa mã vừa mở, danh sách sự kiện mở vị thế)."""
+        # Truy vấn tín hiệu mua đang hoạt động mới nhất
         query = (
             db.query(StrategySignalRun)
             .filter(
@@ -286,7 +294,7 @@ class PaperTradingEngine:
                 StrategySignalRun.entry_high.isnot(None),
             )
         )
-        # 按投资比例排除不投入（比例为 0）的市场
+        # Loại các thị trường không giải ngân (tỷ trọng bằng 0)
         alloc = market_allocations_or_default(account)
         excluded = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
         if excluded:
@@ -297,7 +305,7 @@ class PaperTradingEngine:
         if not signals:
             return 0, new_keys, entry_events
 
-        # 已有 open position 的股票
+        # Các mã đã có vị thế đang mở
         open_keys = set()
         open_positions = (
             db.query(PaperTradingPosition)
@@ -307,7 +315,7 @@ class PaperTradingEngine:
         for p in open_positions:
             open_keys.add((p.stock_symbol, p.stock_market))
 
-        # 收集需要报价的信号（去重：同股票只取 rank_score 最高的一条）
+        # Gom các tín hiệu cần lấy báo giá (khử trùng lặp: mỗi mã chỉ giữ tín hiệu có rank_score cao nhất)
         candidates = []
         seen = set()
         for sig in signals:
@@ -322,14 +330,15 @@ class PaperTradingEngine:
         if not candidates:
             return 0, new_keys, entry_events
 
-        # 批量获取报价
+        # Lấy báo giá hàng loạt
         syms = [(s.stock_symbol, s.stock_market) for s in candidates]
         quotes = self._fetch_quotes_map(syms)
 
-        # 预算各市场可用现金（建仓时按市场子池逐笔扣减）
+        # Dự toán tiền khả dụng của từng thị trường (mở vị thế thì trừ dần theo nhóm con của thị trường đó)
         market_cash = {m: market_available_cash(db, account, m, alloc) for m in ALL_MARKETS}
 
         opened = 0
+        skipped_closed = 0
         for sig in candidates:
             key = (sig.stock_market, sig.stock_symbol)
             quote = quotes.get(key)
@@ -339,14 +348,19 @@ class PaperTradingEngine:
             if current_price is None or current_price <= 0:
                 continue
 
-            # 用当前市价入场
+            # Vào lệnh theo giá thị trường hiện tại
             entry_price = current_price
             mkt = sig.stock_market
             if alloc.get(mkt, 0.0) <= 0:
-                continue  # 该市场比例为 0，不投入
+                continue  # Tỷ trọng thị trường này bằng 0, không giải ngân
+            if not _is_trading_time(mkt):
+                # Thị trường đã đóng cửa: báo giá là giá đóng cửa đóng băng.
+                # Khớp lệnh ở đây là khớp tại mức giá không còn giao dịch được.
+                skipped_closed += 1
+                continue
             avail = market_cash.get(mkt, 0.0)
 
-            # 仓位管理:按信号强度分配该市场预算(替换原固定 100 股)
+            # Quản trị vị thế: chia ngân sách thị trường theo độ mạnh tín hiệu (thay cho cách cũ cố định 100 cổ phiếu)
             market_budget = account.initial_capital * alloc.get(mkt, 0.0)
             quantity = _compute_quantity(
                 rank_score=float(sig.rank_score or 0.0),
@@ -356,28 +370,28 @@ class PaperTradingEngine:
                 cost_model=COST_MODEL,
             )
             if quantity <= 0:
-                continue  # 子池额度不足以买入最小一手
+                continue  # Hạn mức của nhóm con không đủ mua nổi một lô tối thiểu
 
-            # 含交易成本的实际买入流出
+            # Tiền thực chi khi mua, đã gồm chi phí giao dịch
             buy_fill = COST_MODEL.fill("buy", entry_price, quantity)
             buy_outlay = -buy_fill.cash_delta
 
-            # 基于入场价计算止损/止盈
-            # 优先用信号的止损/止盈比例，否则用默认 -8%/+15%
+            # Tính cắt lỗ / chốt lời dựa trên giá vào lệnh
+            # Ưu tiên tỷ lệ cắt lỗ / chốt lời của tín hiệu, không có thì dùng mặc định -8% / +15%
             stop_loss = sig.stop_loss
             target_price = sig.target_price
             if stop_loss and sig.entry_low and sig.entry_low > 0:
-                # 保留信号的止损比例，映射到实际入场价
+                # Giữ nguyên tỷ lệ cắt lỗ của tín hiệu rồi quy chiếu sang giá vào lệnh thực tế
                 orig_mid = (sig.entry_low + (sig.entry_high or sig.entry_low)) / 2
                 if orig_mid > 0:
                     stop_ratio = (stop_loss - orig_mid) / orig_mid
                     target_ratio = ((target_price - orig_mid) / orig_mid) if target_price else 0.15
                     stop_loss = round(entry_price * (1 + stop_ratio), 4)
                     target_price = round(entry_price * (1 + target_ratio), 4) if target_price else None
-            # 兜底：止损不合理时用默认 -8%
+            # Dự phòng: mức cắt lỗ bất hợp lý thì dùng mặc định -8%
             if not stop_loss or stop_loss <= 0 or stop_loss >= entry_price:
                 stop_loss = round(entry_price * 0.92, 4)
-            # 兜底：止盈不合理时用默认 +15%
+            # Dự phòng: mức chốt lời bất hợp lý thì dùng mặc định +15%
             if not target_price or target_price <= 0 or target_price <= entry_price:
                 target_price = round(entry_price * 1.15, 4)
 
@@ -417,6 +431,8 @@ class PaperTradingEngine:
                 sig.strategy_code,
             )
 
+        if skipped_closed:
+            logger.debug("[模拟盘] 跳过 %s 条信号:所属市场已休市", skipped_closed)
         if opened > 0:
             db.commit()
         return opened, new_keys, entry_events
@@ -429,9 +445,9 @@ class PaperTradingEngine:
         exit_price: float,
         exit_reason: str,
     ) -> PaperTradingTrade:
-        """平仓单个持仓，返回交易记录。"""
+        """Đóng một vị thế, trả về bản ghi giao dịch."""
         now = _utc_now()
-        # 含交易成本的净盈亏:卖出净回收 − 建仓含费投入(与建仓口径一致,资金守恒)
+        # Lãi lỗ ròng đã gồm chi phí giao dịch: tiền thu ròng khi bán − tiền chi có phí lúc mở vị thế (cùng khẩu độ với lúc mở, bảo toàn dòng tiền)
         buy_cost = -COST_MODEL.fill("buy", pos.entry_price, pos.quantity).cash_delta
         sell_fill = COST_MODEL.fill("sell", exit_price, pos.quantity)
         sell_proceeds = sell_fill.cash_delta
@@ -469,7 +485,7 @@ class PaperTradingEngine:
         pos.current_price = exit_price
         pos.unrealized_pnl = pnl
 
-        # 回收资金(卖出净回收,已扣卖出费)
+        # Thu hồi vốn (tiền thu ròng khi bán, đã trừ phí bán)
         account.current_capital += sell_proceeds
         account.total_pnl += pnl
         account.total_trades += 1
@@ -490,7 +506,7 @@ class PaperTradingEngine:
     def _check_exits(
         self, db: Session, account: PaperTradingAccount, skip_keys: set[tuple[str, str]] | None = None,
     ) -> tuple[int, list[tuple[PaperTradingPosition, PaperTradingTrade]]]:
-        """检查持仓止损/止盈/信号反转，自动平仓。skip_keys 中的股票跳过（本轮新建仓）。"""
+        """Kiểm cắt lỗ/chốt lời/tín hiệu đảo chiều của vị thế rồi tự đóng. Mã nằm trong skip_keys thì bỏ qua (vừa mở trong vòng này)."""
         exit_events: list[tuple[PaperTradingPosition, PaperTradingTrade]] = []
         positions = (
             db.query(PaperTradingPosition)
@@ -500,13 +516,14 @@ class PaperTradingEngine:
         if not positions:
             return 0, exit_events
 
-        # 批量获取报价
+        # Lấy báo giá hàng loạt
         syms = [(p.stock_symbol, p.stock_market) for p in positions]
         quotes = self._fetch_quotes_map(syms)
 
         closed = 0
+        skipped_closed = 0
         for pos in positions:
-            # 跳过本轮刚建仓的持仓
+            # Bỏ qua các vị thế vừa mở trong chính vòng quét này
             if skip_keys and (pos.stock_symbol, pos.stock_market) in skip_keys:
                 continue
             key = (pos.stock_market, pos.stock_symbol)
@@ -516,7 +533,7 @@ class PaperTradingEngine:
             if current_price is None or current_price <= 0:
                 continue
 
-            # 更新现价、净浮动盈亏(含若此刻平仓的双边成本)、持仓期最高价
+            # Cập nhật giá hiện tại, lãi lỗ chưa thực hiện ròng (đã tính chi phí hai chiều nếu đóng ngay lúc này) và giá cao nhất trong kỳ nắm giữ
             pos.current_price = current_price
             _buy_cost_u = -COST_MODEL.fill("buy", pos.entry_price, pos.quantity).cash_delta
             _sell_u = COST_MODEL.fill("sell", current_price, pos.quantity).cash_delta
@@ -524,21 +541,30 @@ class PaperTradingEngine:
             if pos.highest_price is None or current_price > pos.highest_price:
                 pos.highest_price = current_price
 
-            # 检查止损
+            if not _is_trading_time(pos.stock_market):
+                # Ngoài phiên vẫn cập nhật giá tham chiếu để màn hình không bị cũ,
+                # nhưng không kích hoạt lệnh: một lệnh cắt lỗ khớp lúc 23:00 theo
+                # giá đóng cửa của cổ phiếu A là lệnh không thể đặt được trong thực tế.
+                # Điều kiện đã chạm sẽ được xử lý ở phiên kế tiếp — đúng như một
+                # lệnh stop thật hành xử khi thị trường mở cửa nhảy giá.
+                skipped_closed += 1
+                continue
+
+            # Kiểm tra cắt lỗ
             if pos.stop_loss and current_price <= pos.stop_loss:
                 trade = self._close_position(db, account, pos, current_price, "stop_loss")
                 exit_events.append((pos, trade))
                 closed += 1
                 continue
 
-            # 检查止盈
+            # Kiểm tra chốt lời
             if pos.target_price and current_price >= pos.target_price:
                 trade = self._close_position(db, account, pos, current_price, "target_price")
                 exit_events.append((pos, trade))
                 closed += 1
                 continue
 
-            # 移动止损:浮盈达标后,从持仓最高价回撤超阈值则离场
+            # Cắt lỗ động: khi lãi chưa thực hiện đạt ngưỡng, sụt quá mức cho phép tính từ giá cao nhất của vị thế thì thoát lệnh
             if pos.highest_price and pos.entry_price > 0:
                 profit_ratio = (pos.highest_price - pos.entry_price) / pos.entry_price
                 if profit_ratio >= MIN_PROFIT_FOR_TRAILING:
@@ -549,11 +575,11 @@ class PaperTradingEngine:
                         closed += 1
                         continue
 
-            # 检查信号反转
+            # Kiểm tra tín hiệu đảo chiều
             if pos.signal_run_id:
-                # no_autoflush: 信号查询是只读的,不要把本轮累积的持仓现价更新提前 flush——
-                # 否则扫描中途会反复抢 SQLite 写锁,与其它调度器并发写时触发 "database is locked"。
-                # 所有写入统一在本方法末尾 db.commit() 时一次性落盘。
+                # no_autoflush: truy vấn tín hiệu là chỉ đọc, đừng flush sớm các cập nhật giá vị thế tích lũy trong vòng này —
+                # nếu không, giữa lúc quét sẽ liên tục tranh khóa ghi SQLite và gây "database is locked" khi chạy song song với các bộ lập lịch khác.
+                # Mọi phép ghi gom lại, ghi xuống một lần ở db.commit() cuối phương thức này.
                 with db.no_autoflush:
                     latest = (
                         db.query(StrategySignalRun)
@@ -571,7 +597,7 @@ class PaperTradingEngine:
                     closed += 1
                     continue
 
-            # 时间止损:持有超过最大自然日离场(优先用 signal 的 holding_days)
+            # Dừng theo thời gian: nắm giữ quá số ngày tự nhiên tối đa thì thoát lệnh (ưu tiên holding_days của tín hiệu)
             max_days = DEFAULT_TIME_STOP_DAYS
             if pos.signal_run_id:
                 sig_hold = (
@@ -591,13 +617,15 @@ class PaperTradingEngine:
                     closed += 1
                     continue
 
+        if skipped_closed:
+            logger.debug("[模拟盘] %s 个持仓所属市场休市:只更新盯市价,不触发离场", skipped_closed)
         self._update_account_metrics(db, account)
         db.commit()
         return closed, exit_events
 
     def _update_account_metrics(self, db: Session, account: PaperTradingAccount) -> None:
-        """更新账户峰值和最大回撤。"""
-        # 计算包含浮动盈亏的总资产
+        """Cập nhật đỉnh và sụt giảm tối đa của tài khoản."""
+        # Tính tổng tài sản đã gồm lãi lỗ chưa thực hiện
         open_positions = (
             db.query(PaperTradingPosition)
             .filter(PaperTradingPosition.status == "open")
@@ -617,7 +645,7 @@ class PaperTradingEngine:
                 account.max_drawdown_pct = round(drawdown, 2)
 
     def _scan_sync(self) -> dict:
-        """同步扫描（在线程中执行）。"""
+        """Quét đồng bộ (chạy trong luồng riêng)."""
         db = SessionLocal()
         try:
             account = self._get_or_create_account(db)
@@ -627,7 +655,7 @@ class PaperTradingEngine:
             opened, new_keys, entry_events = self._check_entries(db, account)
             closed, exit_events = self._check_exits(db, account, skip_keys=new_keys)
 
-            # 在 db.close() 前将 ORM 对象序列化为 dict，避免 detached 问题
+            # Chuyển đối tượng ORM sang dict trước khi db.close(), tránh lỗi detached
             serialized_entries = [
                 {"pos_data": _serialize_position(pos), "sig_data": _serialize_signal(sig) if sig else None}
                 for pos, sig in entry_events
@@ -651,14 +679,14 @@ class PaperTradingEngine:
             db.close()
 
     async def scan_once(self) -> dict:
-        """异步扫描入口。"""
+        """Lối vào quét bất đồng bộ."""
         result = await asyncio.to_thread(self._scan_sync)
-        # 发送通知（异步，失败不影响交易）
+        # Gửi thông báo (bất đồng bộ, lỗi cũng không ảnh hưởng việc giao dịch)
         await self._send_notifications(result)
         return result
 
     def close_position_manual(self, position_id: int) -> dict:
-        """手动平仓。"""
+        """Đóng vị thế bằng tay."""
         db = SessionLocal()
         try:
             account = self._get_or_create_account(db)
@@ -673,7 +701,7 @@ class PaperTradingEngine:
             if not pos:
                 return {"ok": False, "error": "持仓不存在或已平仓"}
 
-            # 获取最新报价(走 flag 门控的 md_quote_rows,支持故障转移)
+            # Lấy báo giá mới nhất (đi qua md_quote_rows có cờ kiểm soát, hỗ trợ hạ cấp khi lỗi)
             mc = _to_market(pos.stock_market)
             rows = md_quote_rows([pos.stock_symbol], mc.value)
 
@@ -686,7 +714,7 @@ class PaperTradingEngine:
             trade = self._close_position(db, account, pos, exit_price, "manual")
             self._update_account_metrics(db, account)
             db.commit()
-            # 序列化后返回，避免 db.close() 后 ORM 对象 detached
+            # Chuyển sang dict rồi mới trả, tránh đối tượng ORM bị detached sau db.close()
             return {
                 "ok": True,
                 "pos_data": _serialize_position(pos),
@@ -696,7 +724,7 @@ class PaperTradingEngine:
             db.close()
 
     async def close_position_manual_async(self, position_id: int) -> dict:
-        """异步手动平仓，含通知。"""
+        """Đóng vị thế bằng tay theo kiểu bất đồng bộ, kèm thông báo."""
         result = await asyncio.to_thread(self.close_position_manual, position_id)
         if result.get("ok"):
             try:
@@ -710,7 +738,7 @@ class PaperTradingEngine:
         return result
 
     async def _send_notifications(self, result: dict) -> None:
-        """从扫描结果中取出序列化事件，发送通知。"""
+        """Lấy các sự kiện đã tuần tự hóa từ kết quả quét rồi gửi thông báo."""
         try:
             from src.modules.paper_trading.paper_trading_notifier import notify_entry, notify_exit
 
@@ -722,7 +750,7 @@ class PaperTradingEngine:
             logger.exception("[模拟盘] 通知发送失败")
 
     def reset_account(self) -> dict:
-        """重置模拟盘（清空所有数据）。"""
+        """Đặt lại mô phỏng bàn giao dịch (xóa sạch mọi dữ liệu)."""
         db = SessionLocal()
         try:
             db.query(PaperTradingPosition).delete()

@@ -62,8 +62,8 @@ logger = logging.getLogger(__name__)
 # cut off while the browser is still receiving events.
 ASSISTANT_RUN_TIMEOUT_SECONDS = 180
 ASSISTANT_TOOL_TIMEOUT_SECONDS = 15
-# 研究型请求可能需要行情、K 线、新闻和持仓多轮组合调用；同时由
-# PanAgent runtime 的重复调用保护避免小模型陷入同一工具循环。
+# Yêu cầu dạng nghiên cứu có thể cần gọi kết hợp nhiều vòng: giá, nến, tin tức và vị thế; đồng thời
+# cơ chế chống gọi lặp của PanAgent runtime giữ cho mô hình nhỏ không rơi vào vòng lặp một công cụ.
 ASSISTANT_MAX_STEPS = 12
 ASSISTANT_MAX_TOOL_CALLS = 24
 

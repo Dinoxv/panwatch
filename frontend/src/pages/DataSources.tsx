@@ -30,7 +30,7 @@ export function TestErrorList({ errors }: { errors: TestErrorItem[] }) {
 
   return (
     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-      <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mb-1">未返回明细</div>
+      <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mb-1">Không trả về chi tiết</div>
       <div className="space-y-1">
         {errors.map((item, i) => (
           <div key={`${item.symbol}-${i}`} className="text-[12px] text-amber-700 dark:text-amber-300">
@@ -69,46 +69,46 @@ interface DataSourceForm {
 }
 
 const DATASOURCE_TYPES = {
-  news: { label: '新闻资讯', icon: Newspaper, color: 'text-blue-500' },
-  kline: { label: 'K线数据', icon: LineChart, color: 'text-orange-500' },
-  capital_flow: { label: '资金流向', icon: DollarSign, color: 'text-yellow-500' },
-  quote: { label: '实时行情', icon: TrendingUp, color: 'text-emerald-500' },
-  events: { label: '事件日历', icon: Layers, color: 'text-violet-500' },
-  chart: { label: 'K线截图', icon: Image, color: 'text-purple-500' },
-  flash_news: { label: '快讯', icon: Zap, color: 'text-amber-500' },
-  fundamentals: { label: '基本面', icon: BarChart3, color: 'text-indigo-500' },
-  dragon_tiger: { label: '龙虎榜', icon: Trophy, color: 'text-red-500' },
-  margin: { label: '融资融券', icon: Landmark, color: 'text-cyan-500' },
-  shareholders: { label: '股东户数', icon: Users, color: 'text-teal-500' },
-  dividend: { label: '分红', icon: Gift, color: 'text-pink-500' },
-  northbound: { label: '北向资金', icon: ArrowLeftRight, color: 'text-sky-500' },
+  news: { label: 'Tin tức', icon: Newspaper, color: 'text-blue-500' },
+  kline: { label: 'Dữ liệu nến', icon: LineChart, color: 'text-orange-500' },
+  capital_flow: { label: 'Dòng tiền', icon: DollarSign, color: 'text-yellow-500' },
+  quote: { label: 'Bảng giá thời gian thực', icon: TrendingUp, color: 'text-emerald-500' },
+  events: { label: 'Lịch sự kiện', icon: Layers, color: 'text-violet-500' },
+  chart: { label: 'Ảnh chụp đồ thị nến', icon: Image, color: 'text-purple-500' },
+  flash_news: { label: 'Tin nhanh', icon: Zap, color: 'text-amber-500' },
+  fundamentals: { label: 'Cơ bản', icon: BarChart3, color: 'text-indigo-500' },
+  dragon_tiger: { label: 'Bảng giao dịch khối lớn', icon: Trophy, color: 'text-red-500' },
+  margin: { label: 'Giao dịch ký quỹ', icon: Landmark, color: 'text-cyan-500' },
+  shareholders: { label: 'Số tài khoản cổ đông', icon: Users, color: 'text-teal-500' },
+  dividend: { label: 'Cổ tức', icon: Gift, color: 'text-pink-500' },
+  northbound: { label: 'Dòng vốn bắc tiến', icon: ArrowLeftRight, color: 'text-sky-500' },
 }
 
-// 数据源分类分组:仅用于页面展示时的二级归组,不影响数据结构与后端
+// Nhóm phân loại nguồn dữ liệu: chỉ dùng để gom tầng hai lúc hiển thị, không đụng tới cấu trúc dữ liệu và backend
 const DATASOURCE_CATEGORIES: { key: string; label: string; types: string[] }[] = [
-  { key: 'quote_kline', label: '行情 & K线', types: ['quote', 'kline'] },
-  { key: 'news', label: '资讯 & 快讯', types: ['news', 'flash_news', 'events'] },
-  { key: 'fundamentals', label: '基本面 & 财务', types: ['fundamentals'] },
-  { key: 'capital', label: '资金 & 市场面', types: ['capital_flow', 'dragon_tiger', 'margin', 'shareholders', 'northbound', 'dividend'] },
-  { key: 'chart', label: '图表', types: ['chart'] },
+  { key: 'quote_kline', label: 'Bảng giá & nến', types: ['quote', 'kline'] },
+  { key: 'news', label: 'Tin tức & tin nhanh', types: ['news', 'flash_news', 'events'] },
+  { key: 'fundamentals', label: 'Cơ bản & tài chính', types: ['fundamentals'] },
+  { key: 'capital', label: 'Dòng tiền & mặt thị trường', types: ['capital_flow', 'dragon_tiger', 'margin', 'shareholders', 'northbound', 'dividend'] },
+  { key: 'chart', label: 'Biểu đồ', types: ['chart'] },
 ]
 
-// 兜底:未被以上分类覆盖的 type 归入"其他"(防止将来新增 type 时漏显示)
+// Lưới hứng: type nào không rơi vào phân loại trên thì xếp vào "Khác" (tránh sau này thêm type mới mà sót hiển thị)
 const CATEGORIZED_TYPES = new Set(DATASOURCE_CATEGORIES.flatMap(c => c.types))
 const UNCATEGORIZED_TYPES = Object.keys(DATASOURCE_TYPES).filter(t => !CATEGORIZED_TYPES.has(t))
 const ALL_DATASOURCE_CATEGORIES = UNCATEGORIZED_TYPES.length > 0
-  ? [...DATASOURCE_CATEGORIES, { key: 'other', label: '其他', types: UNCATEGORIZED_TYPES }]
+  ? [...DATASOURCE_CATEGORIES, { key: 'other', label: 'Khác', types: UNCATEGORIZED_TYPES }]
   : DATASOURCE_CATEGORIES
 
 interface CredentialFieldDef { key: string; label: string; placeholder: string; secret?: boolean; help?: string }
 
-// provider → 凭证字段(前端持有 UI 元数据,新增带凭证的 provider 时在此加一行)
+// provider → trường chứng thực (frontend giữ siêu dữ liệu UI, thêm provider có chứng thực thì thêm một dòng ở đây)
 const PROVIDER_CREDENTIAL_FIELDS: Record<string, CredentialFieldDef[]> = {
   tushare: [
-    { key: 'token', label: 'Tushare Token', placeholder: '粘贴 token,留空则读环境变量 TUSHARE_TOKEN', secret: true, help: '登录 tushare.pro 个人主页获取' },
+    { key: 'token', label: 'Tushare Token', placeholder: 'Dán token, để trống thì đọc biến môi trường TUSHARE_TOKEN', secret: true, help: 'Đăng nhập trang cá nhân tushare.pro để lấy' },
   ],
   xueqiu: [
-    { key: 'cookies', label: '雪球 Cookies', placeholder: 'xq_a_token=...; xq_r_token=...', secret: true, help: '浏览器 DevTools → Network → 复制完整 cookie 字符串' },
+    { key: 'cookies', label: 'Cookies Xueqiu', placeholder: 'xq_a_token=...; xq_r_token=...', secret: true, help: 'DevTools của trình duyệt → Network → chép nguyên chuỗi cookie' },
   ],
 }
 
@@ -134,7 +134,7 @@ export default function DataSourcesPage() {
   const [testSymbolsInput, setTestSymbolsInput] = useState('')
   const [secretVisible, setSecretVisible] = useState(false)
   const [resetting, setResetting] = useState(false)
-  // 分类折叠态:key 不存在或为 false 视为展开(默认全部展开)
+  // Trạng thái gập của phân loại: khóa không tồn tại hoặc bằng false thì coi là đang mở (mặc định mở hết)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const toggleCategory = (key: string) => setCollapsedCategories(prev => ({ ...prev, [key]: !prev[key] }))
 
@@ -146,7 +146,7 @@ export default function DataSourcesPage() {
       setSources(data)
     } catch (e) {
       console.error(e)
-      toast('加载数据源失败', 'error')
+      toast('Tải nguồn dữ liệu thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -183,14 +183,14 @@ export default function DataSourcesPage() {
         await fetchAPI(`/datasources/${editId}`, { method: 'PUT',
           body: JSON.stringify({ priority: form.priority, test_symbols: testSymbols, config: form.config || {} }) })
       } else {
-        if (!form.name || !form.type || !form.provider) { toast('名称/类型/Provider 必填', 'error'); return }
+        if (!form.name || !form.type || !form.provider) { toast('Tên/loại/Provider là bắt buộc', 'error'); return }
         await fetchAPI('/datasources', { method: 'POST', body: JSON.stringify({
           name: form.name, type: form.type, provider: form.provider,
           config: form.config || {}, priority: form.priority,
           supports_batch: form.supports_batch, test_symbols: testSymbols, enabled: true }) })
       }
-      setDialogOpen(false); load(); toast(editId ? '设置已保存' : '已新增数据源', 'success')
-    } catch (e) { toast(e instanceof Error ? e.message : '保存失败', 'error') }
+      setDialogOpen(false); load(); toast(editId ? 'Đã lưu thiết lập' : 'Đã thêm nguồn dữ liệu', 'success')
+    } catch (e) { toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error') }
   }
 
   const toggleEnabled = async (source: DataSource) => {
@@ -201,7 +201,7 @@ export default function DataSourcesPage() {
       })
       load()
     } catch {
-      toast('操作失败', 'error')
+      toast('Thao tác thất bại', 'error')
     }
   }
 
@@ -212,7 +212,7 @@ export default function DataSourcesPage() {
       setTestResult(result)
       setTestResultOpen(true)
     } catch (e) {
-      toast(e instanceof Error ? e.message : '测试失败', 'error')
+      toast(e instanceof Error ? e.message : 'Chạy thử thất bại', 'error')
     } finally {
       setTesting(null)
     }
@@ -226,7 +226,7 @@ export default function DataSourcesPage() {
     return acc
   }, {} as Record<string, DataSource[]>)
 
-  // 组内按当前顺序(API 已按 type,priority,id 排序)与相邻源交换优先级
+  // Trong nhóm, đổi ưu tiên với nguồn kề bên theo thứ tự hiện tại (API đã xếp theo type, priority, id)
   const moveSource = async (source: DataSource, dir: -1 | 1) => {
     const group = groupedSources[source.type] || []
     const idx = group.findIndex(s => s.id === source.id)
@@ -238,18 +238,18 @@ export default function DataSourcesPage() {
         fetchAPI(`/datasources/${swap.id}`, { method: 'PUT', body: JSON.stringify({ priority: source.priority }) }),
       ])
       load()
-    } catch { toast('调整顺序失败', 'error') }
+    } catch { toast('Sắp xếp lại thất bại', 'error') }
   }
 
   const resetToSeed = async () => {
-    if (!window.confirm('将删除孤儿源、补齐缺失默认源，并把内置数据源测试股票恢复为 A/HK/US 各两条；自定义配置与凭证会保留。是否继续?')) return
+    if (!window.confirm('Sẽ xóa nguồn mồ côi, bù các nguồn mặc định còn thiếu, và đưa mã kiểm thử của nguồn dữ liệu dựng sẵn về mỗi thị trường A/HK/US hai mã; cấu hình riêng và chứng thực vẫn giữ. Tiếp tục chứ?')) return
     setResetting(true)
     try {
       const result = await resetDataSourcesToSeed()
       load()
-      toast(`已恢复默认测试股票，清理 ${result.deleted.length} 个孤儿源,补齐 ${result.seeded_missing.length} 个默认源`, 'success')
+      toast(`Đã khôi phục mã kiểm thử mặc định, dọn ${result.deleted.length} nguồn mồ côi, bù ${result.seeded_missing.length} nguồn mặc định`, 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '恢复默认失败', 'error')
+      toast(e instanceof Error ? e.message : 'Khôi phục mặc định thất bại', 'error')
     } finally {
       setResetting(false)
     }
@@ -257,14 +257,14 @@ export default function DataSourcesPage() {
 
   const deleteSource = async () => {
     if (!editId) return
-    if (!window.confirm(`确定删除数据源「${form.name}」?`)) return
+    if (!window.confirm(`Chắc chắn xóa nguồn dữ liệu «${form.name}»?`)) return
     try {
       await fetchAPI(`/datasources/${editId}`, { method: 'DELETE' })
-      setDialogOpen(false); load(); toast('已删除', 'success')
-    } catch (e) { toast(e instanceof Error ? e.message : '删除失败', 'error') }
+      setDialogOpen(false); load(); toast('Đã xóa', 'success')
+    } catch (e) { toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error') }
   }
 
-  // 单个 type 的 section 渲染(结构与此前平铺版本完全一致,仅抽成函数以便按分类复用)
+  // Dựng section cho một type (cấu trúc y hệt bản trải phẳng trước đây, chỉ tách thành hàm để dùng lại theo phân loại)
   const renderTypeSection = (type: string) => {
     const meta = DATASOURCE_TYPES[type as keyof typeof DATASOURCE_TYPES]
     if (!meta) return null
@@ -275,12 +275,12 @@ export default function DataSourcesPage() {
           <Icon className={`w-4 h-4 ${color}`} />
           <h3 className="text-[13px] font-semibold text-foreground">{label}</h3>
           <span className="text-[11px] text-muted-foreground ml-auto">
-            {groupedSources[type]?.length || 0} 个
+            {groupedSources[type]?.length || 0} nguồn
           </span>
         </div>
 
         {(!groupedSources[type] || groupedSources[type].length === 0) ? (
-          <p className="text-[13px] text-muted-foreground text-center py-6">暂无{label}数据源</p>
+          <p className="text-[13px] text-muted-foreground text-center py-6">Chưa có{label}Nguồn dữ liệu</p>
         ) : (
           <div className="space-y-2">
             {groupedSources[type].map(source => (
@@ -296,22 +296,22 @@ export default function DataSourcesPage() {
                         {source.supports_batch && (
                           <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                             <Layers className="w-2.5 h-2.5" />
-                            批量
+                            Hàng loạt
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-[11px] text-muted-foreground font-mono">{source.provider}</span>
-                        <span className="text-[11px] text-muted-foreground">优先级: {source.priority}</span>
+                        <span className="text-[11px] text-muted-foreground">Ưu tiên: {source.priority}</span>
                         {source.engine_attached ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">已接入新引擎</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Đã nối engine mới</span>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">旧路·待迁移</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Đường cũ · chờ chuyển</span>
                         )}
                         {source.is_orphan && (
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
                             <AlertTriangle className="w-2.5 h-2.5" />
-                            无对应源·待清理
+                            Không có nguồn tương ứng · chờ dọn
                           </Badge>
                         )}
                         {source.engine_attached && source.health && source.health.success_rate != null && (
@@ -319,19 +319,19 @@ export default function DataSourcesPage() {
                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${
                               source.health.success_rate >= 0.95 ? 'bg-emerald-500'
                               : source.health.success_rate >= 0.8 ? 'bg-amber-500' : 'bg-red-500'}`} />
-                            成功率 {Math.round(source.health.success_rate * 100)}%
+                            Tỷ lệ thành công {Math.round(source.health.success_rate * 100)}%
                             {source.health.p50_latency_ms != null && ` · p50 ${source.health.p50_latency_ms}ms`}
-                            {source.health.last_error ? ` · 最近错误` : ''}
+                            {source.health.last_error ? ` · lỗi gần nhất` : ''}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSource(source, -1)} title="上移(提高优先级)">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSource(source, -1)} title="Lên (nâng ưu tiên)">
                       <ChevronUp className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSource(source, 1)} title="下移">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSource(source, 1)} title="Xuống">
                       <ChevronDown className="w-3.5 h-3.5" />
                     </Button>
                     <Button
@@ -340,7 +340,7 @@ export default function DataSourcesPage() {
                       className="h-7 w-7"
                       onClick={() => testSource(source.id)}
                       disabled={testing === source.id || !source.enabled}
-                      title="测试连接"
+                      title="Kiểm tra kết nối"
                     >
                       {testing === source.id ? (
                         <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
@@ -349,7 +349,7 @@ export default function DataSourcesPage() {
                       )}
                     </Button>
                     <Switch checked={source.enabled} onCheckedChange={() => toggleEnabled(source)} />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDialog(source)} title="设置">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDialog(source)} title="Cài đặt">
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -373,8 +373,8 @@ export default function DataSourcesPage() {
     <div>
       <div className="mb-4 md:mb-8 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight">数据源</h1>
-          <p className="text-[12px] md:text-[13px] text-muted-foreground mt-0.5 md:mt-1">管理新闻、K线、资金流向和行情数据来源</p>
+          <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight">Nguồn dữ liệu</h1>
+          <p className="text-[12px] md:text-[13px] text-muted-foreground mt-0.5 md:mt-1">Quản lý nguồn tin tức, nến, dòng tiền và bảng giá</p>
         </div>
         <Button variant="outline" size="sm" className="h-8 text-[12px] flex-shrink-0" onClick={resetToSeed} disabled={resetting}>
           {resetting ? (
@@ -382,7 +382,7 @@ export default function DataSourcesPage() {
           ) : (
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
           )}
-          恢复默认
+          Khôi phục mặc định
         </Button>
       </div>
 
@@ -401,7 +401,7 @@ export default function DataSourcesPage() {
                 <span className="text-[13px] font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
                   {category.label}
                 </span>
-                <span className="text-[11px] text-muted-foreground/70">{categoryCount} 个源</span>
+                <span className="text-[11px] text-muted-foreground/70">{categoryCount} nguồn</span>
                 <div className="flex-1 h-px bg-border ml-2" />
               </button>
               {isOpen && (
@@ -414,17 +414,17 @@ export default function DataSourcesPage() {
         })}
       </div>
 
-      {/* Edit Dialog - 编辑模式只允许修改配置项;新增模式含名称/类型/Provider */}
+      {/* Edit Dialog - chế độ sửa chỉ cho đổi mục cấu hình; chế độ thêm mới có cả tên/loại/Provider */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>数据源设置 - {form.name}</DialogTitle>
+            <DialogTitle>Thiết lập nguồn dữ liệu - {form.name}</DialogTitle>
             <DialogDescription>{form.provider}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>优先级 <span className="text-muted-foreground font-normal">(越小越高)</span></Label>
+                <Label>Ưu tiên <span className="text-muted-foreground font-normal">(số càng nhỏ càng ưu tiên)</span></Label>
                 <Input
                   type="number"
                   value={form.priority}
@@ -434,15 +434,15 @@ export default function DataSourcesPage() {
               </div>
             </div>
             <div>
-              <Label>测试股票代码 <span className="text-muted-foreground font-normal">(逗号分隔)</span></Label>
+              <Label>Mã kiểm thử <span className="text-muted-foreground font-normal">(ngăn cách bằng dấu phẩy)</span></Label>
               <Input
                 value={testSymbolsInput}
                 onChange={e => setTestSymbolsInput(e.target.value)}
-                placeholder="如 601127, 600519"
+                placeholder="Ví dụ 601127, 600519"
               />
             </div>
 
-            {/* 凭证类配置:按 provider 动态渲染对应字段 */}
+            {/* Cấu hình dạng chứng thực: dựng trường tương ứng theo provider */}
             {(PROVIDER_CREDENTIAL_FIELDS[form.provider] || []).map(field => (
               <div key={field.key}>
                 <Label>{field.label}
@@ -467,11 +467,11 @@ export default function DataSourcesPage() {
               </div>
             ))}
 
-            {/* 高级:完整 JSON 编辑(只读形式,展开后可编辑) */}
+            {/* Nâng cao: sửa toàn bộ JSON (dạng chỉ đọc, mở ra thì sửa được) */}
             {Object.keys(form.config || {}).length > 0 && (
               <details className="text-[12px]">
                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                  高级:查看/编辑完整 config JSON
+                  Nâng cao: xem/sửa toàn bộ config JSON
                 </summary>
                 <textarea
                   className="mt-2 w-full font-mono text-[11px] p-2 border border-border rounded bg-background min-h-[100px]"
@@ -481,7 +481,7 @@ export default function DataSourcesPage() {
                       const parsed = JSON.parse(e.target.value)
                       setForm({ ...form, config: parsed })
                     } catch {
-                      // 解析失败时不更新,允许用户继续输入
+                      // Phân tích hỏng thì không cập nhật, để người dùng nhập tiếp
                     }
                   }}
                 />
@@ -491,12 +491,12 @@ export default function DataSourcesPage() {
             <div className="flex justify-between gap-2 pt-2">
               {editId ? (
                 <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={deleteSource}>
-                  <Trash2 className="w-4 h-4 mr-1" />删除
+                  <Trash2 className="w-4 h-4 mr-1" />Xóa
                 </Button>
               ) : <span />}
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setDialogOpen(false)}>取消</Button>
-                <Button onClick={saveSource}>{editId ? '保存' : '新增'}</Button>
+                <Button variant="ghost" onClick={() => setDialogOpen(false)}>Hủy</Button>
+                <Button onClick={saveSource}>{editId ? 'Lưu' : 'Thêm mới'}</Button>
               </div>
             </div>
           </div>
@@ -516,11 +516,11 @@ export default function DataSourcesPage() {
               ) : (
                 <X className="w-5 h-5 text-red-500" />
               )}
-              测试结果 - {testResult?.source_name}
+              Kết quả kiểm tra - {testResult?.source_name}
             </DialogTitle>
             <DialogDescription>
               {testResult?.type_label} · {testResult?.provider}
-              {testResult?.supports_batch && ' · 支持批量'}
+              {testResult?.supports_batch && ' · chạy được hàng loạt'}
             </DialogDescription>
           </DialogHeader>
 
@@ -528,17 +528,17 @@ export default function DataSourcesPage() {
             {/* Summary */}
             <div className="flex items-center gap-4 p-3 rounded-lg bg-accent/30">
               <div className="flex-1">
-                <div className="text-[11px] text-muted-foreground">状态</div>
+                <div className="text-[11px] text-muted-foreground">Trạng thái</div>
                 <div className={`text-[13px] font-medium ${testResult?.test_passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                  {testResult?.test_passed ? '测试成功' : '测试失败'}
+                  {testResult?.test_passed ? 'Kiểm tra thành công' : 'Chạy thử thất bại'}
                 </div>
               </div>
               <div className="flex-1">
-                <div className="text-[11px] text-muted-foreground">数据量</div>
-                <div className="text-[13px] font-medium">{testResult?.count ?? 0} 条</div>
+                <div className="text-[11px] text-muted-foreground">Lượng dữ liệu</div>
+                <div className="text-[13px] font-medium">{testResult?.count ?? 0} bản ghi</div>
               </div>
               <div className="flex-1">
-                <div className="text-[11px] text-muted-foreground">耗时</div>
+                <div className="text-[11px] text-muted-foreground">Thời gian chạy</div>
                 <div className="text-[13px] font-medium">{testResult?.duration_ms ?? 0} ms</div>
               </div>
             </div>
@@ -546,7 +546,7 @@ export default function DataSourcesPage() {
             {/* Error message */}
             {testResult?.error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                <div className="text-[11px] text-red-500 font-medium mb-1">错误信息</div>
+                <div className="text-[11px] text-red-500 font-medium mb-1">Thông tin lỗi</div>
                 <div className="text-[12px] text-red-600 dark:text-red-400 break-words whitespace-pre-wrap">{testResult.error}</div>
               </div>
             )}
@@ -558,7 +558,7 @@ export default function DataSourcesPage() {
               <div>
                 <div className="text-[12px] font-medium text-foreground mb-2 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  执行日志
+                  Nhật ký chạy
                 </div>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {testResult.logs.map((log, i) => (
@@ -569,7 +569,7 @@ export default function DataSourcesPage() {
                         log.action === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
                         'bg-red-500/10 text-red-500'
                       }`}>
-                        {log.action === 'start' ? '开始' : log.action === 'success' ? '成功' : '失败'}
+                        {log.action === 'start' ? 'Bắt đầu' : log.action === 'success' ? 'Thành công' : 'Thất bại'}
                       </span>
                       <span className="text-foreground flex-1">{log.message}</span>
                       {log.duration_ms > 0 && (
@@ -585,9 +585,9 @@ export default function DataSourcesPage() {
             {/* Chart type - show image outside scrollable area */}
             {testResult?.test_passed && testResult.source_type === 'chart' && (testResult.items as {image?: string})?.image && (
               <div>
-                <div className="text-[12px] font-medium text-foreground mb-2">数据预览</div>
+                <div className="text-[12px] font-medium text-foreground mb-2">Xem trước dữ liệu</div>
                 <div className="rounded-lg overflow-hidden border">
-                  <img src={(testResult.items as {image: string}).image} alt="K线图截图" className="w-full" />
+                  <img src={(testResult.items as {image: string}).image} alt="Ảnh chụp đồ thị nến" className="w-full" />
                 </div>
               </div>
             )}
@@ -595,7 +595,7 @@ export default function DataSourcesPage() {
             {/* Other data types - in scrollable container */}
             {testResult?.test_passed && testResult.items && testResult.source_type !== 'chart' && Array.isArray(testResult.items) && testResult.items.length > 0 && (
               <div>
-                <div className="text-[12px] font-medium text-foreground mb-2">数据预览</div>
+                <div className="text-[12px] font-medium text-foreground mb-2">Xem trước dữ liệu</div>
                 <div className="space-y-1.5 max-h-60 overflow-y-auto">
 
                   {/* News type */}
@@ -694,7 +694,7 @@ export default function DataSourcesPage() {
                           <span className={`text-[12px] font-mono ${
                             (flowItem.main_net ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                           }`}>
-                            {(flowItem.main_net ?? 0) > 0 ? '+' : ''}{((flowItem.main_net ?? 0) / 10000).toFixed(2)}万
+                            {(flowItem.main_net ?? 0) > 0 ? '+' : ''}{((flowItem.main_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                           <span className="text-[11px] text-muted-foreground">
                             {flowItem.main_pct?.toFixed(2)}%
@@ -713,7 +713,7 @@ export default function DataSourcesPage() {
                         <span className={`text-[12px] font-mono ${
                           (dtItem.net_buy ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                         }`}>
-                          {(dtItem.net_buy ?? 0) > 0 ? '+' : ''}{((dtItem.net_buy ?? 0) / 10000).toFixed(2)}万
+                          {(dtItem.net_buy ?? 0) > 0 ? '+' : ''}{((dtItem.net_buy ?? 0) / 10000).toFixed(2)}vạn
                         </span>
                       </div>
                     )
@@ -726,7 +726,7 @@ export default function DataSourcesPage() {
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
                         <span className="text-[12px] font-medium text-foreground">{marginItem.symbol}</span>
                         <div className="flex items-center gap-3">
-                          <span className="text-[12px] font-mono">{((marginItem.total_balance ?? 0) / 10000).toFixed(2)}万</span>
+                          <span className="text-[12px] font-mono">{((marginItem.total_balance ?? 0) / 10000).toFixed(2)}vạn</span>
                           <span className="text-[11px] text-muted-foreground">{marginItem.date}</span>
                         </div>
                       </div>
@@ -754,7 +754,7 @@ export default function DataSourcesPage() {
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
                         <span className="text-[12px] font-medium text-foreground">{divItem.symbol}</span>
                         <div className="flex items-center gap-3">
-                          <span className="text-[12px] font-mono">{divItem.dividend_per_share?.toFixed(4) ?? '-'} 元/股</span>
+                          <span className="text-[12px] font-mono">{divItem.dividend_per_share?.toFixed(4) ?? '-'} đồng/cổ</span>
                           <span className="text-[11px] text-muted-foreground">{divItem.ex_date}</span>
                         </div>
                       </div>
@@ -771,10 +771,10 @@ export default function DataSourcesPage() {
                           <span className={`text-[12px] font-mono ${
                             (nbItem.total_net ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                           }`}>
-                            {(nbItem.total_net ?? 0) > 0 ? '+' : ''}{((nbItem.total_net ?? 0) / 10000).toFixed(2)}万
+                            {(nbItem.total_net ?? 0) > 0 ? '+' : ''}{((nbItem.total_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            沪股通 {((nbItem.hgt_net ?? 0) / 10000).toFixed(2)}万
+                            Kết nối Thượng Hải {((nbItem.hgt_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                         </div>
                       </div>
@@ -787,7 +787,7 @@ export default function DataSourcesPage() {
             {/* Test symbols info */}
             {testResult?.test_symbols && testResult.test_symbols.length > 0 && (
               <div className="text-[11px] text-muted-foreground">
-                测试股票: {testResult.test_symbols.join(', ')}
+                Mã kiểm thử: {testResult.test_symbols.join(', ')}
               </div>
             )}
           </div>

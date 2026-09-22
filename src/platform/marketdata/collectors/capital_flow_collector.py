@@ -1,45 +1,45 @@
-"""资金流向采集器 - 经 marketdata 包统一接入"""
+"""Bộ thu thập dòng tiền - nối thống nhất qua gói marketdata"""
 from dataclasses import dataclass
 
 from src.platform.marketdata.collectors.market_http import TTLCache
 from src.platform.marketdata.models import MarketCode
 
-# 资金流为日级数据、变动慢:中等 TTL 缓存,避免每轮重复拉。
+# Dòng tiền là dữ liệu theo ngày và đổi chậm: đệm với TTL trung bình, tránh vòng nào cũng lấy lại.
 _FLOW_CACHE = TTLCache(default_ttl_sec=600.0)
 
 
 @dataclass
 class CapitalFlow:
-    """资金流向数据"""
+    """Dữ liệu dòng tiền"""
     symbol: str
     name: str
 
-    # 今日资金流（单位：元）
-    main_net_inflow: float      # 主力净流入
-    main_net_inflow_pct: float  # 主力净流入占比
-    super_net_inflow: float     # 超大单净流入
-    big_net_inflow: float       # 大单净流入
-    mid_net_inflow: float       # 中单净流入
-    small_net_inflow: float     # 小单净流入
+    # Dòng tiền hôm nay (đơn vị: đồng)
+    main_net_inflow: float      # Dòng tiền lớn vào ròng
+    main_net_inflow_pct: float  # Tỷ trọng dòng tiền lớn vào ròng
+    super_net_inflow: float     # Lệnh siêu lớn vào ròng
+    big_net_inflow: float       # Lệnh lớn vào ròng
+    mid_net_inflow: float       # Lệnh vừa vào ròng
+    small_net_inflow: float     # Lệnh nhỏ vào ròng
 
-    # 5日资金流
-    main_net_5d: float | None = None  # 5日主力净流入
+    # Dòng tiền 5 phiên
+    main_net_5d: float | None = None  # Dòng tiền lớn vào ròng 5 phiên
 
 
 def get_market_data():
-    """惰性导入,避免模块加载时的循环依赖(便于测试 monkeypatch)。"""
+    """Import lười, tránh phụ thuộc vòng lúc nạp module (cũng tiện monkeypatch khi kiểm thử)."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
     return _g()
 
 
 class CapitalFlowCollector:
-    """资金流向采集器"""
+    """Bộ thu thập dòng tiền"""
 
     def __init__(self, market: MarketCode):
         self.market = market
 
     def get_capital_flow(self, symbol: str) -> CapitalFlow | None:
-        """获取单只股票的资金流向(经 marketdata 包统一接入 + TTL缓存)。"""
+        """Lấy dòng tiền của một mã (nối thống nhất qua gói marketdata + đệm TTL)."""
         cache_key = f"{self.market.value}:{symbol}"
         cached = _FLOW_CACHE.get(cache_key)
         if cached is not None:
@@ -63,13 +63,13 @@ class CapitalFlowCollector:
         return capital_flow
 
     def get_capital_flow_summary(self, symbol: str) -> dict:
-        """获取资金流向摘要（用于 prompt）"""
+        """Lấy tóm tắt dòng tiền (dùng cho prompt)"""
         flow = self.get_capital_flow(symbol)
 
         if not flow:
             return {"error": "无资金流向数据"}
 
-        # 判断资金状态
+        # Xác định trạng thái dòng tiền
         if flow.main_net_inflow > 0:
             if flow.main_net_inflow_pct > 10:
                 status = "主力大幅流入"
@@ -87,7 +87,7 @@ class CapitalFlowCollector:
         else:
             status = "主力资金平衡"
 
-        # 5日趋势
+        # Xu hướng 5 phiên
         trend_5d = "无数据"
         if flow.main_net_5d is not None:
             if flow.main_net_5d > 0:

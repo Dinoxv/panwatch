@@ -118,7 +118,7 @@ def _stock_to_response(stock: Stock, agent_display_names: dict[str, str] | None 
 
 @router.get("/markets/status")
 def get_market_status():
-    """获取各市场的交易状态"""
+    """Lấy trạng thái giao dịch của từng thị trường"""
     from datetime import datetime
 
     result = []
@@ -127,12 +127,12 @@ def get_market_status():
             now = datetime.now(market_def.get_tz())
             is_trading = market_def.is_trading_time()
 
-            # 获取交易时段描述
+            # Lấy phần mô tả khung giờ giao dịch
             sessions_desc = []
             for session in market_def.sessions:
                 sessions_desc.append(f"{session.start.strftime('%H:%M')}-{session.end.strftime('%H:%M')}")
 
-            # 判断状态
+            # Xác định trạng thái
             weekday = now.weekday()
             current_time = now.time()
 
@@ -143,7 +143,7 @@ def get_market_status():
                 status = "trading"
                 status_text = "交易中"
             else:
-                # 判断是盘前还是盘后
+                # Xác định là trước phiên hay sau phiên
                 first_session = market_def.sessions[0]
                 last_session = market_def.sessions[-1]
                 if current_time < first_session.start:
@@ -167,7 +167,7 @@ def get_market_status():
                 "timezone": market_def.timezone,
             })
         except Exception as e:
-            # 单个市场获取失败不影响其他市场
+            # Một thị trường lấy dữ liệu lỗi không ảnh hưởng các thị trường khác
             logger.error(f"获取 {market_code.value} 市场状态失败: {e}")
             result.append({
                 "code": market_code.value,
@@ -186,13 +186,13 @@ def get_market_status():
 
 @router.get("/search")
 def search(q: str = Query("", min_length=1), market: str = Query("")):
-    """模糊搜索股票(代码/名称)"""
+    """Tìm mã theo kiểu mờ (mã/tên)"""
     return search_stocks(q, market)
 
 
 @router.post("/refresh-list")
 def refresh_list():
-    """刷新股票列表缓存"""
+    """Làm mới bộ đệm danh sách mã"""
     stocks = refresh_stock_list()
     return {"count": len(stocks)}
 
@@ -206,12 +206,12 @@ def list_stocks(db: Session = Depends(get_db)):
 
 @router.get("/quotes")
 def get_quotes(db: Session = Depends(get_db)):
-    """获取所有自选股的实时行情"""
+    """Lấy bảng giá thời gian thực của mọi mã trong danh mục theo dõi"""
     stocks = db.query(Stock).all()
     if not stocks:
         return {}
 
-    # 按市场分组
+    # Gom nhóm theo thị trường
     market_stocks: dict[str, list[Stock]] = {}
     for s in stocks:
         market_stocks.setdefault(s.market, []).append(s)
@@ -219,11 +219,11 @@ def get_quotes(db: Session = Depends(get_db)):
     quotes = {}
     for market, stock_list in market_stocks.items():
         try:
-            MarketCode(market)  # 校验市场合法
+            MarketCode(market)  # Kiểm tra thị trường hợp lệ
         except ValueError:
             continue
 
-        symbols = [s.symbol for s in stock_list]   # 原始代码,md 内部按市场格式化
+        symbols = [s.symbol for s in stock_list]   # Mã gốc, bên trong md sẽ định dạng theo từng thị trường
         try:
             items = md_quote_rows(symbols, market)
             for item in items:
@@ -293,12 +293,12 @@ def delete_stock(stock_id: int, db: Session = Depends(get_db)):
     if not db_stock:
         raise HTTPException(404, "股票不存在")
 
-    # 删除股票前，要求先清理持仓，避免误删资产数据。
+    # Trước khi xóa cổ phiếu phải dọn vị thế trước, tránh xóa nhầm dữ liệu tài sản.
     has_position = db.query(Position.id).filter(Position.stock_id == stock_id).first()
     if has_position:
         raise HTTPException(400, "该股票存在持仓，请先删除持仓后再删除股票")
 
-    # SQLite 默认可能不启用 FK 级联，手动清理提醒数据避免孤儿记录。
+    # SQLite mặc định có thể không bật xóa dây chuyền theo khóa ngoại, nên dọn tay dữ liệu cảnh báo để khỏi còn bản ghi mồ côi.
     rule_ids = [
         row[0]
         for row in db.query(PriceAlertRule.id).filter(
@@ -326,7 +326,7 @@ def delete_stock(stock_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{stock_id}/agents", response_model=StockResponse)
 def update_stock_agents(stock_id: int, body: StockAgentUpdate, db: Session = Depends(get_db)):
-    """更新股票关联的 Agent 列表（含调度配置和 AI/通知覆盖）"""
+    """Cập nhật danh sách Agent gắn với mã (gồm cấu hình lịch chạy và phần ghi đè AI/thông báo)"""
     db_stock = db.query(Stock).filter(Stock.id == stock_id).first()
     if not db_stock:
         raise HTTPException(404, "股票不存在")
@@ -339,7 +339,7 @@ def update_stock_agents(stock_id: int, body: StockAgentUpdate, db: Session = Dep
         if agent_kind != AGENT_KIND_WORKFLOW:
             raise HTTPException(400, f"Agent {item.agent_name} 为内部能力，不支持绑定到股票")
 
-    # 清除旧关联，重建
+    # Xóa liên kết cũ rồi dựng lại
     db.query(StockAgent).filter(StockAgent.stock_id == stock_id).delete()
     for item in body.agents:
         db.add(StockAgent(
@@ -369,12 +369,12 @@ async def trigger_stock_agent(
     name: str = Query(""),
     db: Session = Depends(get_db),
 ):
-    """手动触发单只股票 Agent。
+    """Kích hoạt tay Agent cho một mã.
 
-    - 正常模式：传有效 stock_id
-    - 无绑定模式：stock_id<=0 且传 symbol/market（需 allow_unbound=true）
-    - 无绑定模式默认禁用通知（仅生成建议）
-    - 默认异步执行（立即返回），传 wait=true 可同步等待结果
+    - Chế độ thường: truyền stock_id hợp lệ
+    - Chế độ không gắn: stock_id<=0 và truyền symbol/market (cần allow_unbound=true)
+    - Chế độ không gắn mặc định tắt thông báo (chỉ sinh khuyến nghị)
+    - Mặc định chạy bất đồng bộ (trả về ngay), truyền wait=true để chờ kết quả đồng bộ
     """
     sa = None
     trigger_stock = None
@@ -391,7 +391,7 @@ async def trigger_stock_agent(
         if not sa and not allow_unbound:
             raise HTTPException(400, f"股票未关联 Agent {agent_name}")
         if not sa and allow_unbound:
-            # 允许无绑定触发时，至少确保 Agent 存在。
+            # Khi cho phép kích hoạt không cần gắn mã, ít nhất phải bảo đảm Agent có tồn tại.
             agent = db.query(AgentConfig).filter(AgentConfig.name == agent_name).first()
             if not agent:
                 raise HTTPException(400, f"Agent {agent_name} 不存在")
@@ -414,7 +414,7 @@ async def trigger_stock_agent(
             ).first()
             trigger_stock = db_stock
         else:
-            # 不落库：用于详情弹窗未持仓且未关注股票的一次性分析。
+            # Không lưu xuống: dùng cho lần phân tích một lần ở hộp thoại chi tiết với mã chưa nắm giữ và chưa theo dõi.
             agent = db.query(AgentConfig).filter(AgentConfig.name == agent_name).first()
             if not agent:
                 raise HTTPException(400, f"Agent {agent_name} 不存在")
@@ -432,9 +432,9 @@ async def trigger_stock_agent(
     from server import trigger_agent_for_stock
     import time as _time
 
-    # 幂等性兜底:TradingAgents 单次 3-5 分钟,前端误操作/双击可能并发触发同一标的。
-    # 后端先查"该 symbol 是否有真正在跑的 TA 任务",有则返回现有 trace_id(不启新任务)。
-    # force_refresh=true 时跳过去重,允许用户主动强制重跑(老任务自然终止,新 trace_id)。
+    # Dự phòng tính bất biến khi lặp: mỗi lượt TradingAgents mất 3-5 phút, người dùng bấm nhầm / bấm đúp ở giao diện có thể kích hoạt song song cùng một mã.
+    # Máy chủ tra trước "mã này có tác vụ TA nào đang thật sự chạy không", có thì trả lại trace_id sẵn có (không khởi tác vụ mới).
+    # force_refresh=true thì bỏ qua khử trùng lặp, cho người dùng chủ động ép chạy lại (tác vụ cũ tự kết thúc, cấp trace_id mới).
     if agent_name == "tradingagents" and not force_refresh:
         from src.modules.automation import find_active_tradingagents_trace
         existing_trace = find_active_tradingagents_trace(db, trigger_stock.symbol)
@@ -450,10 +450,10 @@ async def trigger_stock_agent(
                 "deduplicated": True,
             }
 
-    # 预生成 trace_id,返回给前端用于轮询进度
+    # Sinh sẵn trace_id rồi trả cho giao diện để thăm dò tiến độ
     trace_id = f"man-{agent_name}-{trigger_stock.symbol}-{int(_time.time() * 1000)}"
 
-    # 生命周期先落库，确保后台线程尚未写出第一条进度日志时，刷新页面仍能恢复任务。
+    # Ghi bản ghi vòng đời xuống trước, để khi luồng nền chưa kịp ghi dòng nhật ký tiến độ đầu tiên thì tải lại trang vẫn khôi phục được tác vụ.
     if agent_name == "tradingagents":
         try:
             from src.modules.automation.agent_runs import start_agent_run
@@ -465,10 +465,10 @@ async def trigger_stock_agent(
         except Exception as e:
             logger.warning(f"[TA] 写 running 生命周期失败,不影响主流程: {e}")
 
-    # 立刻写一条"任务已触发"进度日志,保证前端 polling 第一拍就能看到 running。
-    # 否则 trigger_agent_for_stock 内部要先 await agent.collect()(美股拉 yfinance 数据
-    # 可能 30s+),期间没有任何 ta_progress 日志 → 前端 progress 接口返回 not_found
-    # → 60s grace 过后前端 reset 到 idle,看起来像"进度卡死自动退回"。
+    # Ghi ngay một dòng nhật ký tiến độ "tác vụ đã được kích hoạt", bảo đảm nhịp thăm dò đầu tiên của giao diện đã thấy trạng thái running.
+    # Nếu không, bên trong trigger_agent_for_stock phải await agent.collect() trước (kéo dữ liệu yfinance cho cổ phiếu Mỹ
+    # có thể mất hơn 30s), suốt lúc đó không có dòng ta_progress nào → endpoint tiến độ trả not_found
+    # → qua 60s ân hạn thì giao diện đưa về idle, trông như "tiến độ treo rồi tự lùi về".
     if agent_name == "tradingagents":
         try:
             from src.platform.observability.log_context import log_context
@@ -485,7 +485,7 @@ async def trigger_stock_agent(
             logger.warning(f"[TA] 写触发日志失败,不影响主流程: {e}")
 
     if not wait:
-        # 异步模式：后台执行，立即返回
+        # Chế độ bất đồng bộ: chạy nền, trả về ngay
         sa_id = sa.id if sa else None
 
         def _runner():
@@ -512,7 +512,7 @@ async def trigger_stock_agent(
         t.start()
         return {"queued": True, "trace_id": trace_id, "message": "已提交后台执行"}
 
-    # 同步模式：等待结果返回
+    # Chế độ đồng bộ: chờ kết quả rồi trả về
     try:
         result = await trigger_agent_for_stock(
             agent_name,

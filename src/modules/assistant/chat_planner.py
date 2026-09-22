@@ -1,12 +1,15 @@
-"""Planning 试点 —— "全面诊断我的持仓"计划驱动编排。
+"""Thí điểm Planning — dàn dựng do kế hoạch dẫn dắt cho "soi toàn diện danh mục của tôi".
 
-范围刻意小:只覆盖单一场景(全面诊断持仓)。识别到该意图后走计划驱动:
-LLM 生成结构化计划(逐持仓股分析 → 组合风险 → 汇总建议)→ 计划经 SSE `plan` 事件
-推给前端 → 逐步执行(每步复用现有工具/LLM)→ 步骤失败重规划(上限 1 次,超限带失败
-信息直接汇总)。
+Phạm vi cố ý để nhỏ: chỉ phủ một tình huống duy nhất (soi toàn diện danh mục). Nhận ra ý
+định đó thì đi theo lối do kế hoạch dẫn dắt: LLM sinh kế hoạch có cấu trúc (phân tích
+từng mã trong danh mục → rủi ro danh mục → khuyến nghị tổng hợp) → kế hoạch được đẩy cho
+frontend qua sự kiện SSE `plan` → chạy từng bước (mỗi bước dùng lại công cụ/LLM sẵn có) →
+bước nào hỏng thì lập lại kế hoạch (tối đa 1 lần, quá thì mang luôn thông tin hỏng vào
+phần tổng hợp).
 
-这是**试点**:验证"计划驱动"相对固定流程的价值,不做过度泛化。编排函数把工具执行器
-(execute_tool)与 SSE 流(stream)作为依赖注入,便于单测全 mock。
+Đây là **thí điểm**: để kiểm chứng giá trị của "do kế hoạch dẫn dắt" so với luồng cố
+định, không tổng quát hóa quá tay. Hàm dàn dựng nhận bộ chạy công cụ (execute_tool) và
+luồng SSE (stream) dưới dạng phụ thuộc tiêm vào, để unit test mock được hết.
 """
 
 import json
@@ -15,7 +18,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# 触发词:显式命中即走计划驱动(简单启发式,试点足够)
+# Từ khóa kích hoạt: khớp tường minh là chuyển sang chế độ dẫn dắt theo kế hoạch (heuristic đơn giản, đủ cho giai đoạn thử nghiệm)
 _PLANNING_TRIGGERS = (
     "全面诊断",
     "诊断我的持仓",
@@ -29,7 +32,7 @@ _PLANNING_TRIGGERS = (
 
 
 def should_use_planning(content: str) -> bool:
-    """判断用户输入是否命中"全面诊断持仓"场景。"""
+    """Xét xem người dùng nhập vào có rơi vào tình huống "soi toàn diện danh mục" không."""
     if not content:
         return False
     text = content.replace(" ", "")
@@ -71,10 +74,11 @@ def _replan_messages(
 
 
 def parse_plan(text: str) -> list[dict] | None:
-    """从 LLM 文本里容错解析计划步骤列表。
+    """Đọc danh sách bước kế hoạch từ văn bản LLM theo kiểu chịu lỗi.
 
-    支持:纯 JSON、```json 围栏包裹、前后有解释文字、尾部截断等常见脏输出。
-    解析失败返回 None(交由调用方回退默认计划)。
+    Hỗ trợ: JSON thuần, bọc trong hàng rào ```json, có chữ giải thích ở trước/sau, bị cắt
+    cụt ở đuôi và các kiểu đầu ra bẩn thường gặp khác.
+    Đọc hỏng thì trả None (để bên gọi lùi về kế hoạch mặc định).
     """
     if not text:
         return None
@@ -109,12 +113,12 @@ def parse_plan(text: str) -> list[dict] | None:
 
 
 def build_default_plan(portfolio_text: str) -> list[dict]:
-    """LLM 计划不可用时的降级默认计划(仅做组合风险,汇总由系统追加)。"""
+    """Kế hoạch mặc định khi hạ cấp lúc kế hoạch của LLM không dùng được (chỉ làm phần rủi ro danh mục, phần tổng hợp do hệ thống thêm vào)."""
     return [{"title": "组合整体风险评估", "action": "portfolio_risk"}]
 
 
 def normalize_steps(steps: list[dict], start_id: int = 1) -> list[dict]:
-    """规范化步骤:补 id/title/action/params/status。过滤 summarize(汇总系统自动做)。"""
+    """Chuẩn hóa bước: bù id/title/action/params/status. Lọc bỏ summarize (phần tổng hợp hệ thống tự làm)."""
     out = []
     sid = start_id
     for s in steps:
@@ -155,7 +159,7 @@ _SUMMARY_SYSTEM = (
 
 
 async def _execute_step(db, ai_client, execute_tool, step: dict, portfolio_text: str) -> str:
-    """执行单个计划步骤,返回该步的分析文本。"""
+    """Chạy một bước kế hoạch, trả về văn bản phân tích của bước đó."""
     action = step["action"]
     if action == "analyze_stock":
         p = step.get("params") or {}
@@ -172,7 +176,7 @@ async def _execute_step(db, ai_client, execute_tool, step: dict, portfolio_text:
         ]
         return await ai_client.chat_multi(msgs, temperature=0.4)
 
-    # portfolio_risk 及其它未知 action:统一按组合风险处理
+    # portfolio_risk và các action lạ khác: xử lý thống nhất như rủi ro danh mục
     msgs = [
         {"role": "system", "content": _STEP_SYSTEM},
         {"role": "user", "content": f"评估以下持仓组合的整体风险:\n{portfolio_text}"},
@@ -189,19 +193,19 @@ def _summary_messages(results: list[tuple[str, str]]) -> list[dict]:
 
 
 async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
-    """计划驱动的"全面诊断持仓"编排,返回最终汇总文本(已通过 SSE 流式推送)。
+    """Dàn dựng "soi toàn diện danh mục" do kế hoạch dẫn dắt, trả về văn bản tổng hợp cuối (đã đẩy theo luồng qua SSE).
 
     Args:
-        db: DB session。
-        stream: SSEStream(需支持 async publish(event, data))。
-        ai_client: AI 客户端(chat_multi / chat_stream)。
-        execute_tool: async (db, name, args) -> str 工具执行器。
+        db: phiên DB.
+        stream: SSEStream (cần hỗ trợ async publish(event, data)).
+        ai_client: máy khách AI (chat_multi / chat_stream).
+        execute_tool: bộ chạy công cụ async (db, name, args) -> str.
     """
     await stream.publish("plan", {"status": "planning", "steps": []})
 
     portfolio_text = await execute_tool(db, "get_portfolio", {})
 
-    # 1) 生成计划(失败/解析不了则回退默认计划)
+    # 1) Sinh kế hoạch (thất bại / không bóc được thì lùi về kế hoạch mặc định)
     steps = None
     try:
         raw = await ai_client.chat_multi(_plan_messages(portfolio_text), temperature=0.3)
@@ -216,7 +220,7 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
 
     await _publish_plan(stream, steps, status="running")
 
-    # 2) 逐步执行,失败重规划(上限 1 次)
+    # 2) Thực thi từng bước, hỏng thì lập lại kế hoạch (tối đa 1 lần)
     results: list[tuple[str, str]] = []
     replanned = False
     i = 0
@@ -243,14 +247,14 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
                 if new_steps:
                     steps = steps[:i] + normalize_steps(new_steps, start_id=step["id"])
                     await _publish_plan(stream, steps, status="running")
-                    continue  # 从当前位置用新计划重试
-            # 已重规划过或重规划失败:标记失败,带失败信息继续汇总
+                    continue  # Thử lại từ vị trí hiện tại bằng kế hoạch mới
+            # Đã lập lại kế hoạch hoặc việc lập lại thất bại: đánh dấu thất bại, mang thông tin lỗi đi tổng hợp tiếp
             step["status"] = "failed"
             results.append((step["title"], f"(该步执行失败:{e})"))
         await _publish_plan(stream, steps, status="running")
         i += 1
 
-    # 3) 汇总(流式推 token)
+    # 3) Tổng hợp (đẩy token theo luồng)
     summary = ""
     try:
         parts: list[str] = []
@@ -261,7 +265,7 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
                 parts.append(payload)
                 await stream.publish("token", {"text": payload})
         summary = "".join(parts)
-    except Exception as e:  # noqa: BLE001 — 流式汇总失败降级为非流式
+    except Exception as e:  # noqa: BLE001 — tổng hợp theo luồng thất bại thì hạ cấp sang không dùng luồng
         logger.warning("流式汇总失败,降级非流式: %s", e)
         try:
             summary = await ai_client.chat_multi(_summary_messages(results), temperature=0.4)

@@ -1,9 +1,12 @@
-"""系统自检(Doctor):一键体检 数据源 / AI / 通知,带中文修复提示。
+"""Tự kiểm tra hệ thống (Doctor): khám nhanh nguồn dữ liệu / AI / thông báo, kèm gợi ý khắc phục.
 
-复用各自现有的 test 逻辑(数据源 manager.test_source、AI AIClient.chat、通知 NotifierManager),
-不重造探测;补两件事:① 并发聚合成一块看板 ② 常见错误 → 中文 actionable 修复提示。
+Tái dùng đúng logic kiểm thử sẵn có của từng phần (nguồn dữ liệu dùng manager.test_source,
+AI dùng AIClient.chat, thông báo dùng NotifierManager) chứ không dựng lại phép thăm dò;
+chỉ bổ sung hai việc: ① chạy song song rồi gộp thành một bảng theo dõi ② quy các lỗi
+thường gặp thành gợi ý khắc phục hành động được.
 
-通知默认**只校验 URI 配置不真发**(防刷屏);notify_send=True 才真实发送。
+Phần thông báo mặc định **chỉ kiểm tra cấu hình URI chứ không gửi thật** (tránh spam);
+phải đặt notify_send=True mới gửi thật.
 """
 
 from __future__ import annotations
@@ -16,12 +19,12 @@ from src.platform.persistence.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-SLOW_MS = 4000          # 超过算「慢」
-PROBE_TIMEOUT_S = 20    # 单项探测超时
+SLOW_MS = 4000          # Vượt mức này thì tính là «chậm»
+PROBE_TIMEOUT_S = 20    # Thời gian chờ tối đa cho một lần thăm dò
 
 
 def classify_hint(category: str, error: str | None) -> str:
-    """错误 → 中文 actionable 修复提示。覆盖自托管最常见的代理/鉴权/配置坑。"""
+    """Quy lỗi thành gợi ý khắc phục hành động được. Phủ các bẫy proxy / xác thực / cấu hình thường gặp nhất khi tự vận hành."""
     e = (error or "").lower()
     if category == "datasource":
         if "database is locked" in e:
@@ -80,7 +83,7 @@ def _status_for(success: bool, latency_ms: int) -> str:
 
 
 async def probe_datasource(source) -> dict:
-    """复用 collector manager.test_source。"""
+    """Tái dùng manager.test_source của collector."""
     from src.modules.market.data_collector import get_collector_manager
 
     t0 = time.monotonic()
@@ -96,7 +99,7 @@ async def probe_datasource(source) -> dict:
 
 
 async def probe_ai_model(model, service) -> dict:
-    """复用 AIClient.chat 发一个极短 ping。"""
+    """Tái dùng AIClient.chat để gửi một lệnh ping cực ngắn."""
     from src.platform.ai.ai_client import AIClient
 
     name = model.name or model.model
@@ -113,14 +116,14 @@ async def probe_ai_model(model, service) -> dict:
 
 
 async def probe_notify_channel(channel, *, send: bool = False) -> dict:
-    """默认只校验 URI 配置(add_channel 不通会抛);send=True 才真实发送。"""
+    """Mặc định chỉ kiểm tra cấu hình URI (add_channel không thông sẽ ném lỗi); phải đặt send=True mới gửi thật."""
     from src.platform.notifications.notifier import NotifierManager
 
     name = channel.name or channel.type
     t0 = time.monotonic()
     try:
         notifier = NotifierManager()
-        notifier.add_channel(channel.type, channel.config or {})  # URI 非法会抛
+        notifier.add_channel(channel.type, channel.config or {})  # URI không hợp lệ sẽ ném lỗi
         if not send:
             latency = int((time.monotonic() - t0) * 1000)
             return _item("notify", f"nc:{channel.id}", name, "ok", latency,
@@ -137,7 +140,7 @@ async def probe_notify_channel(channel, *, send: bool = False) -> dict:
 
 
 async def probe_db() -> dict:
-    """对真实库执行 SELECT 1。"""
+    """Chạy SELECT 1 trên cơ sở dữ liệu thật."""
     from sqlalchemy import text
 
     from src.platform.persistence.database import SessionLocal
@@ -156,7 +159,7 @@ async def probe_db() -> dict:
 
 
 async def probe_disk() -> dict:
-    """检查 data 目录所在盘的可用空间。"""
+    """Kiểm tra dung lượng trống của ổ đĩa chứa thư mục data."""
     import os
     import shutil
 
@@ -180,7 +183,7 @@ async def probe_disk() -> dict:
 
 
 async def probe_scheduler() -> dict:
-    """经 scheduler_registry 看运行中的调度器;注册表空(CLI/未启动)→ 优雅跳过。"""
+    """Xem các bộ lập lịch đang chạy qua scheduler_registry; sổ đăng ký rỗng (chạy CLI / chưa khởi động) thì bỏ qua một cách êm."""
     from src.platform.scheduling import scheduler_registry
 
     regs = scheduler_registry.get_all()
@@ -209,19 +212,19 @@ async def probe_scheduler() -> dict:
 
 
 async def _guard(coro, fallback: dict) -> dict:
-    """给每个 probe 套超时;探测自身已 try/except,这里只兜超时/异常。"""
+    """Bọc thời gian chờ cho từng phép thăm dò; bản thân phép thăm dò đã tự try/except nên ở đây chỉ bắt quá hạn và ngoại lệ."""
     try:
         return await asyncio.wait_for(coro, timeout=PROBE_TIMEOUT_S)
     except asyncio.TimeoutError:
         return _item(fallback["category"], fallback["key"], fallback["name"],
                      "fail", PROBE_TIMEOUT_S * 1000, f"探测超时(>{PROBE_TIMEOUT_S}s)")
-    except Exception as e:  # pragma: no cover - 防御
+    except Exception as e:  # pragma: no cover - nhánh phòng thủ
         return _item(fallback["category"], fallback["key"], fallback["name"],
                      "fail", 0, str(e))
 
 
 def _enumerate(db, include_system: bool = True) -> list[dict]:
-    """枚举所有待检项(身份 + ORM 引用),不探测。include_system 加 DB/磁盘/调度 系统基础项。"""
+    """Liệt kê mọi mục cần kiểm tra (định danh + tham chiếu ORM) mà không thăm dò. include_system thêm các mục hạ tầng DB / đĩa / lập lịch."""
     from src.platform.persistence.models import AIModel, AIService, DataSource, NotifyChannel
 
     targets: list[dict] = []
@@ -236,7 +239,7 @@ def _enumerate(db, include_system: bool = True) -> list[dict]:
         service = db.query(AIService).filter(AIService.id == model.service_id).first()
         if not service:
             continue
-        # group = 服务商名,供前端做「服务商 → 模型」两级层级
+        # group = tên nhà cung cấp, để giao diện dựng cây hai cấp «nhà cung cấp → mô hình»
         targets.append({"category": "ai", "key": f"ai:{model.id}", "name": model.name or model.model,
                         "group": service.name, "_kind": "ai", "_obj": model, "_service": service})
     for ch in db.query(NotifyChannel).filter(NotifyChannel.enabled.is_(True)).all():
@@ -265,7 +268,7 @@ def _probe_for(t: dict, notify_send: bool):
 
 
 def list_selfcheck_items(*, db=None, include_system: bool = True) -> list[dict]:
-    """只枚举待检项身份(category/key/name/group),不探测;供前端先渲染列表再逐项检查。"""
+    """Chỉ liệt kê định danh của các mục cần kiểm tra (category/key/name/group) mà không thăm dò; để giao diện dựng danh sách trước rồi kiểm tra từng mục sau."""
     own = db is None
     db = db or SessionLocal()
     try:
@@ -276,7 +279,7 @@ def list_selfcheck_items(*, db=None, include_system: bool = True) -> list[dict]:
 
 
 async def run_selfcheck(*, db=None, notify_send: bool = False, keys=None, include_system: bool = True) -> dict:
-    """探测待检项,返回看板。keys 非空时只探测这些 key(供前端逐项更新进度)。"""
+    """Thăm dò các mục cần kiểm tra rồi trả về bảng theo dõi. keys khác rỗng thì chỉ thăm dò đúng các key đó (để giao diện cập nhật tiến độ từng mục)."""
     own = db is None
     db = db or SessionLocal()
     try:

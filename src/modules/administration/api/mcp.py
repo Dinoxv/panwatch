@@ -1,14 +1,18 @@
-"""MCP Server —— 把 chat 的 5 个只读工具暴露为 Model Context Protocol 端点。
+"""MCP Server — phơi 5 công cụ chỉ đọc của chat thành endpoint Model Context Protocol.
 
-设计选择(在报告中说明):
-- **手写轻量 JSON-RPC**(Streamable HTTP 的 JSON 响应模式),不引入 mcp SDK ——
-  依赖最小、测试自包含、协议表面小(只读场景仅需 initialize/tools/list/tools/call);
-- 挂在**顶层 `/mcp`**(不在 `/api/` 下),绕开 ResponseWrapperMiddleware 的
-  `{code,data,message}` 包装,保证 JSON-RPC 报文原样返回;
-- 鉴权用**独立 PAT 体系**(pwmcp_ 前缀 + sha256 存库 + 常数时间比较 + mcp:read
-  scope),与登录 JWT 分流;工具全只读,天然安全;每次调用落审计日志。
+Các lựa chọn thiết kế (có giải thích trong báo cáo):
+- **Tự viết JSON-RPC nhẹ** (chế độ phản hồi JSON của Streamable HTTP), không kéo SDK mcp
+  vào — phụ thuộc tối thiểu, kiểm thử tự chứa, bề mặt giao thức nhỏ (kịch bản chỉ đọc chỉ
+  cần initialize / tools/list / tools/call);
+- Gắn ở **cấp cao nhất `/mcp`** (không nằm dưới `/api/`) để đi vòng qua lớp bọc
+  `{code,data,message}` của ResponseWrapperMiddleware, bảo đảm gói tin JSON-RPC được trả
+  nguyên dạng;
+- Xác thực bằng **hệ PAT riêng** (tiền tố pwmcp_ + lưu sha256 + so sánh thời gian hằng
+  định + scope mcp:read), tách khỏi JWT đăng nhập; công cụ toàn chỉ đọc nên tự thân đã an
+  toàn; mỗi lời gọi đều ghi nhật ký kiểm toán.
 
-工具实现复用 assistant 的公开工具 schema 与 dispatcher，不重写业务逻辑。
+Phần cài đặt công cụ tái dùng schema công khai và dispatcher của assistant, không viết lại
+logic nghiệp vụ.
 """
 
 import json
@@ -32,25 +36,25 @@ from src.platform.persistence.models import MCPCallLog, PersonalAccessToken
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# 协议版本(客户端未协商时的默认值)
+# Phiên bản giao thức (giá trị mặc định khi máy khách không thương lượng)
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SERVER_INFO = {"name": "PanWatch", "version": "0.1.0"}
 
-# 只读工具白名单(复用 chat 的工具定义,新增工具自动纳入)
+# Danh sách trắng công cụ chỉ đọc (tái dùng định nghĩa công cụ của chat, công cụ mới tự động được tính vào)
 READ_TOOL_NAMES = {t["function"]["name"] for t in CHAT_TOOLS}
 
-# last_used 写入节流窗口(秒),避免每次 tool call 都写库
+# Cửa sổ giãn ghi last_used (giây), tránh ghi xuống cơ sở dữ liệu ở mỗi lần gọi công cụ
 _LAST_USED_THROTTLE_S = 60
-# 审计摘要长度上限
+# Giới hạn độ dài phần tóm tắt nhật ký kiểm toán
 _ARG_SUMMARY_MAX = 200
 _ARG_VALUE_MAX = 40
 
 
-# ──────────────── PAT 鉴权 ────────────────
+# ──────────────── Xác thực PAT ────────────────
 
 
 def _to_utc(dt: datetime | None) -> datetime | None:
-    """SQLite 存的 DateTime 是 naive,统一按 UTC 处理,避免 aware/naive 比较报错。"""
+    """DateTime mà SQLite lưu không mang múi giờ, nên thống nhất xử lý theo UTC để tránh lỗi khi so sánh giá trị có và không có múi giờ."""
     if dt is None:
         return None
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
@@ -66,7 +70,7 @@ def _bump_last_used(db: Session, row: PersonalAccessToken, request: Request) -> 
 
 
 def authenticate_pat(request: Request, db: Session) -> dict:
-    """校验 Authorization: Bearer pwmcp_...，返回 PAT 元数据；失败抛 HTTPException。"""
+    """Kiểm tra Authorization: Bearer pwmcp_..., trả về siêu dữ liệu của PAT; thất bại thì ném HTTPException."""
     header = request.headers.get("authorization") or ""
     if not header.lower().startswith("bearer "):
         raise HTTPException(401, "缺少 Bearer PAT")
@@ -103,11 +107,11 @@ def authenticate_pat(request: Request, db: Session) -> dict:
     }
 
 
-# ──────────────── 审计日志 ────────────────
+# ──────────────── Nhật ký kiểm toán ────────────────
 
 
 def _summarize_args(args: dict) -> str | None:
-    """脱敏摘要:结构化字段 k=v，截断，供审计调试。"""
+    """Tóm tắt đã che thông tin nhạy cảm: các trường dạng k=v, có cắt bớt, phục vụ kiểm toán và gỡ lỗi."""
     if not args:
         return None
     parts: list[str] = []
@@ -136,7 +140,7 @@ def _write_call_log(
     duration_ms: int,
     client_ip: str | None,
 ) -> None:
-    """落审计日志(独立 session，失败静默不影响主流程)。"""
+    """Ghi nhật ký kiểm toán (dùng session riêng, lỗi thì im lặng bỏ qua chứ không ảnh hưởng luồng chính)."""
     db = SessionLocal()
     try:
         db.add(
@@ -163,7 +167,7 @@ MCP_LOG_RETENTION_DAYS = 30
 
 
 def prune_mcp_logs(retention_days: int = MCP_LOG_RETENTION_DAYS) -> int:
-    """清理超过保留期的 MCP 调用日志,返回删除条数(供每日调度调用)。"""
+    """Dọn nhật ký lời gọi MCP quá hạn lưu trữ, trả về số bản ghi đã xóa (để tác vụ lập lịch hằng ngày gọi)."""
     from datetime import timedelta
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
@@ -184,11 +188,11 @@ def prune_mcp_logs(retention_days: int = MCP_LOG_RETENTION_DAYS) -> int:
         db.close()
 
 
-# ──────────────── JSON-RPC 处理 ────────────────
+# ──────────────── Xử lý JSON-RPC ────────────────
 
 
 def _mcp_tools() -> list[dict]:
-    """CHAT_TOOLS(OpenAI function schema)→ MCP tool 列表。"""
+    """CHAT_TOOLS (schema function của OpenAI) → danh sách tool của MCP."""
     tools = []
     for t in CHAT_TOOLS:
         fn = t["function"]
@@ -234,7 +238,7 @@ async def _handle_tools_call(params: dict, db: Session, pat: dict, req_id) -> JS
             req_id,
             {"content": [{"type": "text", "text": text}], "isError": is_error},
         )
-    except Exception as e:  # noqa: BLE001 — 兜底,不让异常穿透协议层
+    except Exception as e:  # noqa: BLE001 — bắt dự phòng, không để ngoại lệ xuyên qua tầng giao thức
         err = str(e)
         return _rpc_error(req_id, -32603, f"工具执行异常: {e}")
     finally:
@@ -253,7 +257,7 @@ async def _handle_tools_call(params: dict, db: Session, pat: dict, req_id) -> JS
 @router.post("")
 @router.post("/")
 async def mcp_endpoint(request: Request, db: Session = Depends(get_db)):
-    """MCP Streamable HTTP 单端点:处理 initialize / tools/list / tools/call 等。"""
+    """Endpoint đơn của MCP Streamable HTTP: xử lý initialize / tools/list / tools/call..."""
     pat = authenticate_pat(request, db)
 
     try:
@@ -268,7 +272,7 @@ async def mcp_endpoint(request: Request, db: Session = Depends(get_db)):
     req_id = payload.get("id")
     params = payload.get("params") or {}
 
-    # 通知类消息(无 id)不需要响应,返回 202
+    # Thông điệp dạng notification (không có id) không cần phản hồi, trả 202
     if req_id is None and isinstance(method, str) and method.startswith("notifications/"):
         return Response(status_code=202)
 

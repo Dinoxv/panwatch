@@ -1,21 +1,24 @@
-"""交易日历:回答「这一天开不开市」。
+"""Lịch giao dịch: trả lời câu hỏi «ngày này có mở cửa không».
 
-与 `MarketDef.is_trading_time()`(回答「当下是否在交易时段内」)互补 ——
-盘前计划、日终摘要这类定时任务本身就发生在交易时段之外,只能用「是不是交易日」
-来守卫,用时段判断会把它们永久拦死。
+Bổ sung cho `MarketDef.is_trading_time()` (vốn trả lời «lúc này có đang trong phiên
+không») — các tác vụ định giờ như kế hoạch trước phiên, tóm tắt cuối ngày vốn dĩ xảy ra
+ngoài giờ giao dịch, nên chỉ canh được bằng «có phải phiên giao dịch không»; canh bằng
+khoảng giờ sẽ chặn chết chúng vĩnh viễn.
 
-数据源
-- **A 股**:akshare 交易日历(`tool_trade_date_hist_sina`),含法定节假日,权威。
-  结果缓存在内存,由 `refresh()` 更新(启动预热 + 每日凌晨刷新)。
-- **港股 / 美股**:没有等价的公开日历源,只判周末(诚实降级,不假装支持节假日)。
+Nguồn dữ liệu
+- **Cổ phiếu A**: lịch giao dịch của akshare (`tool_trade_date_hist_sina`), có cả nghỉ lễ chính thức, đáng tin.
+  Kết quả đệm trong bộ nhớ, `refresh()` cập nhật (hâm nóng lúc khởi động + làm mới mỗi rạng sáng).
+- **Cổ phiếu HK / Mỹ**: không có nguồn lịch công khai tương đương, nên chỉ xét cuối tuần
+  (hạ cấp một cách trung thực, không giả vờ hỗ trợ nghỉ lễ).
 
-降级原则
-拿不到日历时退回「只判周末」—— 宁可多发一条通知,也不能把交易日误判为休市。
-少发一条是遗憾,漏发一整天是事故。
+Nguyên tắc hạ cấp
+Không lấy được lịch thì lùi về «chỉ xét cuối tuần» — thà gửi dư một thông báo còn hơn xét
+nhầm phiên giao dịch thành ngày nghỉ. Gửi thiếu một bản là đáng tiếc, sót cả một ngày là sự cố.
 
-并发安全
-同步接口只读内存缓存,**永不发起网络请求**;网络拉取集中在 `refresh()`
-(内部 `asyncio.to_thread`)和 `refresh_blocking()`,避免阻塞事件循环。
+An toàn khi chạy song song
+Giao diện đồng bộ chỉ đọc đệm trong bộ nhớ, **không bao giờ phát yêu cầu mạng**; phần kéo
+qua mạng gom vào `refresh()` (bên trong dùng `asyncio.to_thread`) và `refresh_blocking()`,
+để khỏi chặn vòng lặp sự kiện.
 """
 
 from __future__ import annotations
@@ -27,23 +30,23 @@ from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
-# A 股交易日集合;None = 尚未加载或加载失败(此时降级为只判周末)
+# Tập phiên giao dịch của cổ phiếu A; None = chưa nạp hoặc nạp thất bại (lúc đó hạ cấp về chỉ xét cuối tuần)
 _CN_TRADING_DATES: frozenset[date] | None = None
-# 日历覆盖区间,用于判断查询日期是否落在可信范围内(跨年未刷新时会超出)
+# Khoảng thời gian mà lịch phủ, dùng để biết ngày truy vấn có nằm trong vùng đáng tin không (sang năm mới mà chưa làm mới thì sẽ vượt ra ngoài)
 _CN_RANGE: tuple[date, date] | None = None
 
 _FALLBACK_TZ = "Asia/Shanghai"
 
 
 def reset_cache() -> None:
-    """清空日历缓存(配置变更或测试用)。"""
+    """Xóa sạch đệm lịch (dùng khi đổi cấu hình hoặc khi test)."""
     global _CN_TRADING_DATES, _CN_RANGE
     _CN_TRADING_DATES = None
     _CN_RANGE = None
 
 
 def _fetch_cn_trading_dates() -> frozenset[date]:
-    """阻塞拉取 A 股交易日历。仅由 `refresh_blocking()` 调用。"""
+    """Kéo lịch giao dịch cổ phiếu A theo kiểu chặn. Chỉ `refresh_blocking()` gọi."""
     import akshare as ak
 
     df = ak.tool_trade_date_hist_sina()
@@ -59,7 +62,7 @@ def _fetch_cn_trading_dates() -> frozenset[date]:
 
 
 def refresh_blocking() -> bool:
-    """同步刷新 A 股交易日历。返回是否成功;失败不抛异常(保持降级行为)。"""
+    """Làm mới lịch giao dịch cổ phiếu A một cách đồng bộ. Trả về thành công hay không; hỏng thì không ném lỗi (giữ hành vi hạ cấp)."""
     global _CN_TRADING_DATES, _CN_RANGE
     try:
         dates = _fetch_cn_trading_dates()
@@ -81,12 +84,12 @@ def refresh_blocking() -> bool:
 
 
 async def refresh() -> bool:
-    """异步刷新日历(走线程池,不阻塞事件循环)。"""
+    """Làm mới lịch bất đồng bộ (qua thread pool, không chặn vòng lặp sự kiện)."""
     return await asyncio.to_thread(refresh_blocking)
 
 
 def _to_market_code(market):
-    """把 MarketCode / 字符串归一化为 MarketCode;无法识别返回 None。"""
+    """Chuẩn hóa MarketCode / chuỗi về MarketCode; không nhận ra thì trả None."""
     from src.platform.marketdata.models import MarketCode
 
     if isinstance(market, MarketCode):
@@ -105,12 +108,12 @@ def _market_tz(code) -> ZoneInfo:
 
 
 def _now_in_market_tz(code) -> datetime:
-    """该市场时区的当前时间。独立成函数便于测试注入。"""
+    """Thời gian hiện tại theo múi giờ của thị trường đó. Tách thành hàm riêng cho dễ tiêm vào lúc test."""
     return datetime.now(_market_tz(code))
 
 
 def _resolve_date(code, d: date | datetime | None) -> date:
-    """把入参归一化为「该市场当地日期」。"""
+    """Chuẩn hóa tham số về «ngày địa phương của thị trường đó»."""
     if d is None:
         return _now_in_market_tz(code).date()
     if isinstance(d, datetime):
@@ -121,34 +124,34 @@ def _resolve_date(code, d: date | datetime | None) -> date:
 
 
 def is_trading_day(market, d: date | datetime | None = None) -> bool:
-    """给定市场的某一天是否开市。
+    """Một ngày nào đó của thị trường cho trước có mở cửa không.
 
     Args:
-        market: `MarketCode` 或市场码字符串(CN/HK/US)。
-        d: 目标日期;`None` 表示该市场时区的今天。带时区的 `datetime`
-           会先换算到市场时区再取日期。
+        market: `MarketCode` hoặc chuỗi mã thị trường (CN/HK/US).
+        d: ngày mục tiêu; `None` nghĩa là hôm nay theo múi giờ của thị trường đó.
+           `datetime` có múi giờ sẽ được quy về múi giờ thị trường rồi mới lấy ngày.
     """
     from src.platform.marketdata.models import MarketCode
 
     code = _to_market_code(market)
     target = _resolve_date(code, d)
 
-    # 周末:三个市场都不开。零依赖、永远准确,放在最前面。
+    # Cuối tuần: cả ba thị trường đều đóng. Không phụ thuộc gì, luôn đúng, nên đặt lên đầu.
     if target.weekday() >= 5:
         return False
 
-    # A 股:日历已加载且覆盖该日期时按日历判(含法定节假日)。
+    # Cổ phiếu A: khi lịch đã nạp và có phủ ngày đó thì xét theo lịch (gồm cả nghỉ lễ theo quy định).
     if code == MarketCode.CN and _CN_TRADING_DATES and _CN_RANGE:
         if _CN_RANGE[0] <= target <= _CN_RANGE[1]:
             return target in _CN_TRADING_DATES
         logger.debug("[交易日历] %s 超出A股日历覆盖范围,降级为只判周末", target)
 
-    # 港美股、日历缺失、超出覆盖范围:只判周末。
+    # Cổ phiếu Hồng Kông / Mỹ, lịch thiếu, hoặc ngày vượt vùng phủ: chỉ xét cuối tuần.
     return True
 
 
 def any_market_trading_day(d: date | datetime | None = None) -> bool:
-    """CN/HK/US 任一为交易日即 `True`。全市场休市(如周末)返回 `False`。"""
+    """Chỉ cần một trong CN/HK/US là phiên giao dịch thì `True`. Mọi thị trường nghỉ (như cuối tuần) thì trả `False`."""
     from src.platform.marketdata.models import MarketCode
 
     return any(

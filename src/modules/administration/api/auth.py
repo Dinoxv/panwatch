@@ -1,4 +1,4 @@
-"""认证 API - 简单的单用户 JWT 认证"""
+"""API xác thực — JWT đơn giản cho một người dùng duy nhất."""
 import os
 import hashlib
 import secrets
@@ -17,35 +17,35 @@ from src.platform.persistence.models import AppSettings
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
 
-# JWT 配置
+# Cấu hình JWT
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
 
-# 环境变量配置（Docker 部署用）
+# Cấu hình qua biến môi trường (dùng khi triển khai Docker)
 ENV_AUTH_USERNAME = os.getenv("AUTH_USERNAME")
 ENV_AUTH_PASSWORD = os.getenv("AUTH_PASSWORD")
 
-# 设置项 key
+# Khóa của mục cài đặt
 AUTH_USERNAME_KEY = "auth_username"
 PASSWORD_HASH_KEY = "auth_password_hash"
 JWT_SECRET_KEY = "jwt_secret"
 
-# JWT Secret 缓存
+# Bộ đệm JWT Secret
 _jwt_secret: str | None = None
 
 
 def get_jwt_secret() -> str:
-    """获取 JWT Secret（持久化到数据库）"""
+    """Lấy JWT Secret (được lưu bền trong cơ sở dữ liệu)."""
     global _jwt_secret
     if _jwt_secret:
         return _jwt_secret
 
-    # 环境变量优先
+    # Biến môi trường được ưu tiên
     if os.getenv("JWT_SECRET"):
         _jwt_secret = os.getenv("JWT_SECRET")
         return _jwt_secret
 
-    # 从数据库读取或首次生成
+    # Đọc từ cơ sở dữ liệu, hoặc sinh mới lần đầu
     db = SessionLocal()
     try:
         setting = db.query(AppSettings).filter(AppSettings.key == JWT_SECRET_KEY).first()
@@ -76,12 +76,12 @@ class TokenResponse(BaseModel):
 
 
 def hash_password(password: str) -> str:
-    """简单的密码哈希"""
+    """Băm mật khẩu đơn giản."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def create_token(expires_days: int = JWT_EXPIRE_DAYS) -> tuple[str, datetime]:
-    """创建 JWT token"""
+    """Tạo JWT token."""
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=expires_days)
     payload = {
@@ -94,7 +94,7 @@ def create_token(expires_days: int = JWT_EXPIRE_DAYS) -> tuple[str, datetime]:
 
 
 def verify_token(token: str) -> bool:
-    """验证 JWT token"""
+    """Xác thực JWT token."""
     try:
         jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         return True
@@ -105,13 +105,13 @@ def verify_token(token: str) -> bool:
 
 
 def get_stored_username(db: Session) -> Optional[str]:
-    """获取存储的用户名"""
+    """Lấy tên người dùng đã lưu."""
     setting = db.query(AppSettings).filter(AppSettings.key == AUTH_USERNAME_KEY).first()
     return setting.value if setting else None
 
 
 def set_stored_username(db: Session, username: str):
-    """设置用户名"""
+    """Đặt tên người dùng."""
     setting = db.query(AppSettings).filter(AppSettings.key == AUTH_USERNAME_KEY).first()
     if setting:
         setting.value = username
@@ -122,13 +122,13 @@ def set_stored_username(db: Session, username: str):
 
 
 def get_password_hash(db: Session) -> Optional[str]:
-    """获取存储的密码哈希"""
+    """Lấy chuỗi băm mật khẩu đã lưu."""
     setting = db.query(AppSettings).filter(AppSettings.key == PASSWORD_HASH_KEY).first()
     return setting.value if setting else None
 
 
 def set_password_hash(db: Session, password_hash: str):
-    """设置密码哈希"""
+    """Đặt chuỗi băm mật khẩu."""
     setting = db.query(AppSettings).filter(AppSettings.key == PASSWORD_HASH_KEY).first()
     if setting:
         setting.value = password_hash
@@ -139,7 +139,7 @@ def set_password_hash(db: Session, password_hash: str):
 
 
 def init_auth_from_env(db: Session) -> bool:
-    """从环境变量初始化认证（Docker 部署用）
+    """Khởi tạo thông tin xác thực từ biến môi trường (dùng khi triển khai Docker).
 
     Returns:
         True if initialized from env, False otherwise
@@ -147,11 +147,11 @@ def init_auth_from_env(db: Session) -> bool:
     if not ENV_AUTH_USERNAME or not ENV_AUTH_PASSWORD:
         return False
 
-    # 如果已有账号，不覆盖
+    # Đã có tài khoản thì không ghi đè
     if get_password_hash(db):
         return False
 
-    # 从环境变量创建账号
+    # Tạo tài khoản từ biến môi trường
     set_stored_username(db, ENV_AUTH_USERNAME)
     set_password_hash(db, hash_password(ENV_AUTH_PASSWORD))
     return True
@@ -161,14 +161,14 @@ async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ):
-    """验证当前用户（用作依赖）"""
-    # 检查是否已设置密码
+    """Xác thực người dùng hiện tại (dùng làm dependency)."""
+    # Kiểm tra đã đặt mật khẩu hay chưa
     password_hash = get_password_hash(db)
     if not password_hash:
-        # 未设置密码，允许访问（初始状态）
+        # Chưa đặt mật khẩu thì cho truy cập (trạng thái khởi tạo)
         return None
 
-    # 已设置密码，需要验证 token
+    # Đã đặt mật khẩu thì phải xác thực token
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -188,7 +188,7 @@ async def get_current_user(
 
 @router.get("/status")
 async def auth_status(db: Session = Depends(get_db)):
-    """获取认证状态"""
+    """Lấy trạng thái xác thực."""
     password_hash = get_password_hash(db)
     return {
         "initialized": password_hash is not None,
@@ -197,7 +197,7 @@ async def auth_status(db: Session = Depends(get_db)):
 
 @router.post("/setup", response_model=TokenResponse)
 async def setup_password(data: SetupRequest, db: Session = Depends(get_db)):
-    """首次设置用户名和密码"""
+    """Đặt tên người dùng và mật khẩu lần đầu."""
     if get_password_hash(db):
         raise HTTPException(400, "已设置过账号，请使用登录接口")
 
@@ -217,7 +217,7 @@ async def setup_password(data: SetupRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: Session = Depends(get_db)):
-    """登录"""
+    """Đăng nhập."""
     stored_hash = get_password_hash(db)
     stored_username = get_stored_username(db)
     if not stored_hash or not stored_username:
@@ -239,7 +239,7 @@ async def change_password(
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
-    """修改密码"""
+    """Đổi mật khẩu."""
     if len(data.password) < 6:
         raise HTTPException(400, "密码长度至少 6 位")
 
@@ -251,5 +251,5 @@ async def change_password(
 
 @router.get("/me")
 async def get_me(user: str = Depends(get_current_user)):
-    """获取当前用户信息"""
+    """Lấy thông tin người dùng hiện tại."""
     return {"user": user or "guest"}

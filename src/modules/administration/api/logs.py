@@ -1,4 +1,4 @@
-"""日志中心 API"""
+"""API trung tâm nhật ký"""
 import asyncio
 import logging
 import time
@@ -10,7 +10,7 @@ from sqlalchemy import func, or_
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-# 端点入参里有名为 logger 的 query 参数，模块级 logger 用别名避免遮蔽
+# Endpoint có tham số query tên là logger, nên logger cấp module dùng bí danh để khỏi bị che
 _module_logger = logging.getLogger(__name__)
 
 from src.platform.persistence.database import get_db
@@ -19,7 +19,7 @@ from src.platform.observability.log_handler import get_log_handler_stats
 
 
 def _format_datetime(dt) -> str:
-    """格式化时间为带时区的 ISO 格式"""
+    """Định dạng thời gian sang ISO kèm múi giờ"""
     if not dt:
         return ""
     if dt.tzinfo is None:
@@ -92,7 +92,7 @@ def _apply_log_filters(
     since: str = "",
     until: str = "",
 ):
-    """把查询过滤条件应用到 LogEntry query 上（列表与 SSE tail 共用）。"""
+    """Áp điều kiện lọc của truy vấn lên query LogEntry (danh sách và SSE tail dùng chung)."""
     if level:
         levels = [l.strip().upper() for l in level.split(",") if l.strip()]
         if levels:
@@ -160,7 +160,7 @@ def _apply_log_filters(
 
 
 def _to_log_response(item: LogEntry) -> LogEntryResponse:
-    """把 ORM 行转成响应模型（列表与 SSE tail 共用）。"""
+    """Đổi dòng ORM sang mô hình phản hồi (danh sách và SSE tail dùng chung)."""
     return LogEntryResponse(
         id=item.id,
         timestamp=_format_datetime(item.timestamp),
@@ -246,7 +246,7 @@ def list_logs(
     )
 
 
-# 日志 SSE tail 的轮询/推送节奏
+# Nhịp thăm dò / đẩy của luồng SSE tail nhật ký
 LOGS_SSE_POLL_SEC = 2.0
 LOGS_SSE_MAX_DURATION_SEC = 30 * 60
 LOGS_SSE_BATCH_LIMIT = 200
@@ -262,12 +262,12 @@ async def stream_logs(
     since: str = Query("", description="起始时间 ISO 格式"),
     last_event_id: int = Query(0, ge=0, description="断线前收到的最后日志 id"),
 ):
-    """日志 SSE tail：按过滤条件持续推送新增日志（替代前端 3s 轮询）。
+    """SSE tail cho nhật ký: đẩy liên tục nhật ký mới theo điều kiện lọc (thay lối hỏi vòng 3s của frontend).
 
-    - 事件 id 直接用日志行 id（天然单调递增），断线重连带 Last-Event-ID
-      （header 优先，query 兜底）即可从缺口处续推；
-    - 首次连接（无 Last-Event-ID）从当前最新 id 开始只推增量，
-      存量由既有 GET /api/logs 列表端点负责（保留不动，降级兜底）。
+    - id sự kiện dùng thẳng id của dòng nhật ký (vốn đã tăng đơn điệu), đứt rồi nối lại
+      mang theo Last-Event-ID (ưu tiên header, query để hứng) là đẩy tiếp từ chỗ hụt được;
+    - lần kết nối đầu (không có Last-Event-ID) bắt đầu từ id mới nhất và chỉ đẩy phần tăng thêm,
+      phần tồn kho do điểm cuối danh sách GET /api/logs sẵn có lo (giữ nguyên, làm lưới hứng khi hạ cấp).
     """
     from src.platform.events.sse import format_sse_comment, format_sse_event
     from src.platform.persistence.database import SessionLocal
@@ -276,7 +276,7 @@ async def stream_logs(
     resume_id = int(header_id) if header_id.isdigit() else last_event_id
 
     def _fetch_after(cursor: int) -> list[LogEntryResponse]:
-        """开独立会话查 id > cursor 的新日志（升序，限量防洪峰）。"""
+        """Mở phiên riêng để tra nhật ký mới có id > cursor (tăng dần, giới hạn số lượng để chống lũ)."""
         db = SessionLocal()
         try:
             query = _apply_log_filters(
@@ -306,7 +306,7 @@ async def stream_logs(
             db.close()
 
     async def gen():
-        # 有 Last-Event-ID → 从缺口续推；否则从当前最新开始只 tail 增量
+        # Có Last-Event-ID → đẩy tiếp từ chỗ hụt; không thì bắt đầu từ bản ghi mới nhất và chỉ tail phần tăng thêm
         cursor = resume_id if resume_id > 0 else await asyncio.to_thread(_current_max_id)
         started = time.monotonic()
         idle_ticks = 0
@@ -324,7 +324,7 @@ async def stream_logs(
                 yield format_sse_event(
                     cursor, "logs", {"items": [i.model_dump() for i in items]}
                 )
-                # 一批打满说明还有积压，立即继续拉
+                # Một lô đầy nghĩa là còn tồn đọng, kéo tiếp ngay
                 if len(items) >= LOGS_SSE_BATCH_LIMIT:
                     continue
             else:

@@ -1,4 +1,4 @@
-"""验证中心 API：面向产品展示的 Agent 建议复盘。"""
+"""API trung tâm kiểm chứng: phần ôn lại khuyến nghị của Agent dành cho sản phẩm."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def query_prediction_rows(
     horizon_unit: str | None = "trading_days",
     days: int = 90,
 ) -> list[AgentPredictionOutcome]:
-    """加载一组原始 horizon 记录，聚合与分页交给调用方完成。"""
+    """Nạp một nhóm bản ghi horizon thô, phần gộp và phân trang để bên gọi làm."""
     cutoff = (date.today() - timedelta(days=max(1, int(days)))).strftime("%Y-%m-%d")
     query = db.query(AgentPredictionOutcome).filter(
         AgentPredictionOutcome.prediction_date >= cutoff
@@ -59,7 +59,7 @@ def query_prediction_rows(
 def filter_prediction_groups_by_status(
     groups: list[dict], status: str | None
 ) -> list[dict]:
-    """按建议组筛选状态，始终保留其全部 horizon 结果。"""
+    """Lọc trạng thái theo nhóm khuyến nghị, luôn giữ trọn mọi kết quả horizon của nhóm đó."""
     if not status:
         return groups
     return [
@@ -96,7 +96,7 @@ def list_agent_predictions(
     offset: int = Query(default=0, ge=0, le=3000),
     db: Session = Depends(get_db),
 ):
-    """按建议组返回复盘行；默认只展示交易日口径。"""
+    """Trả về các dòng ôn lại theo nhóm khuyến nghị; mặc định chỉ hiện khẩu độ phiên giao dịch."""
     rows = query_prediction_rows(
         db=db,
         agent_name=agent_name,
@@ -131,7 +131,7 @@ def get_agent_prediction_summary(
     days: int = Query(default=90, ge=1, le=720),
     db: Session = Depends(get_db),
 ):
-    """返回与列表筛选一致的命中、覆盖与样本量汇总。"""
+    """Trả về tổng hợp mức trúng, mức phủ và cỡ mẫu khớp với bộ lọc của danh sách."""
     rows = query_prediction_rows(
         db=db,
         agent_name=agent_name,
@@ -154,7 +154,7 @@ def evaluate_agent_predictions(
     max_horizon_days: int = Query(default=5, ge=1, le=5),
     limit: int = Query(default=300, ge=1, le=300),
 ):
-    """手动检查已到期建议；未到期记录保持 pending。"""
+    """Kiểm tay các khuyến nghị đã tới hạn; bản ghi chưa tới hạn giữ nguyên pending."""
     return evaluate_pending_prediction_outcomes(
         max_horizon_days=max_horizon_days,
         limit=limit,

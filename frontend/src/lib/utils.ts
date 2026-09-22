@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 export { cn } from '@panwatch/base-ui'
 
 /**
- * 持久化到 localStorage 的 useState
- * @param key localStorage 键名
- * @param defaultValue 默认值
+ * useState có lưu bền xuống localStorage
+ * @param key tên khóa trong localStorage
+ * @param defaultValue giá trị mặc định
  */
 export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
   const [value, setValue] = useState<T>(() => {
@@ -30,12 +30,12 @@ export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T 
   return [value, setValue]
 }
 
-// ==================== 时间格式化工具 ====================
+// ==================== Tiện ích định dạng thời gian ====================
 
 /**
- * 格式化 ISO 时间为本地时间（仅时间）
- * @param isoTime ISO 格式时间字符串
- * @returns 如 "15:30"
+ * Định dạng thời gian ISO thành giờ địa phương (chỉ phần giờ)
+ * @param isoTime chuỗi thời gian định dạng ISO
+ * @returns ví dụ "15:30"
  */
 export function formatTime(isoTime?: string | null): string {
   if (!isoTime) return ''
@@ -53,9 +53,9 @@ export function formatTime(isoTime?: string | null): string {
 }
 
 /**
- * 格式化 ISO 时间为本地日期时间
- * @param isoTime ISO 格式时间字符串
- * @returns 如 "01/26 15:30"
+ * Định dạng thời gian ISO thành ngày giờ địa phương
+ * @param isoTime chuỗi thời gian định dạng ISO
+ * @returns ví dụ "01/26 15:30"
  */
 export function formatDateTime(isoTime?: string | null): string {
   if (!isoTime) return ''
@@ -75,9 +75,9 @@ export function formatDateTime(isoTime?: string | null): string {
 }
 
 /**
- * 格式化 ISO 时间为完整本地日期时间
- * @param isoTime ISO 格式时间字符串
- * @returns 如 "2024-01-26 15:30:00"
+ * Định dạng thời gian ISO thành ngày giờ địa phương đầy đủ
+ * @param isoTime chuỗi thời gian định dạng ISO
+ * @returns ví dụ "2024-01-26 15:30:00"
  */
 export function formatFullDateTime(isoTime?: string | null): string {
   if (!isoTime) return ''

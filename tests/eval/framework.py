@@ -19,11 +19,11 @@ from dataclasses import dataclass, field
 from src.modules.assistant.chat_api import SYSTEM_PROMPT
 from src.modules.assistant.legacy_chat_tools import CHAT_TOOLS
 
-# 动作白名单：chat agent 只允许调用这些只读工具
+# Danh sách trắng hành động: chat agent chỉ được gọi các công cụ chỉ đọc này
 TOOL_WHITELIST = {t["function"]["name"] for t in CHAT_TOOLS}
 MAX_TOOL_ROUNDS = 5
 
-# 用例未提供某工具 mock 数据时的默认返回（模拟工具失败）
+# Giá trị trả về mặc định khi test không cấp dữ liệu giả cho một công cụ (mô phỏng công cụ thất bại)
 DEFAULT_TOOL_MISSING = "工具执行出错: eval 用例未提供该工具的 mock 数据"
 
 
@@ -33,21 +33,21 @@ class ChatEvalCase:
 
     id: str
     question: str
-    # 工具名 → mock 返回文本（工具失败场景直接给"工具执行出错: ..."文案）
+    # Tên công cụ → văn bản trả về giả (tình huống công cụ lỗi thì đưa thẳng câu "工具执行出错: ...")
     tool_data: dict[str, str] = field(default_factory=dict)
-    # 必须调用的工具（子集断言，不要求顺序）
+    # Các công cụ bắt buộc phải gọi (kiểm tra theo tập con, không đòi thứ tự)
     expected_tools: tuple[str, ...] = ()
-    # 明确不应调用的工具
+    # Các công cụ dứt khoát không được gọi
     forbidden_tools: tuple[str, ...] = ()
-    # 闲聊/概念题：完全不应调用任何工具
+    # Câu hỏi tán gẫu / khái niệm: tuyệt đối không được gọi công cụ nào
     expect_no_tools: bool = False
-    # 工具名 → {参数名: 期望值或校验函数}；同名多次调用时任一命中即通过
+    # Tên công cụ → {tên tham số: giá trị kỳ vọng hoặc hàm kiểm tra}; gọi nhiều lần cùng tên thì chỉ cần một lần khớp là đạt
     param_checks: dict[str, dict] = field(default_factory=dict)
-    # 有据性：答案必须包含的关键值（全部命中才通过）
+    # Tính có căn cứ: các giá trị then chốt mà câu trả lời phải chứa (khớp hết mới đạt)
     answer_must_contain: tuple[str, ...] = ()
-    # 答案必须包含其中任意一个（如失败场景的"失败/无法/未能"类表述）
+    # Câu trả lời phải chứa ít nhất một trong số này (ví dụ các cách diễn đạt kiểu "thất bại / không thể / chưa thực hiện được" ở tình huống lỗi)
     answer_must_contain_any: tuple[str, ...] = ()
-    # 答案不得包含（如工具失败时不得出现编造的具体数值）
+    # Câu trả lời không được chứa (ví dụ khi công cụ lỗi thì không được xuất hiện con số cụ thể bịa ra)
     answer_must_not_contain: tuple[str, ...] = ()
     notes: str = ""
 
@@ -73,7 +73,7 @@ class ChatEvalRunner:
 
     def __init__(self, ai_client, temperature: float = 0.0):
         self.ai_client = ai_client
-        # 评测用低温，尽量减少非确定性
+        # Chấm điểm dùng nhiệt độ thấp để giảm tối đa tính bất định
         self.temperature = temperature
 
     async def run_case(self, case: ChatEvalCase) -> ChatEvalResult:
@@ -121,7 +121,7 @@ class ChatEvalRunner:
                     })
             else:
                 result.error = "超过最大工具轮次仍未给出回答"
-        except Exception as e:  # noqa: BLE001 - 评测记录任何运行异常
+        except Exception as e:  # noqa: BLE001 - phép chấm điểm ghi nhận mọi ngoại lệ khi chạy
             result.error = f"运行异常: {e}"
         return result
 
@@ -145,11 +145,11 @@ def evaluate_case(case: ChatEvalCase, result: ChatEvalResult) -> list[str]:
     called = [name for name, _ in result.tool_calls]
     called_set = set(called)
 
-    # 1) 动作白名单：调用了未注册的工具直接失败
+    # 1) Danh sách trắng hành động: gọi công cụ chưa đăng ký là trượt luôn
     for name in sorted(called_set - TOOL_WHITELIST):
         failures.append(f"调用了白名单外的工具: {name}")
 
-    # 2) 工具选择
+    # 2) Chọn công cụ
     if case.expect_no_tools and called:
         failures.append(f"不该调用工具却调用了: {called}")
     for name in case.expected_tools:
@@ -159,11 +159,11 @@ def evaluate_case(case: ChatEvalCase, result: ChatEvalResult) -> list[str]:
         if name in called_set:
             failures.append(f"调用了不该调用的工具: {name}")
 
-    # 3) 工具参数
+    # 3) Tham số công cụ
     for tool_name, expects in (case.param_checks or {}).items():
         calls = [args for name, args in result.tool_calls if name == tool_name]
         if not calls:
-            continue  # 缺调用已在上面报过
+            continue  # Việc thiếu lời gọi đã được báo ở trên
         matched = any(
             all(_param_match(args.get(k), v) for k, v in expects.items())
             for args in calls
@@ -172,7 +172,7 @@ def evaluate_case(case: ChatEvalCase, result: ChatEvalResult) -> list[str]:
             expect_desc = {k: (v if not callable(v) else "<校验函数>") for k, v in expects.items()}
             failures.append(f"{tool_name} 参数不符合预期 {expect_desc}，实际 {calls}")
 
-    # 4) 有据性 / 内容约束
+    # 4) Tính có căn cứ / ràng buộc nội dung
     answer = result.answer or ""
     for token in case.answer_must_contain:
         if token not in answer:

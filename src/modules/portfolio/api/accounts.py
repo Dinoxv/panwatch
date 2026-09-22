@@ -1,4 +1,4 @@
-"""账户和持仓管理 API"""
+"""API quản lý tài khoản và vị thế"""
 import logging
 import time
 import httpx
@@ -18,21 +18,21 @@ from src.platform.marketdata.models import MarketCode
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# 汇率缓存
-_hkd_rate_cache: dict = {"rate": 0.92, "ts": 0}  # 港币默认汇率 0.92
-_usd_rate_cache: dict = {"rate": 7.25, "ts": 0}  # 美元默认汇率 7.25
-EXCHANGE_RATE_TTL = 3600  # 1 小时缓存
+# Bộ đệm tỷ giá
+_hkd_rate_cache: dict = {"rate": 0.92, "ts": 0}  # Tỷ giá HKD mặc định 0,92
+_usd_rate_cache: dict = {"rate": 7.25, "ts": 0}  # Tỷ giá USD mặc định 7,25
+EXCHANGE_RATE_TTL = 3600  # Bộ đệm 1 giờ
 
 
 def get_hkd_cny_rate() -> float:
-    """获取港币兑人民币汇率"""
+    """Lấy tỷ giá đô la Hồng Kông sang nhân dân tệ"""
     global _hkd_rate_cache
 
-    # 检查缓存
+    # Kiểm tra bộ đệm
     if time.time() - _hkd_rate_cache["ts"] < EXCHANGE_RATE_TTL:
         return _hkd_rate_cache["rate"]
 
-    # 从新浪财经获取汇率
+    # Lấy tỷ giá từ Sina Finance
     try:
         resp = httpx.get(
             "https://hq.sinajs.cn/list=fx_shkdcny",
@@ -42,7 +42,7 @@ def get_hkd_cny_rate() -> float:
                 "Referer": "https://finance.sina.com.cn/"
             }
         )
-        # 格式: var hq_str_fx_shkdcny="时间,汇率,..."
+        # Định dạng: var hq_str_fx_shkdcny="thời gian,tỷ giá,..."
         text = resp.text
         if "=" in text and "," in text:
             data = text.split('"')[1]
@@ -59,14 +59,14 @@ def get_hkd_cny_rate() -> float:
 
 
 def get_usd_cny_rate() -> float:
-    """获取美元兑人民币汇率"""
+    """Lấy tỷ giá đô la Mỹ sang nhân dân tệ"""
     global _usd_rate_cache
 
-    # 检查缓存
+    # Kiểm tra bộ đệm
     if time.time() - _usd_rate_cache["ts"] < EXCHANGE_RATE_TTL:
         return _usd_rate_cache["rate"]
 
-    # 从新浪财经获取汇率
+    # Lấy tỷ giá từ Sina Finance
     try:
         resp = httpx.get(
             "https://hq.sinajs.cn/list=fx_susdcny",
@@ -76,7 +76,7 @@ def get_usd_cny_rate() -> float:
                 "Referer": "https://finance.sina.com.cn/"
             }
         )
-        # 格式: var hq_str_fx_susdcny="时间,汇率,..."
+        # Định dạng: var hq_str_fx_susdcny="thời gian,tỷ giá,..."
         text = resp.text
         if "=" in text and "," in text:
             data = text.split('"')[1]
@@ -121,7 +121,7 @@ class PositionCreate(BaseModel):
     cost_price: float
     quantity: int
     invested_amount: float | None = None
-    trading_style: str | None = None  # short: 短线, swing: 波段, long: 长线
+    trading_style: str | None = None  # short: lướt sóng, swing: trung hạn, long: dài hạn
 
 
 class PositionUpdate(BaseModel):
@@ -140,7 +140,7 @@ class PositionResponse(BaseModel):
     invested_amount: float | None
     sort_order: int
     trading_style: str | None
-    # 关联信息
+    # Thông tin liên kết
     account_name: str | None = None
     stock_symbol: str | None = None
     stock_name: str | None = None
@@ -162,13 +162,13 @@ class PositionReorderRequest(BaseModel):
 
 @router.get("/accounts", response_model=list[AccountResponse])
 def list_accounts(db: Session = Depends(get_db)):
-    """获取所有账户"""
+    """Lấy mọi tài khoản"""
     return db.query(Account).order_by(Account.id).all()
 
 
 @router.get("/accounts/{account_id}", response_model=AccountResponse)
 def get_account(account_id: int, db: Session = Depends(get_db)):
-    """获取单个账户"""
+    """Lấy một tài khoản"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -177,7 +177,7 @@ def get_account(account_id: int, db: Session = Depends(get_db)):
 
 @router.post("/accounts", response_model=AccountResponse)
 def create_account(data: AccountCreate, db: Session = Depends(get_db)):
-    """创建账户"""
+    """Tạo tài khoản"""
     account = Account(name=data.name, available_funds=data.available_funds)
     db.add(account)
     db.commit()
@@ -188,7 +188,7 @@ def create_account(data: AccountCreate, db: Session = Depends(get_db)):
 
 @router.put("/accounts/{account_id}", response_model=AccountResponse)
 def update_account(account_id: int, data: AccountUpdate, db: Session = Depends(get_db)):
-    """更新账户"""
+    """Cập nhật tài khoản"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -208,7 +208,7 @@ def update_account(account_id: int, data: AccountUpdate, db: Session = Depends(g
 
 @router.delete("/accounts/{account_id}")
 def delete_account(account_id: int, db: Session = Depends(get_db)):
-    """删除账户（会同时删除该账户的所有持仓）"""
+    """Xóa tài khoản (sẽ xóa luôn mọi vị thế của tài khoản đó)"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -231,7 +231,7 @@ def list_positions(
     stock_id: int | None = None,
     db: Session = Depends(get_db)
 ):
-    """获取持仓列表，可按账户或股票筛选"""
+    """Lấy danh sách vị thế, lọc được theo tài khoản hoặc theo mã"""
     query = db.query(Position)
     if account_id:
         query = query.filter(Position.account_id == account_id)
@@ -259,8 +259,8 @@ def list_positions(
 
 @router.post("/positions", response_model=PositionResponse)
 def create_position(data: PositionCreate, db: Session = Depends(get_db)):
-    """创建持仓"""
-    # 检查账户和股票是否存在
+    """Tạo vị thế"""
+    # Kiểm tra tài khoản và cổ phiếu có tồn tại không
     account = db.query(Account).filter(Account.id == data.account_id).first()
     if not account:
         raise HTTPException(400, "账户不存在")
@@ -269,7 +269,7 @@ def create_position(data: PositionCreate, db: Session = Depends(get_db)):
     if not stock:
         raise HTTPException(400, "股票不存在")
 
-    # 检查是否已存在该账户的该股票持仓
+    # Kiểm tra tài khoản này đã có vị thế ở mã đó chưa
     existing = db.query(Position).filter(
         Position.account_id == data.account_id,
         Position.stock_id == data.stock_id,
@@ -312,7 +312,7 @@ def create_position(data: PositionCreate, db: Session = Depends(get_db)):
 
 @router.put("/positions/{position_id}", response_model=PositionResponse)
 def update_position(position_id: int, data: PositionUpdate, db: Session = Depends(get_db)):
-    """更新持仓"""
+    """Cập nhật vị thế"""
     position = db.query(Position).filter(Position.id == position_id).first()
     if not position:
         raise HTTPException(404, "持仓不存在")
@@ -324,7 +324,7 @@ def update_position(position_id: int, data: PositionUpdate, db: Session = Depend
     if data.invested_amount is not None:
         position.invested_amount = data.invested_amount
     if data.trading_style is not None:
-        # 空字符串表示清空，设为 None
+        # Chuỗi rỗng nghĩa là xóa trắng, đặt thành None
         position.trading_style = data.trading_style if data.trading_style else None
 
     db.commit()
@@ -348,7 +348,7 @@ def update_position(position_id: int, data: PositionUpdate, db: Session = Depend
 
 @router.delete("/positions/{position_id}")
 def delete_position(position_id: int, db: Session = Depends(get_db)):
-    """删除持仓"""
+    """Xóa vị thế"""
     position = db.query(Position).filter(Position.id == position_id).first()
     if not position:
         raise HTTPException(404, "持仓不存在")
@@ -366,7 +366,7 @@ def delete_position(position_id: int, db: Session = Depends(get_db)):
 
 @router.put("/positions/reorder/batch")
 def reorder_positions(data: PositionReorderRequest, db: Session = Depends(get_db)):
-    """批量更新持仓排序"""
+    """Cập nhật hàng loạt thứ tự sắp xếp vị thế"""
     if not data.items:
         return {"updated": 0}
     ids = [int(x.id) for x in data.items]
@@ -392,16 +392,16 @@ def get_portfolio_summary(
     db: Session = Depends(get_db),
 ):
     """
-    获取持仓汇总信息
+    Lấy thông tin tổng hợp vị thế
 
     Args:
-        account_id: 可选，指定账户ID。不指定则汇总所有账户
+        account_id: tùy chọn, chỉ định ID tài khoản. Không chỉ định thì gộp mọi tài khoản
 
     Returns:
-        accounts: 账户列表及各账户持仓明细
-        total: 所有账户汇总
+        accounts: danh sách tài khoản và chi tiết vị thế của từng tài khoản
+        total: tổng hợp mọi tài khoản
     """
-    # 获取账户
+    # Lấy tài khoản
     if account_id:
         accounts = db.query(Account).filter(Account.id == account_id, Account.enabled == True).all()
     else:
@@ -420,7 +420,7 @@ def get_portfolio_summary(
             }
         }
 
-    # 获取所有相关股票
+    # Lấy toàn bộ cổ phiếu liên quan
     all_stock_ids = set()
     for acc in accounts:
         for pos in acc.positions:
@@ -429,14 +429,14 @@ def get_portfolio_summary(
     stocks = db.query(Stock).filter(Stock.id.in_(all_stock_ids)).all() if all_stock_ids else []
     stock_map = {s.id: s for s in stocks}
 
-    # 获取实时行情（可选）
+    # Lấy giá thời gian thực (tùy chọn)
     quotes = _fetch_quotes_for_stocks(stocks) if include_quotes else {}
 
-    # 获取汇率
+    # Lấy tỷ giá
     hkd_rate = get_hkd_cny_rate()
     usd_rate = get_usd_cny_rate()
 
-    # 计算各账户持仓
+    # Tính vị thế của từng tài khoản
     account_summaries = []
     grand_total_market_value = 0
     grand_total_cost = 0
@@ -463,7 +463,7 @@ def get_portfolio_summary(
             change_pct = quote["change_pct"] if quote else None
             prev_close = quote.get("prev_close") if quote else None
 
-            # 根据市场确定汇率
+            # Xác định tỷ giá theo thị trường
             is_foreign = stock.market in ("HK", "US")
             if stock.market == "HK":
                 rate = hkd_rate
@@ -485,12 +485,12 @@ def get_portfolio_summary(
                 acc_daily_pnl += daily_pnl
 
             cost = pos.cost_price * pos.quantity
-            cost_cny = cost * rate  # 假设成本价也是原币种
+            cost_cny = cost * rate  # Giả định giá vốn cũng tính bằng bản tệ
             acc_cost += cost_cny
 
             if current_price is not None:
-                market_value = current_price * pos.quantity  # 原币种市值
-                market_value_cny = market_value * rate  # 人民币市值
+                market_value = current_price * pos.quantity  # Giá trị thị trường theo bản tệ
+                market_value_cny = market_value * rate  # Giá trị thị trường quy CNY
                 pnl = market_value_cny - cost_cny
                 pnl_pct = (pnl / cost_cny * 100) if cost_cny > 0 else 0
 
@@ -555,7 +555,7 @@ def get_portfolio_summary(
         grand_pnl_pct = 0
         grand_total_assets = grand_available_funds
 
-    # 构建 quotes 字典（用于前端股票列表显示）
+    # Dựng dict quotes (để giao diện hiển thị danh sách cổ phiếu)
     quotes_dict = {}
     if include_quotes:
         for symbol, quote in quotes.items():
@@ -579,16 +579,16 @@ def get_portfolio_summary(
             "HKD_CNY": hkd_rate,
             "USD_CNY": usd_rate,
         },
-        "quotes": quotes_dict,  # 可选：返回行情数据
+        "quotes": quotes_dict,  # Tùy chọn: trả kèm dữ liệu giá
     }
 
 
 def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
-    """获取股票列表的实时行情"""
+    """Lấy bảng giá thời gian thực của một danh sách mã"""
     if not stocks:
         return {}
 
-    # 按市场分组
+    # Gom nhóm theo thị trường
     market_stocks: dict[str, list[Stock]] = {}
     for s in stocks:
         market_stocks.setdefault(s.market, []).append(s)
@@ -611,13 +611,13 @@ def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
     return quotes
 
 
-# 组合基准/归因结果缓存:重建全持仓 NAV 很贵(逐只拉 K 线),按持仓指纹缓存结果。
-# 持仓变动即失效(指纹变);失败/空结果不缓存,避免把瞬时故障冻住 10 分钟。
+# Bộ đệm kết quả chuẩn so sánh / phân rã đóng góp: dựng lại giá trị ròng cho cả danh mục rất tốn (phải kéo nến từng mã), nên đệm theo vân tay của danh mục.
+# Vị thế đổi là bộ đệm mất hiệu lực ngay (vân tay đổi); kết quả lỗi / rỗng thì không đệm, tránh đóng băng một sự cố nhất thời suốt 10 phút.
 _PORTFOLIO_RESULT_CACHE = TTLCache(default_ttl_sec=600.0)
 
 
 def _holdings_signature(db: Session) -> str:
-    """启用账户持仓的稳定指纹(stock_id + 合并后数量);仅查 DB,不拉行情/K 线。"""
+    """Dấu vân tay ổn định của vị thế trong các tài khoản đang bật (stock_id + số lượng sau khi gộp); chỉ tra DB, không kéo bảng giá/nến."""
     rows = (
         db.query(Position.stock_id, Position.quantity)
         .join(Account, Account.id == Position.account_id)
@@ -631,7 +631,7 @@ def _holdings_signature(db: Session) -> str:
 
 
 def _gather_holdings(db: Session) -> list[dict]:
-    """汇总所有启用账户的真实持仓为统一列表(CNY 市值/浮盈 + fx),多账户同股合并。"""
+    """Gộp vị thế thật của mọi tài khoản đang bật thành một danh sách thống nhất (giá trị/lãi tạm tính quy CNY + fx), cùng mã ở nhiều tài khoản thì gộp lại."""
     accounts = db.query(Account).filter(Account.enabled == True).all()  # noqa: E712
     stock_ids = {p.stock_id for acc in accounts for p in acc.positions}
     stocks = db.query(Stock).filter(Stock.id.in_(stock_ids)).all() if stock_ids else []
@@ -653,7 +653,7 @@ def _gather_holdings(db: Session) -> list[dict]:
             mv_cny = (price * pos.quantity * rate) if price else cost_cny
             pnl_cny = (mv_cny - cost_cny) if price else 0.0
             key = (stock.market, stock.symbol)
-            if key in seen:  # 多账户同一标的合并
+            if key in seen:  # Gộp cùng một mã nằm ở nhiều tài khoản
                 h = seen[key]
                 h["quantity"] += pos.quantity
                 h["market_value"] += mv_cny
@@ -676,7 +676,7 @@ def _gather_holdings(db: Session) -> list[dict]:
 
 @router.get("/portfolio/diagnostics")
 def portfolio_diagnostics(db: Session = Depends(get_db)):
-    """真实持仓组合诊断:集中度(HHI)/最大单仓/市场分布/风险提示(只读)。"""
+    """Soi danh mục vị thế thật: mức tập trung (HHI)/vị thế lớn nhất/phân bố thị trường/cảnh báo rủi ro (chỉ đọc)."""
     from src.modules.portfolio.portfolio_diagnostics import diagnose_positions
 
     return diagnose_positions(_gather_holdings(db))
@@ -686,7 +686,7 @@ def portfolio_diagnostics(db: Session = Depends(get_db)):
 def portfolio_benchmark(
     days: int = 60, benchmark: str = "000300", db: Session = Depends(get_db)
 ):
-    """真实持仓组合 vs 基准:超额收益/信息比率/相对回撤 + 归一化净值曲线。"""
+    """Danh mục vị thế thật vs tham chiếu: lợi nhuận vượt trội/tỷ lệ thông tin/sụt giảm tương đối + đường giá trị ròng đã chuẩn hóa."""
     from src.modules.portfolio.portfolio_benchmark import (
         DEFAULT_BENCHMARK,
         build_portfolio_benchmark,
@@ -707,7 +707,7 @@ def portfolio_benchmark(
         return {"empty": True, "reason": "no_holdings"}
     res = build_portfolio_benchmark(holdings, days=days, benchmark_code=bcode)
     if not res:
-        # 失败/数据不足不缓存,下轮可重试(由 K 线负缓存兜住打爆)
+        # Lỗi / thiếu dữ liệu thì không đệm, vòng sau thử lại (đã có negative cache của nến chặn việc gọi dồn dập)
         return {"empty": True, "reason": "insufficient_data"}
     _PORTFOLIO_RESULT_CACHE.set(ckey, res)
     return res
@@ -715,7 +715,7 @@ def portfolio_benchmark(
 
 @router.get("/portfolio/todos")
 def portfolio_todos(db: Session = Depends(get_db)):
-    """首页空态待办:持仓但未设提醒 / 提醒即将到期(可行动,盘后也不空)。"""
+    """Việc còn treo ở trạng thái rỗng của trang chủ: có vị thế mà chưa đặt cảnh báo / cảnh báo sắp hết hạn (hành động được, ngoài phiên cũng không trống)."""
     todos: list[dict] = []
     accounts = db.query(Account).filter(Account.enabled == True).all()  # noqa: E712
     held_ids = {p.stock_id for acc in accounts for p in acc.positions}
@@ -766,7 +766,7 @@ def portfolio_todos(db: Session = Depends(get_db)):
 
 @router.get("/portfolio/attribution")
 def portfolio_attribution(days: int = 60, benchmark: str = "000300", db: Session = Depends(get_db)):
-    """近 days 日各持仓对组合收益的贡献(谁拖累/贡献),降序。"""
+    """Mức đóng góp của từng vị thế vào lợi nhuận danh mục trong days ngày gần nhất (ai kéo lùi/ai đóng góp), giảm dần."""
     from src.modules.portfolio.portfolio_benchmark import DEFAULT_BENCHMARK, build_attribution
 
     days = max(20, min(int(days), 250))
@@ -784,7 +784,7 @@ def portfolio_attribution(days: int = 60, benchmark: str = "000300", db: Session
         return {"items": []}
     items = build_attribution(holdings, days=days, benchmark_code=bcode)
     result = {"items": items}
-    if items:  # 空结果不缓存,下轮可重试
+    if items:  # Kết quả rỗng không đệm, vòng sau thử lại
         _PORTFOLIO_RESULT_CACHE.set(ckey, result)
     return result
 
@@ -808,7 +808,7 @@ def _gather_account_totals(db: Session, *, market_value: float) -> dict:
 
 @router.post("/portfolio/ai-review")
 async def portfolio_ai_review(model_id: int | None = None, db: Session = Depends(get_db)):
-    """组合 AI 体检:诊断+基准+归因 → 叙述结论 + 调仓建议(只读,不下单)。"""
+    """Soi sức khỏe danh mục bằng AI: soi + tham chiếu + phân rã đóng góp → kết luận dạng văn + khuyến nghị cơ cấu lại (chỉ đọc, không đặt lệnh)."""
     from src.modules.portfolio.portfolio_benchmark import build_attribution, build_portfolio_benchmark
     from src.modules.portfolio.portfolio_diagnostics import diagnose_positions
     from src.platform.ai.ai_failover import get_configured_failover_client

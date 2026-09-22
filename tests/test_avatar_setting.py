@@ -10,11 +10,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import src.platform.persistence.models as M  # noqa: F401 (确保模型注册到 Base)
+import src.platform.persistence.models as M  # noqa: F401 (bảo đảm mô hình được đăng ký vào Base)
 from src.modules.administration.api import settings as settings_api
 from src.platform.persistence.database import Base, get_db
 
-# 任意有效 base64;后端按字节落文件,GET 再读回同样的 data URL
+# base64 hợp lệ bất kỳ; máy chủ ghi ra tệp theo byte, GET đọc lại đúng data URL đó
 _IMG = "data:image/jpeg;base64,AAAA"
 
 
@@ -52,11 +52,11 @@ def test_avatar_saved_as_file_db_stores_filename(tmp_path, monkeypatch):
     c = _client(tmp_path, monkeypatch)
     r = c.put("/settings/avatar", json={"value": _IMG})
     assert r.status_code == 200, r.text
-    # 文件已落盘到 data/avatars
+    # Tệp đã ghi xuống data/avatars
     assert os.listdir(os.path.join(str(tmp_path), "avatars")) == ["avatar.jpg"]
-    # DB 仅存文件名(短,非 base64)
+    # Cơ sở dữ liệu chỉ lưu tên tệp (ngắn, không phải base64)
     assert r.json()["value"] == "avatar.jpg"
-    # GET 读回 data URL
+    # GET đọc lại data URL
     assert c.get("/settings/avatar").json()["value"] == _IMG
 
 

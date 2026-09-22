@@ -138,7 +138,7 @@ def test_stream_task_tool_loop(monkeypatch):
     assert events[1][1]["ok"] is True
     assert "1700" in events[1][1]["preview"]
     assert events[-1][1]["content"] == "茅台 1700 元"
-    # 工具名与参数确实传给了执行器
+    # Tên công cụ và tham số thật sự được truyền cho bộ thực thi
     fake_exec.assert_awaited_once()
     assert fake_exec.await_args.args[1] == "get_stock_quote"
     assert fake_exec.await_args.args[2] == {"symbol": "600519"}
@@ -207,7 +207,7 @@ def test_send_message_stream_endpoint(monkeypatch):
     assert "event: meta\n" in body
     assert "event: done\n" in body
 
-    # meta 里的 stream_id 能从 hub 找回（断线重连的依据）
+    # stream_id trong meta tìm lại được từ hub (đây là căn cứ để nối lại sau khi đứt kết nối)
     meta_line = next(
         l for l in body.split("\n") if l.startswith("data: ") and "stream_id" in l
     )
@@ -215,7 +215,7 @@ def test_send_message_stream_endpoint(monkeypatch):
     assert chat_api.chat_stream_hub.get(stream_id) is not None
     assert json.loads(meta_line[len("data: "):])["task_id"] > 0
 
-    # 用户消息已落库
+    # Tin nhắn của người dùng đã được lưu
     db = session_factory()
     user_msgs = (
         db.query(ChatMessage)

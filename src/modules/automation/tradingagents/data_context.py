@@ -1,16 +1,19 @@
-"""TradingAgents 数据上下文适配。
+"""Khớp ngữ cảnh dữ liệu cho TradingAgents.
 
-本文件同时负责 A 股财务摘要、PortfolioContext、instrument_context 和标的元数据，
-把 PanWatch 的业务数据转换成 TradingAgents 可消费的结构化上下文。
+Tệp này đồng thời lo phần tóm tắt tài chính cổ phiếu A, PortfolioContext,
+instrument_context và siêu dữ liệu của mã, đổi dữ liệu nghiệp vụ của PanWatch thành ngữ
+cảnh có cấu trúc mà TradingAgents tiêu thụ được.
 
-A 股财务数据采集 — 用 akshare 拉真实财务报表给 TradingAgents 分析师用。
+Thu thập dữ liệu tài chính cổ phiếu A — dùng akshare kéo báo cáo tài chính thật cho các
+chuyên viên phân tích của TradingAgents dùng.
 
-之前 PanWatch 没采集财报,fundamentals/balance/cashflow/income 工具都返回占位文本,
-LLM 没法做真正的基本面分析。本模块用 akshare 的 stock_financial_abstract 拉最近 2 期
-真实数据(归母净利润 / 营收 / ROE / 毛利率 / 资产负债率 / 经营现金流等),塞给
-对应工具。
+Trước đây PanWatch không thu thập báo cáo tài chính, các công cụ
+fundamentals/balance/cashflow/income đều trả về văn bản giữ chỗ, LLM không phân tích cơ
+bản thật sự được. Module này dùng stock_financial_abstract của akshare kéo dữ liệu thật
+của 2 kỳ gần nhất (lợi nhuận sau thuế thuộc công ty mẹ / doanh thu / ROE / biên lợi nhuận
+gộp / hệ số nợ / dòng tiền kinh doanh…) rồi nhét vào công cụ tương ứng.
 
-只支持 A 股(6 位数字)。失败时返回 None,toolkit_adapter 退回轻量 quote 数据。
+Chỉ hỗ trợ cổ phiếu A (6 chữ số). Hỏng thì trả None, toolkit_adapter lùi về dữ liệu quote nhẹ.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# 统一导出“业务数据 → TradingAgents 上下文”的入口，避免调用方关心内部渲染函数。
+# Gom về một cửa xuất duy nhất cho luồng “dữ liệu nghiệp vụ → ngữ cảnh TradingAgents”, để phía gọi không phải bận tâm tới các hàm kết xuất bên trong.
 __all__ = [
     "build_stock_metadata_context",
     "fetch_financial_abstract",
@@ -36,11 +39,11 @@ __all__ = [
 
 
 def fetch_financial_abstract(symbol: str) -> dict | None:
-    """拉一只 A 股的财务摘要,返回结构化字典。
+    """Kéo tóm tắt tài chính của một mã cổ phiếu A, trả về dict có cấu trúc.
 
     Returns:
         {
-            "periods": ["20260331", "20251231", ...],   # 最近 N 期
+            "periods": ["20260331", "20251231", ...],   # N kỳ gần nhất
             "indicators": {
                 "归母净利润": {"20260331": -6.56e8, "20251231": -8.78e9, ...},
                 ...
@@ -51,7 +54,7 @@ def fetch_financial_abstract(symbol: str) -> dict | None:
                 ...
             },
         }
-        或 None(akshare 失败 / 非 A 股 / 数据为空)
+        hoặc None (akshare hỏng / không phải cổ phiếu A / dữ liệu rỗng)
     """
     if not (symbol and len(symbol) == 6 and symbol.isdigit()):
         return None
@@ -69,11 +72,11 @@ def fetch_financial_abstract(symbol: str) -> dict | None:
     if df is None or df.empty:
         return None
 
-    # 列结构:[选项, 指标, 20260331, 20251231, ...] —— 取最近 N 期
+    # Cấu trúc cột: [选项, 指标, 20260331, 20251231, ...] — lấy N kỳ gần nhất
     period_cols = [c for c in df.columns if str(c).isdigit() and len(str(c)) == 8]
     if not period_cols:
         return None
-    recent_periods = period_cols[:6]  # 最多 6 期(1.5 年)
+    recent_periods = period_cols[:6]  # Tối đa 6 kỳ (1,5 năm)
 
     indicators: dict[str, dict[str, float | None]] = {}
     categories: dict[str, dict[str, dict[str, float | None]]] = {}
@@ -119,7 +122,7 @@ def _fmt_pct(v: float | None) -> str:
 
 
 def _fmt_period(p: str) -> str:
-    """20260331 → 2026Q1, 20251231 → 2025Q4(年报)"""
+    """20260331 → 2026Q1, 20251231 → 2025Q4 (báo cáo năm)"""
     if len(p) != 8:
         return p
     y, m, d = p[:4], p[4:6], p[6:8]
@@ -128,7 +131,7 @@ def _fmt_period(p: str) -> str:
 
 
 def render_fundamentals_summary(data: dict) -> str:
-    """渲染基本面综合摘要(给 get_fundamentals 用)。"""
+    """Dựng phần tóm tắt tổng hợp mặt cơ bản (cho get_fundamentals dùng)."""
     periods = data.get("periods", [])[:4]
     ind = data.get("indicators", {})
     if not periods or not ind:
@@ -165,7 +168,7 @@ def render_fundamentals_summary(data: dict) -> str:
 
 
 def render_income_statement(data: dict) -> str:
-    """渲染利润表(给 get_income_statement 用)。"""
+    """Dựng báo cáo kết quả kinh doanh (cho get_income_statement dùng)."""
     periods = data.get("periods", [])[:4]
     ind = data.get("indicators", {})
     if not periods or not ind:
@@ -193,7 +196,7 @@ def render_income_statement(data: dict) -> str:
 
 
 def render_balance_sheet(data: dict) -> str:
-    """渲染资产负债表(给 get_balance_sheet 用)。"""
+    """Dựng bảng cân đối kế toán (cho get_balance_sheet dùng)."""
     periods = data.get("periods", [])[:4]
     ind = data.get("indicators", {})
     if not periods or not ind:
@@ -219,7 +222,7 @@ def render_balance_sheet(data: dict) -> str:
 
 
 def render_cashflow(data: dict) -> str:
-    """渲染现金流量表(给 get_cashflow 用)。"""
+    """Dựng báo cáo lưu chuyển tiền tệ (cho get_cashflow dùng)."""
     periods = data.get("periods", [])[:4]
     ind = data.get("indicators", {})
     if not periods or not ind:
@@ -251,7 +254,7 @@ def build_stock_metadata_context(
     current_price: float | None = None,
     industry: str = "",
 ) -> str:
-    """渲染标的元信息，避免模型从 A/HK ticker 反查并臆测公司。"""
+    """Dựng siêu dữ liệu của mã, tránh để mô hình tra ngược từ ticker A/HK rồi đoán mò công ty."""
     if not stock_symbol:
         return ""
 
@@ -274,7 +277,7 @@ def build_stock_metadata_context(
 
 
 def _finite_number(value: Any) -> float | None:
-    """把可能来自数据库的数值安全转换为有限 float。"""
+    """Đổi an toàn một giá trị có thể lấy từ cơ sở dữ liệu thành float hữu hạn."""
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -283,10 +286,11 @@ def _finite_number(value: Any) -> float | None:
 
 
 def to_tradingagents_portfolio(portfolio: Any):
-    """把 ``PortfolioInfo`` 转为 TradingAgents 0.5.0 的 ``PortfolioContext``。
+    """Đổi ``PortfolioInfo`` thành ``PortfolioContext`` của TradingAgents 0.5.0.
 
-    多账户中同一 ticker 的仓位按数量加权平均成本价聚合。没有账户快照时返回
-    ``None``，让上游明确区分“用户未提供组合”与“组合现金/仓位均为零”。
+    Vị thế cùng ticker ở nhiều tài khoản được gộp theo giá vốn bình quân trọng số theo số
+    lượng. Không có ảnh chụp tài khoản nào thì trả ``None``, để thượng nguồn phân biệt rõ
+    "người dùng không đưa danh mục" với "danh mục tiền mặt/vị thế đều bằng không".
     """
     accounts: Iterable[Any] = getattr(portfolio, "accounts", ()) or ()
     accounts = list(accounts)
@@ -305,8 +309,8 @@ def to_tradingagents_portfolio(portfolio: Any):
         for position in getattr(account, "positions", ()) or ():
             ticker = str(getattr(position, "symbol", "") or "").strip().upper()
             quantity = _finite_number(getattr(position, "quantity", None))
-            # TradingAgents 0.5.0 用正数表示多头、负数表示空头；这里只过滤
-            # 零数量和脏数据，不能把空头当成“无持仓”丢掉。
+            # TradingAgents 0.5.0 dùng số dương cho vị thế mua, số âm cho vị thế bán; ở đây chỉ lọc bỏ
+            # khối lượng bằng 0 và dữ liệu rác, không được coi vị thế bán là “không có vị thế” rồi bỏ đi.
             if not ticker or quantity is None or quantity == 0:
                 continue
             average_price = _finite_number(getattr(position, "cost_price", None))
@@ -320,8 +324,8 @@ def to_tradingagents_portfolio(portfolio: Any):
             for lot_quantity, average_price in lots
             if average_price is not None
         ]
-        # 用数量绝对值做成本价权重：同方向仓位与旧逻辑一致，混合多空时
-        # 也不会因净数量接近 0 而产生无意义的极端均价；quantity 仍保留净符号。
+        # Dùng trị tuyệt đối của khối lượng làm trọng số cho giá vốn: cùng chiều thì kết quả y như logic cũ, còn khi trộn mua - bán
+        # cũng không sinh ra giá bình quân cực đoan vô nghĩa vì khối lượng ròng gần 0; quantity vẫn giữ dấu của giá trị ròng.
         total_abs_quantity = sum(abs(lot_quantity) for lot_quantity, _ in priced_lots)
         average_price = (
             sum(abs(lot_quantity) * price for lot_quantity, price in priced_lots)
@@ -337,12 +341,13 @@ def to_tradingagents_portfolio(portfolio: Any):
 
 
 def patch_instrument_context(graph: Any, metadata_context: str) -> None:
-    """把 PanWatch 标的元数据注入 TradingAgents 0.5.0 的 ``instrument_context``。
+    """Tiêm siêu dữ liệu mã của PanWatch vào ``instrument_context`` của TradingAgents 0.5.0.
 
-    ``past_context`` 是上游用于历史研究记忆的扩展点，业务标的元数据放进去会
-    混淆提示词语义，也会让后续研究回放把本次股票信息当成历史经验。0.5.0 的
-    ``Propagator.create_initial_state`` 已公开 ``instrument_context``，因此只在
-    这个入口做一次实例级包装，并完整透传 portfolio/future kwargs。
+    ``past_context`` là điểm mở rộng mà thượng nguồn dùng cho ký ức nghiên cứu lịch sử,
+    nhét siêu dữ liệu nghiệp vụ của mã vào đó sẽ làm lệch ngữ nghĩa của prompt, và khiến
+    lần phát lại nghiên cứu sau coi thông tin cổ phiếu lần này là kinh nghiệm lịch sử.
+    ``Propagator.create_initial_state`` của 0.5.0 đã phơi ``instrument_context``, nên chỉ
+    bọc một lần ở cấp thực thể tại lối vào này, và chuyển trọn portfolio/future kwargs.
     """
     if not metadata_context:
         return
@@ -381,5 +386,5 @@ def patch_instrument_context(graph: Any, metadata_context: str) -> None:
 
 
 def patch_past_context(graph: Any, metadata_context: str) -> None:
-    """兼容旧调用方的别名；新代码应使用 :func:`patch_instrument_context`。"""
+    """Bí danh cho bên gọi cũ; mã mới nên dùng :func:`patch_instrument_context`."""
     patch_instrument_context(graph, metadata_context)

@@ -42,8 +42,8 @@ from marketdata.vendors.sina import SinaQuoteVendor
 from marketdata.vendors.tencent import TencentQuoteVendor
 from marketdata.vendors.yfinance import YFinanceQuoteVendor
 
-# 各数据类型 → {vendor name: vendor 类}。注意:vendor 的 import 本身是廉价的
-# (可选三方依赖如 yfinance 均在 fetch() 内部惰性 import),模块级导入不会引入重依赖。
+# Từng loại dữ liệu → {tên vendor: lớp vendor}. Lưu ý: bản thân việc import vendor rất rẻ
+# (các phụ thuộc bên thứ ba tùy chọn như yfinance đều import lười ngay trong fetch()), nên import ở cấp module không kéo theo phụ thuộc nặng.
 VENDOR_CLASSES_BY_TYPE: dict[str, dict[str, type]] = {
     "quote": {
         "tencent": TencentQuoteVendor,
@@ -95,7 +95,7 @@ VENDOR_CLASSES_BY_TYPE: dict[str, dict[str, type]] = {
     },
 }
 
-# 各数据类型的合法 vendor 名集合(冻结,防止调用方误改)。
+# Tập tên vendor hợp lệ cho từng loại dữ liệu (đóng băng, phòng phía gọi sửa nhầm).
 PACKAGE_VENDORS_BY_TYPE: dict[str, frozenset[str]] = {
     datatype: frozenset(classes.keys()) for datatype, classes in VENDOR_CLASSES_BY_TYPE.items()
 }

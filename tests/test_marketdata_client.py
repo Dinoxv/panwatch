@@ -11,7 +11,7 @@ def test_quote_to_row_keys():
     assert row["symbol"] == "600519" and row["name"] == "贵州茅台"
     assert row["current_price"] == 1700.0 and row["change_pct"] == 1.2
     assert row["volume_ratio"] == 1.1 and row["pe_ratio"] == 35.0
-    # 兼容旧 orchestrator dict 的关键键都在
+    # Các khóa then chốt để tương thích dict của orchestrator cũ đều có mặt
     for k in ("symbol", "name", "market", "current_price", "change_pct",
               "change_amount", "prev_close", "open_price", "high_price",
               "low_price", "volume", "turnover", "turnover_rate",

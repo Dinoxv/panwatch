@@ -23,7 +23,7 @@ from src.platform.marketdata.models import MarketCode
 
 
 # --------------------------------------------------------------------------- #
-# ④ TradingAgents 深度结论注入
+# ④ Nạp kết luận chuyên sâu của TradingAgents
 # --------------------------------------------------------------------------- #
 
 
@@ -47,7 +47,7 @@ def test_ta_verdict_recent_row_injected(monkeypatch):
             "action": "buy",
             "action_label": "买入",
             "rating_raw": "buy",
-            "reason": "基本面与技术面共振," * 30,  # 远超 120 字,需截断
+            "reason": "基本面与技术面共振," * 30,  # Vượt xa 120 chữ nên phải cắt
         },
     )
 
@@ -63,7 +63,7 @@ def test_ta_verdict_recent_row_injected(monkeypatch):
     assert verdict["rating"] == "buy"
     assert verdict["date"] == today.strftime("%Y-%m-%d")
     assert verdict["age_days"] == 0
-    # 一句话需要被清洗 + 截断到约 120 字
+    # Một câu cần được làm sạch + cắt về khoảng 120 chữ
     assert isinstance(verdict["one_liner"], str)
     assert 0 < len(verdict["one_liner"]) <= 130
 
@@ -84,7 +84,7 @@ def test_ta_verdict_includes_today(monkeypatch):
 
     row = analysis_history.get_latest_ta_verdict_row("600519", within_days=14)
     assert row is not None
-    # before_date 必须是"今天+1天"以包含今天
+    # before_date bắt buộc là "hôm nay + 1 ngày" để bao gồm cả hôm nay
     assert captured["before_date"] == today + timedelta(days=1)
 
 
@@ -120,7 +120,7 @@ def test_ta_verdict_parse_error_failsoft(monkeypatch):
     bad = SimpleNamespace(
         analysis_date=date.today().strftime("%Y-%m-%d"),
         content="x",
-        raw_data="not-a-dict",  # 触发 .get 异常
+        raw_data="not-a-dict",  # Gây ngoại lệ ở .get
     )
     monkeypatch.setattr(
         analysis_history,
@@ -131,7 +131,7 @@ def test_ta_verdict_parse_error_failsoft(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
-# ② 相对大盘强度
+# ② Sức mạnh tương đối so với thị trường chung
 # --------------------------------------------------------------------------- #
 
 
@@ -151,7 +151,7 @@ def test_relative_strength_computes_excess():
     assert rs["index_5d"] == 1.0
     assert rs["excess_5d"] == pytest.approx(2.0)
     assert rs["excess_20d"] == pytest.approx(6.0)
-    assert rs["index_label"]  # 非空标签(沪深300 等)
+    assert rs["index_label"]  # Nhãn khác rỗng (CSI 300...)
 
 
 def test_relative_strength_missing_index_returns_none():
@@ -203,7 +203,7 @@ def test_index_returns_cached_once_per_build(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
-# ① 公告全文 + 头部新闻正文保留
+# ① Toàn văn công bố thông tin + giữ phần thân của tin đầu
 # --------------------------------------------------------------------------- #
 
 
@@ -217,16 +217,16 @@ def test_announcement_fulltext_attached_to_important_events(monkeypatch):
     ]
 
     def fake_fetch(art_code):
-        return "全文内容" * 600  # 远超 1000 字,需截断
+        return "全文内容" * 600  # Vượt xa 1000 chữ nên phải cắt
 
     monkeypatch.setattr(context_builder, "fetch_announcement_fulltext", fake_fetch)
 
     enriched = cb._enrich_events_fulltext(events, top_k=3)
-    # 重要的两条带全文
+    # Hai bản ghi quan trọng có kèm toàn văn
     assert "content_fulltext" in enriched[0]
     assert "content_fulltext" in enriched[1]
     assert len(enriched[0]["content_fulltext"]) <= 1100
-    # 不重要的那条不带全文(只剩标题)
+    # Bản ghi không quan trọng thì không kèm toàn văn (chỉ còn tiêu đề)
     assert "content_fulltext" not in enriched[2]
 
 
@@ -309,18 +309,18 @@ def test_fetch_announcement_fulltext_failsoft(monkeypatch):
 def test_news_top_items_retain_more_content():
     """头部新闻(有正文的)放宽到 max_chars,非头部条目维持原样不动。"""
     cb = ContextBuilder()
-    long_content = "新闻正文" * 400  # 约 1600 字
-    short_content = "短讯" * 5  # 采集层已截断的短正文
+    long_content = "新闻正文" * 400  # Khoảng 1600 chữ
+    short_content = "短讯" * 5  # Phần thân ngắn đã bị tầng thu thập cắt bớt
     news = [
         {"title": "头条", "content": long_content},
         {"title": "次条", "content": long_content},
         {"title": "第三条", "content": short_content},
     ]
     out = cb._retain_news_content(news, top_k=2, max_chars=800)
-    # 头部两条被放宽到 800
+    # Hai bản ghi đầu được nới lên 800
     assert len(out[0]["content"]) == 800
     assert len(out[1]["content"]) == 800
-    # 第三条不在 top_k,原样保留(本函数只放宽头部,不额外截断)
+    # Bản ghi thứ ba không nằm trong top_k nên giữ nguyên (hàm này chỉ nới phần đầu, không cắt thêm)
     assert out[2]["content"] == short_content
 
 
@@ -334,7 +334,7 @@ def test_news_retain_no_content_failsoft():
 
 
 # --------------------------------------------------------------------------- #
-# 集成:build_symbol_contexts 把三项新字段写进 payload
+# Tích hợp: build_symbol_contexts ghi ba trường mới vào payload
 # --------------------------------------------------------------------------- #
 
 
@@ -378,16 +378,16 @@ def test_build_symbol_contexts_injects_new_keys(monkeypatch):
     )
     packs = {"600519": pack}
 
-    # 个股 K线 vs 指数 K线:用市场区分(指数走 CN 沪深300)。
+    # Nến của mã riêng lẻ và nến của chỉ số: phân biệt bằng thị trường (chỉ số đi theo CSI 300 của CN).
     def fake_kline(*, symbol, market, lookback_days=120):
         if symbol == "600519":
             return {"available": True, "ret_5d": 5.0, "ret_20d": 12.0, "trend": "多头"}
-        # 指数(000300)
+        # Chỉ số (000300)
         return {"available": True, "ret_5d": 2.0, "ret_20d": 4.0}
 
-    # 在 context_builder 命名空间打桩(它直接 import 了这两个符号)
+    # Đặt stub trong không gian tên của context_builder (module này import thẳng hai ký hiệu đó)
     monkeypatch.setattr(context_builder, "build_kline_history_context", fake_kline)
-    # ② 指数走 _fetch_index_context(get_index_klines 显式 secid 直取),直接打桩其返回
+    # ② Chỉ số đi qua _fetch_index_context (get_index_klines lấy thẳng bằng secid tường minh), nên stub luôn giá trị trả về của nó
     monkeypatch.setattr(
         ContextBuilder, "_fetch_index_context",
         lambda self, symbol, market: {"available": True, "ret_5d": 2.0, "ret_20d": 4.0},
@@ -406,7 +406,7 @@ def test_build_symbol_contexts_injects_new_keys(monkeypatch):
             "age_days": 0,
         },
     )
-    # 历史新闻 / 快照持久化 / 主题快照都打桩,避免触库
+    # Tin lịch sử / lưu ảnh chụp / ảnh chụp chủ đề đều được stub để khỏi chạm cơ sở dữ liệu
     monkeypatch.setattr(ContextBuilder, "_load_history_news", staticmethod(lambda *a, **k: []))
     monkeypatch.setattr(context_builder, "save_stock_context_snapshot", lambda **k: None)
     monkeypatch.setattr(context_builder, "save_news_topic_snapshot", lambda **k: None)
@@ -422,15 +422,15 @@ def test_build_symbol_contexts_injects_new_keys(monkeypatch):
     )
     payload = result["symbols"]["600519"]
 
-    # ④ TA 结论
+    # ④ Kết luận của TA
     assert payload["ta_verdict"]["action_label"] == "买入"
-    # ② 相对强度:5.0 - 2.0 = 3.0
+    # ② Sức mạnh tương đối: 5,0 - 2,0 = 3,0
     rs = payload["relative_strength"]
     assert rs is not None
     assert rs["excess_5d"] == pytest.approx(3.0)
     assert rs["excess_20d"] == pytest.approx(8.0)
     assert rs["index_label"] == "沪深300"
-    # ① 公告全文
+    # ① Toàn văn công bố thông tin
     assert "content_fulltext" in payload["events"][0]
     assert len(payload["events"][0]["content_fulltext"]) <= 1000
 
@@ -449,10 +449,10 @@ def test_build_symbol_contexts_failsoft_when_index_missing(monkeypatch):
     def fake_kline(*, symbol, market, lookback_days=120):
         if symbol == "00700":
             return {"available": True, "ret_5d": 3.0, "ret_20d": 9.0}
-        return {"available": False}  # 指数取不到
+        return {"available": False}  # Không lấy được chỉ số
 
     monkeypatch.setattr(context_builder, "build_kline_history_context", fake_kline)
-    # 指数取数失败 → _fetch_index_context 返回 available False(确定性,不依赖网络)
+    # Lấy chỉ số thất bại → _fetch_index_context trả available False (mang tính tất định, không phụ thuộc mạng)
     monkeypatch.setattr(
         ContextBuilder, "_fetch_index_context", lambda self, symbol, market: {"available": False}
     )

@@ -48,7 +48,7 @@ def test_volume_ratio_falls_back_to_kline_when_quote_missing(monkeypatch):
 
     monkeypatch.setattr(eng, "_get_kline_summary_cached", fake_kline)
 
-    quote = {"current_price": 200.0}  # 无 volume_ratio 字段
+    quote = {"current_price": 200.0}  # Không có trường volume_ratio
     ok, detail = asyncio.run(
         eng._eval_condition(
             {"type": "volume_ratio", "op": ">", "value": 2.0},

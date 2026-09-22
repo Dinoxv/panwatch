@@ -1,8 +1,10 @@
-"""命令行系统自检:`python -m src.modules.administration.doctor` 或 `make doctor`。
+"""Tự kiểm tra hệ thống từ dòng lệnh: `python -m src.modules.administration.doctor` hoặc `make doctor`.
 
-终端跑一遍 系统基础项(DB/磁盘/调度)+ 数据源/AI/通知,打印结果与中文修复建议。
-CLI 进程内无运行中的调度器 → 调度项会优雅跳过(显示说明,不误报)。
-退出码:有异常项返回 1,全通返回 0(便于 CI/脚本判断)。
+Chạy một lượt trên terminal: các mục hạ tầng (DB / đĩa / lập lịch) + nguồn dữ liệu / AI /
+thông báo, rồi in kết quả kèm gợi ý khắc phục.
+Tiến trình CLI không có bộ lập lịch nào đang chạy → mục lập lịch sẽ được bỏ qua một cách
+êm (có ghi rõ lý do chứ không báo lỗi oan).
+Mã thoát: có mục bất thường thì trả 1, tất cả đều đạt thì trả 0 (tiện cho CI / script xét).
 """
 
 from __future__ import annotations

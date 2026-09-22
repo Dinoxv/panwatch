@@ -87,16 +87,16 @@ class EastmoneyCapitalFlowVendor(CapitalFlowVendor):
         if not klines:
             return []
 
-        # 字段索引(从0开始,逗号行):
-        # 0:日期, 1:主力净额, 2:小单净额, 3:中单净额, 4:大单净额, 5:超大单净额,
-        # 6:主力占比, 7:小单占比, 8:中单占比, 9:大单占比, 10:超大单占比,
-        # 11:收盘价, 12:涨跌幅, 13:成交量, 14:成交额
+        # Chỉ số trường (đếm từ 0, trên dòng phân tách bằng dấu phẩy):
+        # 0: ngày, 1: dòng tiền lớn ròng, 2: lệnh nhỏ ròng, 3: lệnh vừa ròng, 4: lệnh lớn ròng, 5: lệnh siêu lớn ròng,
+        # 6: tỷ trọng dòng tiền lớn, 7: tỷ trọng lệnh nhỏ, 8: tỷ trọng lệnh vừa, 9: tỷ trọng lệnh lớn, 10: tỷ trọng lệnh siêu lớn,
+        # 11: giá đóng cửa, 12: biên độ, 13: khối lượng, 14: giá trị giao dịch
         last_line = klines[-1]
         parts = str(last_line).split(",")
         if len(parts) < 13:
             return []
 
-        # 5日主力净流入(klines 从旧到新,取最后5条的主力净额之和)
+        # Dòng tiền lớn vào ròng 5 phiên (nến xếp từ cũ đến mới, lấy tổng dòng tiền lớn ròng của 5 bản ghi cuối)
         last_five = klines[-5:] if len(klines) >= 5 else klines
         main_net_5d = 0.0
         for line in last_five:
@@ -107,13 +107,13 @@ class EastmoneyCapitalFlowVendor(CapitalFlowVendor):
         return [CapitalFlow(
             symbol=str(d.get("code") or sym.code),
             name=str(d.get("name") or ""),
-            main_net_inflow=_safe_float(parts[1]),      # 主力净流入
-            main_net_inflow_pct=_safe_float(parts[6]),  # 主力净流入占比
-            super_net_inflow=_safe_float(parts[5]),      # 超大单净流入
-            big_net_inflow=_safe_float(parts[4]),        # 大单净流入
-            mid_net_inflow=_safe_float(parts[3]),         # 中单净流入
-            small_net_inflow=_safe_float(parts[2]),       # 小单净流入
-            main_net_5d=main_net_5d,                      # 5日主力净流入
+            main_net_inflow=_safe_float(parts[1]),      # Dòng tiền lớn vào ròng
+            main_net_inflow_pct=_safe_float(parts[6]),  # Tỷ trọng dòng tiền lớn vào ròng
+            super_net_inflow=_safe_float(parts[5]),      # Lệnh siêu lớn vào ròng
+            big_net_inflow=_safe_float(parts[4]),        # Lệnh lớn vào ròng
+            mid_net_inflow=_safe_float(parts[3]),         # Lệnh vừa vào ròng
+            small_net_inflow=_safe_float(parts[2]),       # Lệnh nhỏ vào ròng
+            main_net_5d=main_net_5d,                      # Dòng tiền lớn vào ròng 5 phiên
         )]
 
 
@@ -169,19 +169,19 @@ class SinaCapitalFlowVendor(CapitalFlowVendor):
         if not rows:
             return []
 
-        # 新浪按 opendate 降序返回(最新在前),取最近 5 条求主力净额之和
+        # Sina trả theo opendate giảm dần (mới nhất đứng đầu), lấy 5 bản ghi gần nhất rồi cộng dòng tiền lớn ròng
         last_five = rows[:5]
         main_net_5d = sum(_safe_float(row.get("netamount")) for row in last_five)
 
         latest = rows[0]
         return [CapitalFlow(
             symbol=sym.code,
-            name="",  # 新浪该端点不返回股票名称
-            main_net_inflow=_safe_float(latest.get("netamount")),       # 主力净流入
-            main_net_inflow_pct=_safe_float(latest.get("ratioamount")),  # 主力净流入占比
-            super_net_inflow=_safe_float(latest.get("r0_net")),          # 超大单净流入
-            big_net_inflow=0.0,     # 新浪该端点无大单细分
-            mid_net_inflow=0.0,     # 新浪该端点无中单细分
-            small_net_inflow=0.0,   # 新浪该端点无小单细分
-            main_net_5d=main_net_5d,  # 5日主力净流入
+            name="",  # Endpoint này của Sina không trả tên cổ phiếu
+            main_net_inflow=_safe_float(latest.get("netamount")),       # Dòng tiền lớn vào ròng
+            main_net_inflow_pct=_safe_float(latest.get("ratioamount")),  # Tỷ trọng dòng tiền lớn vào ròng
+            super_net_inflow=_safe_float(latest.get("r0_net")),          # Lệnh siêu lớn vào ròng
+            big_net_inflow=0.0,     # Endpoint này của Sina không tách riêng lệnh lớn
+            mid_net_inflow=0.0,     # Endpoint này của Sina không tách riêng lệnh vừa
+            small_net_inflow=0.0,   # Endpoint này của Sina không tách riêng lệnh nhỏ
+            main_net_5d=main_net_5d,  # Dòng tiền lớn vào ròng 5 phiên
         )]

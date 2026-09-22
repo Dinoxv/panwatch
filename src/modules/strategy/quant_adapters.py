@@ -1,14 +1,16 @@
-"""量化框架适配器接口(Phase 4 预留,轻量)。
+"""Giao diện adapter cho khung định lượng (dành sẵn ở Phase 4, nhẹ).
 
-定义统一的回测后端协议,让未来可插入不同实现而不改上层:
-- 内置(默认,永远可用):src/core/backtest(纯 Python 轻量内核,Phase 0)
-- 可选升级(按路线图,默认不安装,保持自托管轻量):
-    · vectorbt —— 向量化批量回测 / 因子网格寻参
-    · rqalpha  —— A 股高保真成本撮合(印花税/涨跌停/交易日历)
-    · qlib     —— ML 因子研究(Alpha158/360 + LightGBM 等)
+Định nghĩa giao ước thống nhất cho backend kiểm thử lịch sử, để sau này cắm cài đặt khác
+mà không phải sửa tầng trên:
+- Dựng sẵn (mặc định, luôn có): src/core/backtest (lõi thuần Python nhẹ, Phase 0)
+- Nâng cấp tùy chọn (theo lộ trình, mặc định không cài, giữ bản tự host nhẹ):
+    · vectorbt —— kiểm thử lịch sử hàng loạt kiểu vector hóa / dò tham số nhân tố theo lưới
+    · rqalpha  —— khớp lệnh cổ phiếu A sát thực tế về chi phí (thuế trước bạ/biên độ trần sàn/lịch giao dịch)
+    · qlib     —— nghiên cứu nhân tố ML (Alpha158/360 + LightGBM…)
 
-此处仅声明接口 + 探测「装了哪些后端」,真正接入时各写一个实现本协议的 adapter。
-选型依据见 .docs/quant-framework-comparison.md。
+Ở đây chỉ khai báo giao diện + dò «đã cài backend nào», lúc nối thật thì mỗi cái viết một
+adapter hiện thực giao ước này.
+Căn cứ chọn lựa xem .docs/quant-framework-comparison.md.
 """
 
 from __future__ import annotations
@@ -18,12 +20,12 @@ from typing import Protocol, runtime_checkable
 
 @runtime_checkable
 class BacktestAdapter(Protocol):
-    """回测后端统一接口。内置 backtest.engine.Backtester 已满足 run()。"""
+    """Giao diện thống nhất của backend kiểm thử lịch sử. backtest.engine.Backtester dựng sẵn đã đáp ứng run()."""
 
     name: str
 
     def run(self, signals: list, bars_by_symbol: dict):  # noqa: D401
-        """对一批信号回测,返回带 metrics 的结果对象。"""
+        """Kiểm thử lịch sử một lô tín hiệu, trả về đối tượng kết quả kèm metrics."""
         ...
 
 
@@ -35,9 +37,9 @@ _OPTIONAL_BACKENDS = (
 
 
 def available_backends() -> dict[str, bool]:
-    """探测可用回测后端。内置永远可用;可选重依赖按是否已安装返回。
+    """Dò các backend kiểm thử lịch sử dùng được. Bản dựng sẵn luôn có; các phụ thuộc nặng tùy chọn thì trả về theo tình hình đã cài.
 
-    供 UI / 文档展示当前环境装了哪些后端,不触发任何安装。
+    Cho giao diện / tài liệu hiện môi trường hiện tại đã cài backend nào, không kích hoạt việc cài đặt nào cả.
     """
     backends: dict[str, bool] = {"builtin": True}
     for module_name, key in _OPTIONAL_BACKENDS:

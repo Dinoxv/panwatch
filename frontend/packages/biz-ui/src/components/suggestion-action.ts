@@ -20,14 +20,14 @@ export const suggestionActionColors: Record<SuggestionAction, string> = {
 }
 
 export const suggestionActionLabels: Record<SuggestionAction, string> = {
-  buy: '买入',
-  add: '加仓',
-  reduce: '减仓',
-  sell: '卖出',
-  hold: '持有',
-  watch: '观望',
-  avoid: '回避',
-  alert: '提醒',
+  buy: 'Mua vào',
+  add: 'Gia tăng tỷ trọng',
+  reduce: 'Hạ tỷ trọng',
+  sell: 'Bán ra',
+  hold: 'Nắm giữ',
+  watch: 'Quan sát',
+  avoid: 'Tránh ra',
+  alert: 'Cảnh báo',
 }
 
 export function normalizeSuggestionAction(action?: string, label?: string): SuggestionAction | null {
@@ -41,6 +41,8 @@ export function normalizeSuggestionAction(action?: string, label?: string): Sugg
   if (raw === 'watch' || raw === 'neutral') return 'watch'
   if (raw === 'avoid') return 'avoid'
   if (raw === 'alert') return 'alert'
+  // Các mẫu dưới đây khớp với chữ trong khuyến nghị THÔ do mô hình sinh ra
+  // (vẫn là tiếng Trung) — đây là từ khóa đối chiếu, không phải chữ hiển thị.
   if (/买入|买|建仓/.test(raw)) return 'buy'
   if (/加仓|增持|补仓/.test(raw)) return 'add'
   if (/减仓|减持/.test(raw)) return 'reduce'
@@ -55,7 +57,7 @@ export function resolveSuggestionAction(action?: string, label?: string): Sugges
   return normalizeSuggestionAction(action, label) || 'watch'
 }
 
-export function resolveSuggestionLabel(action?: string, label?: string, fallback = '观望'): string {
+export function resolveSuggestionLabel(action?: string, label?: string, fallback = 'Quan sát'): string {
   const normalized = normalizeSuggestionAction(action, label)
   if (normalized) return suggestionActionLabels[normalized] || fallback
   return String(label || '').trim() || fallback

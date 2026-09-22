@@ -4,7 +4,7 @@ from marketdata.types import Quote
 
 
 def test_sina_us_quote(monkeypatch):
-    # US: gb_ 逗号字段,idx 0 name,1 price,2 change%,5 open,6 high,7 low,10 vol,14 pe,26 prev_close
+    # US: các trường gb_ phân tách bằng dấu phẩy, idx 0 name, 1 price, 2 change%, 5 open, 6 high, 7 low, 10 vol, 14 pe, 26 prev_close
     parts = ["0"] * 30
     parts[0] = "苹果"; parts[1] = "150.5"; parts[2] = "1.2"; parts[5] = "149.0"
     parts[6] = "151.0"; parts[7] = "148.0"; parts[10] = "1000000"; parts[14] = "28.5"; parts[26] = "148.7"
@@ -18,7 +18,7 @@ def test_sina_us_quote(monkeypatch):
 
 
 def test_sina_hk_quote(monkeypatch):
-    # HK: rt_hk 逗号字段,idx 1 name,2 open,3 prev_close,4 high,5 low,6 price,7 change,8 change%,11 amount,12 vol
+    # HK: các trường rt_hk phân tách bằng dấu phẩy, idx 1 name, 2 open, 3 prev_close, 4 high, 5 low, 6 price, 7 change, 8 change%, 11 amount, 12 vol
     parts = ["0"] * 15
     parts[1] = "腾讯控股"; parts[2] = "300.0"; parts[3] = "298.0"; parts[4] = "305.0"
     parts[5] = "297.0"; parts[6] = "302.0"; parts[7] = "4.0"; parts[8] = "1.34"; parts[11] = "5e8"; parts[12] = "1000000"
@@ -31,5 +31,5 @@ def test_sina_hk_quote(monkeypatch):
 
 
 def test_sina_cn_unsupported():
-    # CN 不支持 → supports_markets 拦截(vendor 只 US/HK);此处直接调不传 CN
+    # Không hỗ trợ CN → supports_markets chặn (vendor chỉ làm US/HK); ở đây gọi thẳng và không truyền CN
     assert sv.SinaQuoteVendor().fetch([], {}) == []

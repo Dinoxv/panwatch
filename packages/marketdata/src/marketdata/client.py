@@ -1,4 +1,4 @@
-"""对象式入口:注入 ConfigProvider(+可选 MetricsSink),对外提供 quotes()/health()。"""
+"""Lối vào dạng đối tượng: tiêm ConfigProvider (+ MetricsSink tùy chọn), phơi ra ngoài quotes()/health()."""
 
 from __future__ import annotations
 
@@ -31,27 +31,27 @@ from marketdata.types import (
 from marketdata.vendors.discovery import DiscoveryVendor
 from marketdata.vendors.news import EastmoneyStockNewsVendor
 
-# 指数 secid(东财):指数与个股 secid 前缀规则不同,必须显式映射,否则按个股规则会取错标的。
-# 美股指数东财K线不支持,未列入 → index_klines 返回空,fail-soft。
+# secid của chỉ số (EastMoney): quy tắc tiền tố của chỉ số khác với cổ phiếu riêng lẻ nên phải ánh xạ tường minh, không thì áp quy tắc cổ phiếu sẽ lấy nhầm mã.
+# EastMoney không hỗ trợ nến cho chỉ số Mỹ nên không đưa vào danh sách → index_klines trả rỗng, hạ cấp mềm.
 INDEX_SECID: dict[str, str] = {
-    "000300": "1.000300",   # 沪深300
-    "000001": "1.000001",   # 上证指数
-    "399001": "0.399001",   # 深证成指
-    "399006": "0.399006",   # 创业板指
-    "HSI": "100.HSI",       # 恒生指数
+    "000300": "1.000300",   # Chỉ số CSI 300
+    "000001": "1.000001",   # Chỉ số Thượng Hải
+    "399001": "0.399001",   # Chỉ số Thâm Quyến
+    "399006": "0.399006",   # Chỉ số ChiNext
+    "HSI": "100.HSI",       # Chỉ số Hang Seng
 }
 
-# 指数的原始腾讯符号(index_klines 的腾讯兜底路径;美股指数东财无 secid,只能走这里,
-# 腾讯对美股指数只返最近几根,短但可用)。
+# Mã Tencent gốc của các chỉ số (đường dự phòng qua Tencent của index_klines; chỉ số Mỹ không có secid ở EastMoney nên chỉ còn lối này,
+# Tencent chỉ trả vài cây nến gần nhất cho chỉ số Mỹ, ngắn nhưng dùng được).
 INDEX_TENCENT: dict[str, str] = {
-    "000001": "sh000001",   # 上证指数
-    "399001": "sz399001",   # 深证成指
-    "399006": "sz399006",   # 创业板指
-    "000300": "sh000300",   # 沪深300
-    "HSI": "hkHSI",         # 恒生指数
-    "IXIC": "usIXIC",       # 纳斯达克
-    "DJI": "usDJI",         # 道琼斯
-    "INX": "usINX",         # 标普500
+    "000001": "sh000001",   # Chỉ số Thượng Hải
+    "399001": "sz399001",   # Chỉ số Thâm Quyến
+    "399006": "sz399006",   # Chỉ số ChiNext
+    "000300": "sh000300",   # Chỉ số CSI 300
+    "HSI": "hkHSI",         # Chỉ số Hang Seng
+    "IXIC": "usIXIC",       # Nasdaq
+    "DJI": "usDJI",         # Dow Jones
+    "INX": "usINX",         # S&P 500
 }
 
 
@@ -85,20 +85,20 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=0.0), default_ttl=0.0,
         )
-        # flash_news(快讯 7×24)是市场级(symbols 恒空),但仍走 Engine 做主备/缓存/健康度,
-        # 与 discovery(不进 Engine)的区别是:flash_news 有多源竞争、需要统一 TTL 缓存。
+        # flash_news (tin nhanh 7×24) ở cấp thị trường (symbols luôn rỗng), nhưng vẫn đi qua Engine để có chính/phụ, bộ đệm và theo dõi sức khỏe;
+        # khác với discovery (không vào Engine) ở chỗ: flash_news có nhiều nguồn cạnh tranh và cần bộ đệm TTL thống nhất.
         self._flash_news_engine = Engine(
             datatype="flash_news",
             vendors=build_vendors("flash_news"),
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=30.0), default_ttl=30.0,
         )
-        # discovery(东财热门榜)是市场级、单源、非 symbol 模型,不进 Engine/不进 DataSource
-        # taxonomy —— md 直接委托给 DiscoveryVendor。
+        # discovery (bảng xếp hạng nổi bật của EastMoney) ở cấp thị trường, một nguồn, không theo mô hình symbol, nên không vào Engine / không vào phân loại
+        # DataSource — md ủy quyền thẳng cho DiscoveryVendor.
         self._discovery = DiscoveryVendor()
-        # news(新闻资讯)是聚合语义(并发查所有已启用源、结果合并去重),非失败转移
-        # (找到一个就停),硬套 Engine 的主备模型是设计错配,故不进 Engine —— 只借 registry
-        # 的 build_vendors 复用 vendor 实例,合并/去重/排序/since 过滤逻辑在 news() 里自己做。
+        # news (tin tức) mang ngữ nghĩa tổng hợp (hỏi song song mọi nguồn đang bật rồi gộp và khử trùng lặp), không phải ngữ nghĩa hạ cấp khi lỗi
+        # (tìm được một nguồn là dừng); ép nó vào mô hình chính/phụ của Engine là lệch thiết kế nên không đưa vào Engine — chỉ mượn build_vendors của registry
+        # để dùng lại thực thể vendor, còn phần gộp / khử trùng lặp / sắp xếp / lọc since thì news() tự làm.
         self._news_vendors = build_vendors("news")
         self._fundamentals_engine = Engine(
             datatype="fundamentals",
@@ -106,8 +106,8 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=300.0), default_ttl=300.0,
         )
-        # 龙虎榜/融资融券/股东户数/分红:市场/资金面,均走东财 datacenter 同构接口,
-        # 更新频率低(日频/期频),沿用 fundamentals 同款 300s TTL。
+        # Bảng giao dịch đột biến / giao dịch ký quỹ / số lượng cổ đông / cổ tức: thuộc mặt thị trường và dòng tiền, đều đi qua cùng một dạng endpoint datacenter của EastMoney,
+        # tần suất cập nhật thấp (theo ngày / theo kỳ) nên dùng luôn TTL 300s giống fundamentals.
         self._dragon_tiger_engine = Engine(
             datatype="dragon_tiger",
             vendors=build_vendors("dragon_tiger"),
@@ -132,8 +132,8 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=300.0), default_ttl=300.0,
         )
-        # 北向资金(同花顺 hexin 当日分钟累计净买入):市场级、单源,更新频率为分钟级
-        # 但当日累计值短期内变化不大,沿用 flash_news 同款 60s TTL(比 300s 更贴合"盘中递增")。
+        # Dòng vốn phía Bắc (mua ròng lũy kế theo phút trong ngày, nguồn hexin của Tonghuashun): cấp thị trường, một nguồn, cập nhật theo phút
+        # nhưng giá trị lũy kế trong ngày biến động chậm, nên dùng TTL 60s giống flash_news (bám sát tính chất "tăng dần trong phiên" hơn 300s).
         self._northbound_engine = Engine(
             datatype="northbound",
             vendors=build_vendors("northbound"),
@@ -142,15 +142,15 @@ class MarketData:
         )
 
     def klines(self, symbol: str, *, market: str, days: int = 120, min_count: int = 1) -> list:
-        """按 priority 主备取日K(不足则试下一个,全不足取最长)。返回 list[Bar]。
-        不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Lấy nến ngày theo chính-phụ dựa trên priority (thiếu thì thử nguồn kế, thiếu hết thì lấy nguồn dài nhất). Trả về list[Bar].
+        Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=(symbol,), market=market, timeframe="day", limit=days,
                       extra=(("days", days),))
         resp = self._kline_engine.fetch(req, min_count=min_count, cache_ttl_sec=0)
         return resp.data or []
 
     def quotes(self, symbols: list[str | Symbol], *, market: str | None = None) -> list[Quote]:
-        """批量报价。symbols 可跨市场:未显式给 market 时按代码自动识别并分组。"""
+        """Báo giá hàng loạt. symbols nằm ở nhiều thị trường được: không ghi market tường minh thì tự nhận diện theo mã rồi gom nhóm."""
         groups: dict[str, list[Symbol]] = {}
         for raw in symbols:
             sym = raw if isinstance(raw, Symbol) else Symbol.parse(raw, market)
@@ -165,19 +165,22 @@ class MarketData:
         return out
 
     def index_quotes(self, tencent_symbols: list[str]) -> list[dict]:
-        """按原始腾讯指数符号(sh000001/hkHSI/usDJI…)取行情,不经 Symbol.parse。
+        """Lấy bảng giá theo ký hiệu chỉ số gốc của Tencent (sh000001/hkHSI/usDJI…), không qua Symbol.parse.
 
-        指数代码可能与个股代码撞号(如 000001 既是平安银行又是上证指数),故走显式符号路径。
-        返回 list[dict]。
+        Mã chỉ số có thể trùng số với mã cổ phiếu (như 000001 vừa là Ping An Bank vừa là
+        chỉ số Thượng Hải), nên đi đường ký hiệu tường minh.
+        Trả về list[dict].
         """
         from marketdata.vendors.tencent import fetch_raw
         return fetch_raw(list(tencent_symbols)) if tencent_symbols else []
 
     def index_klines(self, code: str, *, market: str, days: int = 120) -> list:
-        """指数日K:东财 secid 主源;失败/未映射(如美股指数)走腾讯原始符号兜底;都无 → []。
+        """Nến ngày của chỉ số: secid Đông Tài là nguồn chính; hỏng/chưa ánh xạ (như chỉ số Mỹ) thì lùi về ký hiệu gốc của Tencent; không có gì cả → [].
 
-        腾讯兜底修两类缺口:①东财 push2his 被代理/风控掐时 CN/HK 指数仍有数;
-        ②美股指数(IXIC/DJI/INX)东财无 secid,腾讯可出(仅最近几根,短但可用)。返回 list[Bar]。
+        Phần hứng bằng Tencent lấp hai chỗ hụt: ① khi push2his của Đông Tài bị proxy/kiểm
+        soát rủi ro chặn thì chỉ số CN/HK vẫn có dữ liệu; ② chỉ số Mỹ (IXIC/DJI/INX) Đông
+        Tài không có secid, Tencent thì ra được (chỉ vài cây gần nhất, ngắn nhưng dùng được).
+        Trả về list[Bar].
         """
         c = str(code).strip()
         secid = INDEX_SECID.get(c) or INDEX_SECID.get(c.upper())
@@ -193,21 +196,21 @@ class MarketData:
         return []
 
     def capital_flow(self, symbol: str, *, market: str = "CN") -> CapitalFlow | None:
-        """单只股票资金流向。不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Dòng tiền của một mã. Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=(symbol,), market=market)
         resp = self._capital_flow_engine.fetch(req, cache_ttl_sec=0)
         data = resp.data or []
         return data[0] if data else None
 
     def events(self, symbols: list[str], *, market: str = "CN", since_days: int = 7) -> list[EventItem]:
-        """结构化事件(东财公告)。批量 symbols。不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Sự kiện có cấu trúc (công bố Đông Tài). Nhiều symbols cùng lúc. Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=tuple(symbols), market=market, since_hours=since_days * 24,
                       extra=(("since_days", since_days),))
         resp = self._events_engine.fetch(req, cache_ttl_sec=0)
         return resp.data or []
 
     def flash_news(self, *, market: str = "CN", limit: int = 50, keyword: str | None = None) -> list[FlashNews]:
-        """快讯(7×24)。市场级,symbols 恒空。不在包内缓存额外一层——用 Engine 默认 30s TTL。"""
+        """Tin nhanh (7×24). Cấp thị trường, symbols luôn rỗng. Không đệm thêm một lớp trong gói — dùng TTL 30s mặc định của Engine."""
         req = Request(symbols=(), market=market, limit=limit)
         resp = self._flash_news_engine.fetch(req)
         data = resp.data or []
@@ -224,18 +227,21 @@ class MarketData:
         names: dict[str, str] | None = None,
         now: datetime | None = None,
     ) -> list[NewsArticle]:
-        """新闻资讯(个股新闻 + 公告)—— 聚合语义,非失败转移:查询所有已启用源、结果合并去重,
-        而非"找到一个就停"(这与 quotes()/klines() 的主备语义不同),故不经 Engine。
+        """Tin tức (tin cổ phiếu riêng lẻ + công bố) — ngữ nghĩa gộp, không phải chuyển khi hỏng:
+        tra mọi nguồn đang bật rồi gộp kết quả và gộp trùng, chứ không phải "tìm được một
+        cái là dừng" (khác ngữ nghĩa chính-phụ của quotes()/klines()), nên không đi qua Engine.
 
-        对齐 PanWatch NewsCollector.fetch_all 的聚合语义:
-        - 公告源(vendor="eastmoney")用 max(since_hours, 72) 更宽窗口(公告发布频率低,
-          窗口太窄容易一条都捞不到);其余源用 since_hours。窗口值会透传进 vendor 的
-          config(当前 3 个 vendor 均未读取——真正的 since 过滤在本方法做,vendor 内
-          不允许调用无参 datetime.now())。
-        - 合并后按 external_id 去重,保留先出现的(即优先级更高的源优先保留)。
-        - 按 publish_time 倒序排列。
-        - since 过滤需要"当下"锚点:传 now 才过滤(每条按其来源选窗口,规则同上);
-          不传 now 则不过滤,原样返回全部合并结果(包内绝不偷偷调 datetime.now())。
+        Khớp với ngữ nghĩa gộp của NewsCollector.fetch_all bên PanWatch:
+        - Nguồn công bố (vendor="eastmoney") dùng cửa sổ rộng hơn max(since_hours, 72) (công
+          bố phát hành thưa, cửa sổ hẹp quá thì dễ không vớt được bản nào); các nguồn khác
+          dùng since_hours. Giá trị cửa sổ được chuyển thẳng vào config của vendor (hiện cả
+          3 vendor đều chưa đọc — phần lọc since thật làm ở chính phương thức này, bên trong
+          vendor không được gọi datetime.now() không tham số).
+        - Gộp xong thì gộp trùng theo external_id, giữ bản xuất hiện trước (tức nguồn có ưu tiên cao hơn được giữ).
+        - Xếp theo publish_time giảm dần.
+        - Lọc since cần mốc "lúc này": truyền now thì mới lọc (mỗi bản chọn cửa sổ theo nguồn
+          của nó, quy tắc như trên); không truyền now thì không lọc, trả nguyên toàn bộ kết
+          quả đã gộp (bên trong gói tuyệt đối không lén gọi datetime.now()).
         """
         syms = [Symbol.parse(s, market) for s in symbols]
         srcs = sorted(self.config.sources_for("news", market), key=lambda s: s.priority)

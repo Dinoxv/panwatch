@@ -1,4 +1,4 @@
-"""Agent 运行记录 - 写入 agent_runs 表（供 UI 查询）"""
+"""Bản ghi lượt chạy Agent - ghi vào bảng agent_runs (cho giao diện tra cứu)"""
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -9,8 +9,8 @@ from src.platform.persistence.models import AgentRun, LogEntry
 
 logger = logging.getLogger(__name__)
 
-# 采集阶段可能在外部数据源限流/重试时暂时没有进度日志，不能沿用
-# “5 分钟无日志即 stale”的规则；但服务重启后也不能无限恢复旧任务。
+# Giai đoạn thu thập có thể tạm thời không có nhật ký tiến độ khi nguồn ngoài giới hạn tốc độ / thử lại, nên không dùng được
+# quy tắc “5 phút không có nhật ký là cũ”; nhưng sau khi dịch vụ khởi động lại cũng không được khôi phục tác vụ cũ vô hạn.
 ACTIVE_RUN_TTL_SEC = 45 * 60
 
 
@@ -28,9 +28,10 @@ def start_agent_run(
     trigger_source: str = "",
     model_label: str = "",
 ) -> None:
-    """在任务真正开始前写入 running 生命周期记录。
+    """Ghi bản ghi vòng đời running trước khi tác vụ thật sự bắt đầu.
 
-    同一 trace 可能同时从 API 包装器和执行入口调用，因此写入是幂等的。
+    Cùng một trace có thể được gọi đồng thời từ lớp bọc API và từ lối vào thực thi, nên
+    việc ghi là bất biến.
     """
     if not trace_id:
         return
@@ -72,20 +73,20 @@ def record_agent_run(
     context_chars: int = 0,
     model_label: str = "",
 ) -> None:
-    """记录一次 Agent 运行结果到数据库。
+    """Ghi kết quả một lượt chạy Agent xuống cơ sở dữ liệu.
 
     Args:
-        agent_name: Agent 名称
+        agent_name: tên Agent
         status: success / failed
-        result: 简要结果（会截断）
-        error: 错误信息（会截断）
-        duration_ms: 执行耗时（毫秒）
-        trace_id: 运行链路追踪 id
+        result: kết quả tóm tắt (sẽ bị cắt bớt)
+        error: thông tin lỗi (sẽ bị cắt bớt)
+        duration_ms: thời gian chạy (mili giây)
+        trace_id: id truy vết chuỗi chạy
         trigger_source: schedule / manual / api
-        notify_attempted: 是否尝试发送通知
-        notify_sent: 通知是否发送成功
-        context_chars: prompt/context 字符数
-        model_label: 本次运行使用的模型标识
+        notify_attempted: có thử gửi thông báo không
+        notify_sent: thông báo gửi thành công không
+        context_chars: số ký tự của prompt/context
+        model_label: mã định danh mô hình dùng cho lượt chạy này
     """
     db = SessionLocal()
     try:
@@ -124,15 +125,16 @@ def record_agent_run(
 
 
 def find_active_tradingagents_trace(db: Session, stock_symbol: str) -> str | None:
-    """返回标的仍在执行的 TradingAgents trace，用于跨模块幂等触发。
+    """Trả về trace TradingAgents còn đang chạy của một mã, dùng cho việc kích hoạt bất biến giữa các module.
 
-    运行状态属于自动化模块，市场模块只能通过这个公开查询判断是否需要创建新任务，
-    不应导入自动化 HTTP router 或直接查询其内部实现。
+    Trạng thái chạy thuộc về module tự động hóa, module thị trường chỉ được dùng truy vấn
+    công khai này để xét có cần tạo tác vụ mới không, không được import router HTTP của
+    tự động hóa hay tra thẳng phần cài đặt bên trong của nó.
     """
     now = datetime.now(timezone.utc)
 
-    # 生命周期记录是首选数据源：采集阶段还没有 ta_progress 时也能恢复，
-    # 且不会因为某个外部源 5 分钟没有日志就重复触发任务。
+    # Bản ghi vòng đời là nguồn dữ liệu ưu tiên: khôi phục được cả khi giai đoạn thu thập chưa có ta_progress,
+    # và không kích hoạt lại tác vụ chỉ vì một nguồn ngoài im lặng 5 phút.
     active_run = (
         db.query(AgentRun)
         .filter(
@@ -147,7 +149,7 @@ def find_active_tradingagents_trace(db: Session, stock_symbol: str) -> str | Non
         created_at = _as_utc(active_run.created_at)
         if created_at is None or (now - created_at).total_seconds() <= ACTIVE_RUN_TTL_SEC:
             return active_run.trace_id
-        # 已超过整个任务安全窗口时，不能再被旧日志重新判成 running。
+        # Khi đã vượt cửa sổ an toàn của cả tác vụ thì nhật ký cũ không được phép đưa nó về lại trạng thái running.
         return None
 
     cutoff = now - timedelta(minutes=30)

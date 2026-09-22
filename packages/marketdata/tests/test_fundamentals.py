@@ -17,8 +17,8 @@ def _tencent_line(code: str = "600519", name: str = "贵州茅台") -> str:
     parts[1] = name
     parts[2] = code
     parts[39] = "28.5"     # pe_ttm
-    parts[44] = "18000.3"  # circulating_market_value(亿)
-    parts[45] = "21000.5"  # total_market_value(亿)
+    parts[44] = "18000.3"  # circulating_market_value (trăm triệu)
+    parts[45] = "21000.5"  # total_market_value (trăm triệu)
     parts[46] = "9.8"      # pb
     parts[52] = "30.1"     # pe_static
     return f'v_{code}="1~' + "~".join(parts[1:]) + '";'
@@ -37,7 +37,7 @@ class TestTencentFundamentals:
         assert f.pb == 9.8
         assert f.total_market_value == 21000.5
         assert f.circulating_market_value == 18000.3
-        # 财报类字段该源不提供,一律 None
+        # Nguồn này không cấp các trường báo cáo tài chính, nên tất cả là None
         assert f.eps is None and f.roe is None and f.report_date == ""
 
     def test_empty_response_returns_empty(self, monkeypatch):
@@ -62,10 +62,10 @@ class TestEastmoneyFundamentalsCN:
     def _payload(self, code="600519", name="贵州茅台"):
         return {"data": {
             "f57": code, "f58": name,
-            "f84": 1256197800,     # 总股本(股)
-            "f85": 1256197800,     # 流通股本(股)
-            "f116": 2100050000000,  # 总市值(raw 元) → /1e8 = 21000.5(亿)
-            "f117": 2100050000000,  # 流通市值(raw 元) → /1e8 = 21000.5(亿)
+            "f84": 1256197800,     # Tổng số cổ phần (cổ phiếu)
+            "f85": 1256197800,     # Số cổ phần lưu hành (cổ phiếu)
+            "f116": 2100050000000,  # Vốn hóa (giá trị thô, đồng) → /1e8 = 21000,5 (trăm triệu)
+            "f117": 2100050000000,  # Vốn hóa lưu hành (giá trị thô, đồng) → /1e8 = 21000,5 (trăm triệu)
         }}
 
     def test_parses_shares_and_market_value(self, monkeypatch):
@@ -78,7 +78,7 @@ class TestEastmoneyFundamentalsCN:
         assert f.float_shares == 1256197800.0
         assert f.total_market_value == 21000.5
         assert f.circulating_market_value == 21000.5
-        # push2 该端点未提供 PE/PB,一律 None
+        # Endpoint push2 này không cấp P/E, P/B nên tất cả là None
         assert f.pe_ttm is None and f.pb is None
 
     def test_empty_response_returns_empty(self, monkeypatch):
@@ -123,7 +123,7 @@ class TestEastmoneyFundamentalsUS:
         assert f.net_margin == 25.31
         assert f.revenue_yoy == 2.02
         assert f.report_date == "2025-09-30"
-        # 首试 .O 即命中,不应再尝试 .N
+        # Thử .O lần đầu đã khớp, không được thử tiếp .N
         assert len(calls) == 1
 
     def test_falls_back_to_nyse_when_nasdaq_empty(self, monkeypatch):
@@ -140,7 +140,7 @@ class TestEastmoneyFundamentalsUS:
         out = fv.EastmoneyFundamentalsVendor().fetch([Symbol.parse("GE", market="US")], {})
         assert len(out) == 1
         assert out[0].symbol == "GE"
-        # 先试 .O(空)再试 .N(命中)
+        # Thử .O trước (rỗng) rồi thử .N (khớp)
         assert len(calls) == 2
 
     def test_both_empty_returns_empty(self, monkeypatch):

@@ -1,4 +1,4 @@
-"""策略层：信号生成、后验评估、调权与统计。"""
+"""Tầng chiến lược: sinh tín hiệu, hậu kiểm, điều chỉnh trọng số và thống kê."""
 
 from __future__ import annotations
 
@@ -8,6 +8,13 @@ from math import sqrt
 
 from sqlalchemy import and_, case, func
 
+from src.platform.marketdata.bars import (
+    HORIZON_UNIT_TRADING_DAYS,
+    base_index_on_or_before,
+    bar_after_n_trading_days,
+    close_on_or_before,
+    close_series,
+)
 from src.platform.marketdata.collectors.kline_collector import KlineCollector
 from src.modules.strategy.entry_candidates import refresh_entry_candidates
 from src.platform.persistence.json_safe import to_jsonable
@@ -251,25 +258,8 @@ def _parse_day(value: str | None) -> date | None:
 
 
 def _pick_close_on_or_before(klines: list, target: date) -> float | None:
-    if not klines:
-        return None
-    rows: list[tuple[date, float]] = []
-    for k in klines:
-        d = _parse_day(getattr(k, "date", None))
-        c = getattr(k, "close", None)
-        if d is None or c is None:
-            continue
-        try:
-            rows.append((d, float(c)))
-        except Exception:
-            continue
-    if not rows:
-        return None
-    rows.sort(key=lambda x: x[0])
-    for d, c in reversed(rows):
-        if d <= target:
-            return c
-    return None
+    """Giá đóng cửa của phiên gần nhất không muộn hơn `target` (dùng cho giá gốc)."""
+    return close_on_or_before(klines, target)
 
 
 def _strategy_codes_for_candidate(row: EntryCandidate) -> list[str]:
@@ -875,15 +865,15 @@ def _compute_factor_breakdown(
     regime_multiplier += _clamp((regime_confidence - 0.5) * 0.06, -0.03, 0.03)
     regime_multiplier = _clamp(regime_multiplier, 0.85, 1.12)
 
-    # 每因子外置权重(默认 1.0 → 行为 = 现状,零回归)。snapshot 仍存 raw 因子分,
-    # 权重只作用于合成,确保 IC 测在原始因子上(见 factor_calibration 设计要点)。
+    # Trọng số đặt ngoài cho từng nhân tố (mặc định 1.0 → hành vi giữ nguyên hiện trạng, không hồi quy). Ảnh chụp vẫn lưu điểm nhân tố thô,
+    # trọng số chỉ tác động lúc tổng hợp, bảo đảm IC được đo trên nhân tố gốc (xem phần thiết kế của factor_calibration).
     fw = factor_weights or {}
     raw_score = (
         base_score
         + fw.get("alpha_score", 1.0) * alpha_score
         + fw.get("catalyst_score", 1.0) * catalyst_score
         + fw.get("quality_score", 1.0) * quality_score
-        + source_bonus  # v1: source_bonus 权重固定 1.0
+        + source_bonus  # v1: trọng số source_bonus cố định 1.0
     )
     raw_score -= fw.get("risk_penalty", 1.0) * risk_penalty
     raw_score -= fw.get("crowd_penalty", 1.0) * crowd_penalty
@@ -1547,7 +1537,13 @@ def _pending_due_horizons(
     horizons: tuple[int, ...] | list[int],
     existing: set[tuple[int, int]],
 ) -> tuple[list[int], int]:
-    """筛出尚未落库且已经到期的 horizon，避免无意义加载 K 线。"""
+    """Lọc trước các horizon chưa ghi sổ và đã có khả năng tới hạn, tránh tải K-line vô ích.
+
+    Đây chỉ là **cận dưới** rẻ tiền: số phiên giao dịch trôi qua không bao giờ
+    vượt quá số ngày tự nhiên trôi qua, nên `snapshot_day + horizon ngày > hôm nay`
+    chắc chắn là chưa tới hạn. Việc chốt chính xác "đã đủ N phiên chưa" do
+    `bar_after_n_trading_days` quyết định sau khi đã có K-line trong tay.
+    """
     pending: list[int] = []
     skipped_not_due = 0
     for horizon in horizons:
@@ -1606,7 +1602,7 @@ def evaluate_strategy_outcomes(
 
         today = date.today()
         kline_cache: dict[tuple[str, str], list] = {}
-        pending = 0  # 分批提交计数,缩短写事务窗口
+        pending = 0  # Đếm để commit theo lô, rút ngắn cửa sổ giao dịch ghi
 
         for s in signals:
             snap_day = _parse_day(s.snapshot_date)
@@ -1620,7 +1616,7 @@ def evaluate_strategy_outcomes(
                 existing=existing,
             )
             stats["skipped_not_due"] += skipped_not_due
-            # 所有 horizon 都已评估或尚未到期时，不需要联网取该标的 K 线。
+            # Khi mọi horizon đều đã đánh giá hoặc chưa tới hạn thì không cần gọi mạng lấy nến của mã đó.
             if not pending_horizons:
                 continue
             key = (
@@ -1637,13 +1633,23 @@ def evaluate_strategy_outcomes(
                     kline_cache[key] = []
             klines = kline_cache[key]
 
+            # Chuỗi K-line chính là lịch giao dịch: đếm tiến N phần tử cho ra
+            # đúng "N phiên sau", không bị nghỉ lễ / cuối tuần / đình chỉ làm lệch.
+            rows = close_series(klines)
+            base_index = base_index_on_or_before(rows, snap_day)
+
             for horizon in pending_horizons:
-                target_day = snap_day + timedelta(days=horizon)
                 stats["eligible"] += 1
-                outcome_price = _pick_close_on_or_before(klines, target_day)
-                if outcome_price is None:
+                if base_index is None:
                     stats["skipped_no_price"] += 1
                     continue
+                bar = bar_after_n_trading_days(rows, base_index, horizon)
+                if bar is None:
+                    # Chưa đủ phiên để chốt horizon này — chưa tới hạn, không
+                    # phải thiếu giá. Ghi sổ lúc này sẽ tạo ra một kết quả non.
+                    stats["skipped_not_due"] += 1
+                    continue
+                target_day, outcome_price = bar
                 base_price = None
                 if s.entry_low is not None and s.entry_high is not None:
                     base_price = (float(s.entry_low) + float(s.entry_high)) / 2
@@ -1657,7 +1663,7 @@ def evaluate_strategy_outcomes(
                     quote = source_meta.get("quote") if isinstance(source_meta.get("quote"), dict) else {}
                     base_price = _safe_float(quote.get("current_price"))
                 if base_price is None:
-                    base_price = _pick_close_on_or_before(klines, snap_day)
+                    base_price = rows[base_index][1]
                 if base_price is None or base_price <= 0:
                     stats["skipped_no_base_price"] += 1
                     status = "no_base_price"
@@ -1689,6 +1695,7 @@ def evaluate_strategy_outcomes(
                         stock_market=s.stock_market,
                         source_pool=s.source_pool or "watchlist",
                         horizon_days=horizon,
+                        horizon_unit=HORIZON_UNIT_TRADING_DAYS,
                         target_date=target_day.strftime("%Y-%m-%d"),
                         base_price=base_price,
                         outcome_price=outcome_price,
@@ -1710,7 +1717,7 @@ def evaluate_strategy_outcomes(
                 existing.add((s.id, horizon))
                 pending += 1
 
-            # 分批提交:累计到阈值即落盘,缩短写事务,避免与 60s 调度器并发写长时间持锁
+            # Commit theo lô: đủ ngưỡng là ghi xuống, rút ngắn giao dịch ghi, tránh giữ khóa lâu khi chạy song song với bộ lập lịch 60s
             if pending >= 50:
                 db.commit()
                 pending = 0

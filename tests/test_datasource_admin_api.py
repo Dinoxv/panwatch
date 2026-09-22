@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import src.modules.administration.api.datasources as ds
-import src.platform.persistence.models as M  # noqa: F401  确保模型注册到 Base.metadata
+import src.platform.persistence.models as M  # noqa: F401  bảo đảm mô hình được đăng ký vào Base.metadata
 from src.platform.persistence.database import Base, get_db
 from src.platform.persistence.models import DataSource
 
@@ -78,6 +78,6 @@ def test_reset_to_seed_endpoint_deletes_orphan_and_returns_summary():
     db2 = Session()
     remaining = {(s.type, s.provider) for s in db2.query(DataSource).all()}
     assert ("news", "cls") not in remaining
-    # 缺失的默认(如东财K线)应被补回
+    # Các mặc định còn thiếu (ví dụ nến EastMoney) phải được bù lại
     assert ("kline", "eastmoney") in remaining
     db2.close()

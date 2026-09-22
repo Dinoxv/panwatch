@@ -15,7 +15,7 @@ from marketdata.types import FlashNews
 
 
 # ---------------------------------------------------------------------------
-# cls(财联社)
+# cls (Cailianshe)
 # ---------------------------------------------------------------------------
 
 def test_cls_sign_is_deterministic():
@@ -29,12 +29,12 @@ def test_cls_sign_is_deterministic():
     }
     sign1 = fn._cls_sign(params)
     sign2 = fn._cls_sign(params)
-    # 同样的 params -> 同样的 sign(确定性,便于离线测试与调试)
+    # Cùng params -> cùng sign (mang tính tất định, tiện kiểm thử ngoại tuyến và gỡ lỗi)
     assert sign1 == sign2
-    assert len(sign1) == 32  # md5 hex digest 长度固定
+    assert len(sign1) == 32  # Độ dài của md5 hex digest là cố định
     assert all(c in "0123456789abcdef" for c in sign1)
 
-    # 手算校验:sha1(qs).hexdigest() 再 md5
+    # Kiểm chứng bằng tính tay: sha1(qs).hexdigest() rồi md5
     import hashlib
     qs = "&".join(f"{k}={params[k]}" for k in sorted(params))
     expected = hashlib.md5(hashlib.sha1(qs.encode()).hexdigest().encode()).hexdigest()
@@ -50,13 +50,13 @@ def test_cls_parses_and_maps_importance_and_symbols(monkeypatch):
                     "title": "央行公开市场操作",
                     "content": "央行今日开展逆回购操作",
                     "brief": "",
-                    "ctime": 1752652800,  # 2025-07-16 08:00:00 UTC 附近的固定戳(可复现)
+                    "ctime": 1752652800,  # Dấu thời gian cố định quanh 2025-07-16 08:00:00 UTC (tái lập được)
                     "level": "A",
                     "stock_list": [{"code": "600519", "name": "贵州茅台"}, {"SecurityCode": "000001"}],
                     "shareurl": "https://www.cls.cn/detail/1001",
                 },
                 {
-                    # 无 title/content,回退 brief;level 为未识别字符串 -> importance=0
+                    # Không có title/content thì lùi về brief; level là chuỗi không nhận dạng được -> importance=0
                     "id": 1002,
                     "title": "",
                     "content": "",
@@ -86,9 +86,9 @@ def test_cls_parses_and_maps_importance_and_symbols(monkeypatch):
     assert first.url == "https://www.cls.cn/detail/1001"
 
     second = out[1]
-    assert second.title == "简讯内容"  # 回退 brief
+    assert second.title == "简讯内容"  # Lùi về brief
     assert second.content == "简讯内容"
-    assert second.importance == 0  # 未识别 level
+    assert second.importance == 0  # level không nhận dạng được
     assert second.symbols == []
 
 
@@ -108,7 +108,7 @@ def test_cls_tolerates_broken_item(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# sina(新浪直播)
+# sina (bản tin trực tiếp của Sina)
 # ---------------------------------------------------------------------------
 
 def test_sina_parses_ext_stocks_and_time(monkeypatch):
@@ -124,7 +124,7 @@ def test_sina_parses_ext_stocks_and_time(monkeypatch):
                             "ext": '{"stocks": [{"symbol": "sh600519", "name": "贵州茅台"}, {"code": "000001"}]}',
                         },
                         {
-                            # 无 rich_text,回退 content;create_time 为秒戳字符串
+                            # Không có rich_text thì lùi về content; create_time là chuỗi dấu thời gian tính bằng giây
                             "id": "2002",
                             "content": "深成指低开",
                             "create_time": "1752652800",
@@ -147,7 +147,7 @@ def test_sina_parses_ext_stocks_and_time(monkeypatch):
     assert first.symbols == ["sh600519", "000001"]
 
     second = out[1]
-    assert second.content == "深成指低开"  # 回退 content
+    assert second.content == "深成指低开"  # Lùi về content
     assert second.publish_time == datetime.fromtimestamp(1752652800, tz=timezone.utc)
     assert second.symbols == []
 
@@ -180,7 +180,7 @@ def test_sina_tolerates_broken_ext_json(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财快讯)
+# eastmoney (tin nhanh EastMoney)
 # ---------------------------------------------------------------------------
 
 def test_eastmoney_parses_title_summary_time(monkeypatch):
@@ -194,7 +194,7 @@ def test_eastmoney_parses_title_summary_time(monkeypatch):
                     "showTime": "2026-07-16 11:20:00",
                 },
                 {
-                    # showTime 格式不可解析 -> 回退 EPOCH,不崩
+                    # Không bóc được định dạng showTime -> lùi về EPOCH, không làm sập
                     "id": "4002",
                     "title": "快讯标题",
                     "summary": "摘要内容",
@@ -216,7 +216,7 @@ def test_eastmoney_parses_title_summary_time(monkeypatch):
     assert first.importance == 0
 
     second = out[1]
-    assert second.publish_time == fn._EPOCH  # 不可解析时间的防御回退
+    assert second.publish_time == fn._EPOCH  # Phương án phòng thủ khi không bóc được thời gian
 
 
 def test_eastmoney_empty_response(monkeypatch):
@@ -228,7 +228,7 @@ def test_eastmoney_empty_response(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# MarketData.flash_news() —— 走单源 Engine 出数
+# MarketData.flash_news() — lấy dữ liệu qua Engine một nguồn
 # ---------------------------------------------------------------------------
 
 def test_marketdata_flash_news_single_source(monkeypatch):
@@ -260,7 +260,7 @@ def test_marketdata_flash_news_single_source(monkeypatch):
     assert out[0].title == "测试快讯标题"
     assert out[0].importance == 2  # level="B" -> 2
 
-    # keyword 过滤:命中 title/content 才保留
+    # Lọc theo keyword: khớp title/content mới giữ lại
     out_kw = md.flash_news(limit=20, keyword="ABC")
     assert len(out_kw) == 1
     out_kw_miss = md.flash_news(limit=20, keyword="不存在的关键字")

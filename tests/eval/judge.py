@@ -15,7 +15,7 @@ import json
 import os
 from dataclasses import dataclass
 
-# 评分维度（1-5 分）
+# Các chiều chấm điểm (thang 1-5)
 JUDGE_DIMENSIONS = {
     "relevance": "相关性：回答是否切中用户问题",
     "groundedness": "有据性：结论是否仅基于工具返回的数据，未编造价格/指标等具体数值",

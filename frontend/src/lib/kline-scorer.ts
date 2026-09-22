@@ -29,7 +29,7 @@ export function buildKlineSuggestion(s: KlineSummaryData, holding?: boolean): Kl
   }
 
   const tf = s.timeframe || '1d'
-  const asof = s.asof ? `截至${s.asof}` : ''
+  const asof = s.asof ? `tính tới ${s.asof}` : ''
 
   const addItem = (text: string, delta: number = 0, tag?: string, details?: string) => {
     items.push({ text, delta, tag, details })
@@ -37,76 +37,79 @@ export function buildKlineSuggestion(s: KlineSummaryData, holding?: boolean): Kl
     if (tag) tags.push(tag)
   }
 
-  // Trend
+  // Xu thế đường trung bình.
+  // Lưu ý: đối số của includes() là TỪ KHÓA do backend trả về (trường
+  // trend/macd_status/... vẫn là tiếng Trung), không phải chữ hiển thị —
+  // đừng dịch, dịch là mất tín hiệu. Chữ hiển thị nằm ở text và tag.
   if (s.trend?.includes('多头')) {
-    addItem('均线多头排列，趋势偏强', 2, '多头', `周期${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
+    addItem('Các đường trung bình xếp tăng, xu thế thiên mạnh', 2, 'Xu thế tăng', `Khung ${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
   } else if (s.trend?.includes('空头')) {
-    addItem('均线空头排列，趋势偏弱', -2, '空头', `周期${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
+    addItem('Các đường trung bình xếp giảm, xu thế thiên yếu', -2, 'Xu thế giảm', `Khung ${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
   } else if (s.trend?.includes('交织')) {
-    addItem('均线交织，趋势不明', 0, undefined, `周期${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
+    addItem('Các đường trung bình đan xen, xu thế chưa rõ', 0, undefined, `Khung ${tf} ${asof} · MA5/10/20: ${fmt(s.ma5)}/${fmt(s.ma10)}/${fmt(s.ma20)}`)
   }
 
   // MACD
   if (s.macd_status?.includes('金叉')) {
-    addItem('MACD 金叉，短线动能偏强', 2, 'MACD金叉', `周期${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
+    addItem('MACD cắt lên, động lượng ngắn hạn thiên mạnh', 2, 'MACD cắt lên', `Khung ${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
   }
   if (s.macd_status?.includes('死叉')) {
-    addItem('MACD 死叉，短线动能转弱', -2, 'MACD死叉', `周期${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
+    addItem('MACD cắt xuống, động lượng ngắn hạn chuyển yếu', -2, 'MACD cắt xuống', `Khung ${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
   }
   if (s.macd_hist != null) {
     if (s.macd_hist > 0.0) {
-      addItem('MACD 柱体为正（动能偏多）', 1, undefined, `周期${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
+      addItem('Thanh MACD dương (động lượng nghiêng mua)', 1, undefined, `Khung ${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
     } else if (s.macd_hist < 0.0) {
-      addItem('MACD 柱体为负（动能偏空）', -1, undefined, `周期${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
+      addItem('Thanh MACD âm (động lượng nghiêng bán)', -1, undefined, `Khung ${tf} ${asof} · hist: ${fmt(s.macd_hist, 3)}`)
     }
   }
 
   // RSI
   if (s.rsi_status?.includes('超卖')) {
-    addItem('RSI 超卖，可能存在反弹', 1, 'RSI超卖', `周期${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}（阈值<20）`)
+    addItem('RSI quá bán, có thể bật lại', 1, 'RSI quá bán', `Khung ${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)} (ngưỡng <20)`)
   } else if (s.rsi_status?.includes('偏强')) {
-    addItem('RSI 偏强，买盘占优', 1, 'RSI偏强', `周期${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}（阈值70-80）`)
+    addItem('RSI mạnh, bên mua chiếm ưu thế', 1, 'RSI mạnh', `Khung ${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)} (ngưỡng 70-80)`)
   } else if (s.rsi_status?.includes('超买')) {
-    addItem('RSI 超买，注意回调风险', -1, 'RSI超买', `周期${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}（阈值>80）`)
+    addItem('RSI quá mua, coi chừng nhịp điều chỉnh', -1, 'RSI quá mua', `Khung ${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)} (ngưỡng >80)`)
   } else if (s.rsi_status?.includes('偏弱')) {
-    addItem('RSI 偏弱，短线承压', -1, 'RSI偏弱', `周期${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}（阈值<30）`)
+    addItem('RSI yếu, ngắn hạn chịu áp lực', -1, 'RSI yếu', `Khung ${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)} (ngưỡng <30)`)
   } else if (s.rsi_status?.includes('中性')) {
-    addItem('RSI 中性', 0, undefined, `周期${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}`)
+    addItem('RSI trung tính', 0, undefined, `Khung ${tf} ${asof} · RSI6: ${fmt(s.rsi6, 1)}`)
   }
 
   // KDJ
   if (s.kdj_status?.includes('金叉')) {
-    addItem('KDJ 金叉，短线转强', 1, 'KDJ金叉', `周期${tf} ${asof} · K/D/J: ${fmt(s.kdj_k, 1)}/${fmt(s.kdj_d, 1)}/${fmt(s.kdj_j, 1)}`)
+    addItem('KDJ cắt lên, ngắn hạn chuyển mạnh', 1, 'KDJ cắt lên', `Khung ${tf} ${asof} · K/D/J: ${fmt(s.kdj_k, 1)}/${fmt(s.kdj_d, 1)}/${fmt(s.kdj_j, 1)}`)
   }
   if (s.kdj_status?.includes('死叉')) {
-    addItem('KDJ 死叉，短线转弱', -1, 'KDJ死叉', `周期${tf} ${asof} · K/D/J: ${fmt(s.kdj_k, 1)}/${fmt(s.kdj_d, 1)}/${fmt(s.kdj_j, 1)}`)
+    addItem('KDJ cắt xuống, ngắn hạn chuyển yếu', -1, 'KDJ cắt xuống', `Khung ${tf} ${asof} · K/D/J: ${fmt(s.kdj_k, 1)}/${fmt(s.kdj_d, 1)}/${fmt(s.kdj_j, 1)}`)
   }
 
   // BOLL
   if (s.boll_status?.includes('突破上轨')) {
-    addItem('突破布林上轨，趋势强势', 1, '突破上轨', `周期${tf} ${asof} · close: ${fmt(s.last_close)} · 上轨: ${fmt(s.boll_upper)}`)
+    addItem('Vượt dải Bollinger trên, xu thế mạnh', 1, 'Vượt dải trên', `Khung ${tf} ${asof} · đóng cửa: ${fmt(s.last_close)} · dải trên: ${fmt(s.boll_upper)}`)
   } else if (s.boll_status?.includes('跌破下轨')) {
-    addItem('跌破布林下轨，走势偏弱', -1, '跌破下轨', `周期${tf} ${asof} · close: ${fmt(s.last_close)} · 下轨: ${fmt(s.boll_lower)}`)
+    addItem('Thủng dải Bollinger dưới, diễn biến thiên yếu', -1, 'Thủng dải dưới', `Khung ${tf} ${asof} · đóng cửa: ${fmt(s.last_close)} · dải dưới: ${fmt(s.boll_lower)}`)
   }
 
   // Volume
   if (s.volume_trend?.includes('放量')) {
-    addItem('放量配合，资金参与度提升', 1, '放量', `周期${tf} ${asof} · 量比: ${fmt(s.volume_ratio, 1)}x`)
+    addItem('Khối lượng bùng lên đồng thuận, dòng tiền tham gia nhiều hơn', 1, 'Bùng khối lượng', `Khung ${tf} ${asof} · tỷ lệ khối lượng: ${fmt(s.volume_ratio, 1)}x`)
   } else if (s.volume_trend?.includes('缩量')) {
-    addItem('缩量，动能不足', -1, '缩量', `周期${tf} ${asof} · 量比: ${fmt(s.volume_ratio, 1)}x`)
+    addItem('Khối lượng cạn, thiếu động lượng', -1, 'Cạn khối lượng', `Khung ${tf} ${asof} · tỷ lệ khối lượng: ${fmt(s.volume_ratio, 1)}x`)
   }
 
   // Support / Resistance proximity
   if (s.last_close != null && s.support != null && s.support > 0) {
     if (s.last_close <= s.support * 1.02) {
       const dist = (s.last_close - s.support) / s.support * 100
-      addItem('价格接近支撑位，止跌反弹概率提升', 1, '靠近支撑', `周期${tf} ${asof} · close: ${fmt(s.last_close)} · 支撑: ${fmt(s.support)} · 距离: ${dist >= 0 ? '+' : ''}${dist.toFixed(1)}%（阈值<=+2%）`)
+      addItem('Giá sát vùng hỗ trợ, xác suất chặn đà giảm rồi bật lại tăng lên', 1, 'Sát hỗ trợ', `Khung ${tf} ${asof} · đóng cửa: ${fmt(s.last_close)} · hỗ trợ: ${fmt(s.support)} · khoảng cách: ${dist >= 0 ? '+' : ''}${dist.toFixed(1)}% (ngưỡng <=+2%)`)
     }
   }
   if (s.last_close != null && s.resistance != null && s.resistance > 0) {
     if (s.last_close >= s.resistance * 0.98) {
       const dist = (s.last_close - s.resistance) / s.resistance * 100
-      addItem('价格接近压力位，上行空间受限', -1, '靠近压力', `周期${tf} ${asof} · close: ${fmt(s.last_close)} · 压力: ${fmt(s.resistance)} · 距离: ${dist >= 0 ? '+' : ''}${dist.toFixed(1)}%（阈值>=-2%）`)
+      addItem('Giá sát vùng kháng cự, dư địa đi lên bị chặn', -1, 'Sát kháng cự', `Khung ${tf} ${asof} · đóng cửa: ${fmt(s.last_close)} · kháng cự: ${fmt(s.resistance)} · khoảng cách: ${dist >= 0 ? '+' : ''}${dist.toFixed(1)}% (ngưỡng >=-2%)`)
     }
   }
 
@@ -125,18 +128,18 @@ export function buildKlineSuggestion(s: KlineSummaryData, holding?: boolean): Kl
   }
 
   const uniqTags = Array.from(new Set(tags))
-  const signal = uniqTags.length > 0 ? uniqTags.join(' / ') : '技术面中性'
+  const signal = uniqTags.length > 0 ? uniqTags.join(' / ') : 'Kỹ thuật trung tính'
 
   const actionLabel = (a: Action): string => {
     switch (a) {
-      case 'buy': return '买入'
-      case 'add': return '加仓'
-      case 'reduce': return '减仓'
-      case 'sell': return '卖出'
-      case 'hold': return '持有'
-      case 'watch': return '观望'
-      case 'avoid': return '回避'
-      default: return '观望'
+      case 'buy': return 'Mua vào'
+      case 'add': return 'Gia tăng tỷ trọng'
+      case 'reduce': return 'Hạ tỷ trọng'
+      case 'sell': return 'Bán ra'
+      case 'hold': return 'Nắm giữ'
+      case 'watch': return 'Quan sát'
+      case 'avoid': return 'Tránh ra'
+      default: return 'Quan sát'
     }
   }
 

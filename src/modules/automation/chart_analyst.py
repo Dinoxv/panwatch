@@ -1,4 +1,4 @@
-"""技术分析 Agent - 多模态 K 线图分析"""
+"""Agent phân tích kỹ thuật - phân tích đồ thị nến đa phương thức"""
 
 import logging
 from datetime import datetime
@@ -15,10 +15,10 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "chart_an
 
 class ChartAnalystAgent(BaseAgent):
     """
-    技术分析 Agent
+    Agent phân tích kỹ thuật
 
-    使用多模态 AI 分析 K 线图截图，输出技术分析报告。
-    需要支持 Vision 的 AI 模型（如 GPT-4V、GLM-4V 等）。
+    Dùng AI đa phương thức phân tích ảnh chụp đồ thị nến rồi xuất báo cáo phân tích kỹ thuật.
+    Cần mô hình AI có hỗ trợ Vision (như GPT-4V, GLM-4V…).
     """
 
     name = "chart_analyst"
@@ -28,18 +28,18 @@ class ChartAnalystAgent(BaseAgent):
     def __init__(self, period: str = "daily"):
         """
         Args:
-            period: K线周期 (daily/weekly/monthly)
+            period: chu kỳ nến (daily/weekly/monthly)
         """
         self.period = period
         self._collector: ScreenshotCollector | None = None
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集自选股 K 线图截图"""
+        """Thu thập ảnh chụp đồ thị nến của mã theo dõi"""
         if not context.watchlist:
             logger.warning("自选股列表为空，跳过截图采集")
             return {"screenshots": [], "watchlist": []}
 
-        # 准备股票列表
+        # Chuẩn bị danh sách cổ phiếu
         stocks = [
             {
                 "symbol": stock.symbol,
@@ -49,14 +49,14 @@ class ChartAnalystAgent(BaseAgent):
             for stock in context.watchlist
         ]
 
-        # 截图
+        # Chụp màn hình
         self._collector = ScreenshotCollector()
         try:
             screenshots = await self._collector.capture_batch(
                 stocks, period=self.period
             )
 
-            # 结构化信号（行情/技术/持仓），用于提示词增强（失败不影响截图）
+            # Tín hiệu có cấu trúc (giá / kỹ thuật / vị thế), dùng để làm giàu prompt (lỗi cũng không ảnh hưởng ảnh chụp)
             packs = {}
             try:
                 builder = SignalPackBuilder()
@@ -74,7 +74,7 @@ class ChartAnalystAgent(BaseAgent):
             except Exception as e:
                 logger.warning(f"SignalPack 获取失败（chart_analyst 继续执行）：{e}")
 
-            # 清理旧截图
+            # Dọn ảnh chụp cũ
             self._collector.cleanup_old_screenshots(max_age_hours=24)
 
             return {
@@ -89,14 +89,14 @@ class ChartAnalystAgent(BaseAgent):
             self._collector = None
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建技术分析 Prompt"""
+        """Dựng Prompt phân tích kỹ thuật"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         lines = []
         lines.append(f"## 分析时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append(f"## K线周期：{self._period_label(data.get('period', 'daily'))}\n")
 
-        # 股票列表（含持仓信息）
+        # Danh sách cổ phiếu (kèm thông tin vị thế)
         lines.append("## 待分析股票")
         screenshots: list[ChartScreenshot] = data.get("screenshots", [])
         packs = data.get("signal_packs", {}) or {}
@@ -113,7 +113,7 @@ class ChartAnalystAgent(BaseAgent):
                 else:
                     lines.append(f"{i}. {shot.name}({shot.symbol}) - 见图{i} | 未持仓")
 
-                # 补充结构化技术摘要（让多模态输出更稳定）
+                # Bổ sung tóm tắt kỹ thuật có cấu trúc (giúp đầu ra đa phương thức ổn định hơn)
                 tech = (pack.technical if pack else None) or {}
                 quote = pack.quote if pack else None
                 brief_parts = []
@@ -151,7 +151,7 @@ class ChartAnalystAgent(BaseAgent):
         else:
             lines.append("- 无截图")
 
-        # 账户资金概况
+        # Tổng quan vốn tài khoản
         if context.portfolio.accounts:
             lines.append("\n## 资金状况")
             total_funds = context.portfolio.total_available_funds
@@ -168,7 +168,7 @@ class ChartAnalystAgent(BaseAgent):
         return system_prompt, user_content
 
     def _period_label(self, period: str) -> str:
-        """周期中文标签"""
+        """Nhãn hiển thị của chu kỳ"""
         return {
             "daily": "日K",
             "weekly": "周K",
@@ -177,13 +177,13 @@ class ChartAnalystAgent(BaseAgent):
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
         """
-        重写分析方法以支持多模态
+        Ghi đè phương thức phân tích để hỗ trợ đa phương thức
 
-        将截图作为图片传给 AI
+        Đưa ảnh chụp cho AI dưới dạng ảnh
         """
         system_prompt, user_content = self.build_prompt(data, context)
 
-        # 收集图片路径
+        # Thu thập đường dẫn ảnh
         screenshots: list[ChartScreenshot] = data.get("screenshots", [])
         image_paths = [shot.filepath for shot in screenshots if shot.exists]
 
@@ -191,7 +191,7 @@ class ChartAnalystAgent(BaseAgent):
             logger.warning("没有可用的截图，跳过分析")
             content = "未能获取到 K 线图截图，请检查网络连接或稍后重试。"
         else:
-            # 调用多模态 AI
+            # Gọi AI đa phương thức
             logger.info(f"使用 {len(image_paths)} 张截图进行多模态分析")
             content = await context.ai_client.chat(
                 system_prompt,
@@ -199,13 +199,13 @@ class ChartAnalystAgent(BaseAgent):
                 images=image_paths,
             )
 
-        # 构建标题
+        # Dựng tiêu đề
         stock_names = "、".join(s.name for s in context.watchlist[:5])
         if len(context.watchlist) > 5:
             stock_names += f" 等{len(context.watchlist)}只"
         title = f"【{self.display_name}】{stock_names}"
 
-        # 附 AI 模型信息
+        # Kèm thông tin mô hình AI
         if context.model_label:
             content = content.rstrip() + f"\n\n---\nAI: {context.model_label}"
 
@@ -218,7 +218,7 @@ class ChartAnalystAgent(BaseAgent):
         )
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """有截图且有内容时通知"""
+        """Có ảnh chụp và có nội dung thì mới thông báo"""
         screenshots = result.raw_data.get("screenshots", [])
         return len(screenshots) > 0 and len(result.content) > 50
 
@@ -226,11 +226,11 @@ class ChartAnalystAgent(BaseAgent):
         self, context: AgentContext, stock_symbol: str
     ) -> AnalysisResult | None:
         """
-        单只模式执行：只分析指定的一只股票
+        Chạy ở chế độ từng mã: chỉ phân tích đúng một mã đã chỉ định
 
-        用于逐只分析场景，每只股票独立截图、分析和通知
+        Dùng cho tình huống phân tích lần lượt, mỗi mã chụp ảnh, phân tích và thông báo riêng
         """
-        # 过滤只保留指定股票
+        # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist
         context.config.watchlist = [
             s for s in original_watchlist if s.symbol == stock_symbol

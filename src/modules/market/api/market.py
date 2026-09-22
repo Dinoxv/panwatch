@@ -1,4 +1,4 @@
-"""市场指数 API - 公共数据，无需认证"""
+"""API chỉ số thị trường - dữ liệu công khai, không cần xác thực"""
 import asyncio
 import logging
 import time
@@ -12,46 +12,46 @@ router = APIRouter()
 
 
 def get_market_data():
-    """惰性 import,避免包未装/循环 import 影响本模块加载。"""
+    """Import lười, tránh việc gói chưa cài / import vòng làm hỏng quá trình nạp module này."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()
 
-# 主要市场指数配置
-# response_symbol: 腾讯 API 返回的 symbol（用于匹配）
+# Cấu hình các chỉ số thị trường chính
+# response_symbol: symbol mà API Tencent trả về (dùng để khớp)
 MARKET_INDICES = [
-    # A股指数
+    # Chỉ số cổ phiếu A
     {"symbol": "000001", "name": "上证指数", "market": "CN", "tencent_symbol": "sh000001", "response_symbol": "000001"},
     {"symbol": "399001", "name": "深证成指", "market": "CN", "tencent_symbol": "sz399001", "response_symbol": "399001"},
     {"symbol": "399006", "name": "创业板指", "market": "CN", "tencent_symbol": "sz399006", "response_symbol": "399006"},
-    # 港股指数
+    # Chỉ số cổ phiếu Hồng Kông
     {"symbol": "HSI", "name": "恒生指数", "market": "HK", "tencent_symbol": "hkHSI", "response_symbol": "HSI"},
-    # 美股指数 (腾讯返回的 symbol 带点号前缀: .IXIC, .DJI)
+    # Chỉ số cổ phiếu Mỹ (symbol Tencent trả về có tiền tố dấu chấm: .IXIC, .DJI)
     {"symbol": "IXIC", "name": "纳斯达克", "market": "US", "tencent_symbol": "usIXIC", "response_symbol": ".IXIC"},
     {"symbol": "DJI", "name": "道琼斯", "market": "US", "tencent_symbol": "usDJI", "response_symbol": ".DJI"},
 ]
 
-# 指数响应内存缓存:60s(行情价格要新鲜)。
+# Bộ đệm phản hồi chỉ số trong bộ nhớ: 60s (giá thị trường cần tươi).
 _INDICES_CACHE: dict[str, tuple[float, list[dict]]] = {}
 _INDICES_CACHE_TTL_S = 60
 
-# spark(近20日收盘)独立缓存:日线一天才变,30 分钟足够新鲜。
-# 没有它,响应缓存每 60s 过期就要重付一轮 6×指数K线(部分环境东财先失败再腾讯兜底,
-# 串行约 4s)——这曾是首页快车道最大的延迟来源。空结果也缓存(坏源别反复重拉)。
+# Bộ đệm riêng cho spark (đóng cửa 20 phiên gần nhất): nến ngày một ngày mới đổi nên 30 phút là đủ tươi.
+# Không có nó thì cứ 60s bộ đệm phản hồi hết hạn là phải trả giá thêm một vòng 6 lần lấy nến chỉ số (ở vài môi trường EastMoney hỏng trước rồi Tencent dự phòng,
+# chạy nối tiếp mất khoảng 4s) — đây từng là nguồn trễ lớn nhất của làn nhanh ở trang chủ. Kết quả rỗng cũng đệm (nguồn hỏng thì đừng kéo lại liên tục).
 _SPARK_CACHE: dict[str, tuple[float, list[float]]] = {}
 _SPARK_TTL_S = 1800
 
 
 def clear_indices_cache() -> None:
-    """清空指数响应/spark 缓存(测试隔离用)。"""
+    """Xóa sạch đệm phản hồi/spark của chỉ số (dùng để cô lập khi test)."""
     _INDICES_CACHE.clear()
     _SPARK_CACHE.clear()
 
 
 def _spark_for(idx: dict) -> list[float]:
-    """近 20 日收盘价,供首页指数走势 sparkline 用(带 30min 独立缓存)。
+    """Giá đóng cửa 20 ngày gần nhất, cho sparkline diễn biến chỉ số ở trang chủ (có đệm riêng 30 phút).
 
-    fail-soft:市场码非法/取数异常/无映射一律吞掉,返回空列表,绝不影响 quote 主体。
+    fail-soft: mã thị trường sai/lấy dữ liệu lỗi/không có ánh xạ đều nuốt hết, trả danh sách rỗng, tuyệt đối không ảnh hưởng phần quote chính.
     """
     now = time.time()
     hit = _SPARK_CACHE.get(idx["symbol"])
@@ -70,7 +70,7 @@ def _spark_for(idx: dict) -> list[float]:
 
 @router.get("/indices")
 async def get_market_indices():
-    """获取主要市场指数（公共数据，无需认证）"""
+    """Lấy các chỉ số thị trường chính (dữ liệu công khai, không cần xác thực)"""
     now = time.time()
     cached = _INDICES_CACHE.get("indices")
     if cached and now - cached[0] < _INDICES_CACHE_TTL_S:
@@ -84,12 +84,12 @@ async def get_market_indices():
         logger.error(f"获取市场指数失败: {e}")
         return []
 
-    # 构建 response_symbol -> quote 映射
+    # Dựng ánh xạ response_symbol -> quote
     quote_map = {}
     for q in quotes:
         quote_map[q["symbol"]] = q
 
-    # spark 并行取(缓存未过期时零成本;冷启动=最慢单个≈1s,而非 6 个串行累加)
+    # Lấy spark song song (bộ đệm còn hạn thì tốn 0; khởi động nguội = mất bằng cái chậm nhất ≈1s, thay vì cộng dồn 6 lần nối tiếp)
     sparks = await asyncio.gather(
         *[asyncio.to_thread(_spark_for, idx) for idx in MARKET_INDICES],
         return_exceptions=True,
@@ -101,7 +101,7 @@ async def get_market_indices():
 
     result = []
     for idx in MARKET_INDICES:
-        # 使用 response_symbol 匹配
+        # Khớp bằng response_symbol
         quote = quote_map.get(idx["response_symbol"])
         spark = spark_map.get(idx["symbol"], [])
 
@@ -117,7 +117,7 @@ async def get_market_indices():
                 "spark": spark,
             })
         else:
-            # 即使没有行情也返回基本信息
+            # Không có dữ liệu giá thì vẫn trả về thông tin cơ bản
             result.append({
                 "symbol": idx["symbol"],
                 "name": idx["name"],

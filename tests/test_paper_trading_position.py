@@ -21,7 +21,7 @@ def test_compute_quantity_respects_budget():
         available_cash=1_000_000, cost_model=cm,
     )
     assert qty > 0 and qty % 100 == 0
-    assert qty <= 25000  # 25% 预算 / 10 元
+    assert qty <= 25000  # 25% ngân sách / 10 đồng
 
 
 def test_compute_quantity_respects_cash():

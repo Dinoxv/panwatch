@@ -8,8 +8,8 @@
 
 from tests.eval.framework import ChatEvalCase
 
-# ──────────────── mock 工具数据 ────────────────
-# 数值刻意取"模型编不出来"的非整值，answer_must_contain 据此验证有据性
+# ──────────────── Dữ liệu công cụ giả ────────────────
+# Giá trị cố ý chọn số lẻ mà "mô hình không bịa ra được", answer_must_contain dựa vào đó để kiểm chứng tính có căn cứ
 
 MOCK_PORTFOLIO = (
     "实盘持仓：\n"
@@ -37,7 +37,7 @@ MOCK_WATCHLIST = (
 )
 TOOL_FAIL_TIMEOUT = "工具执行出错: 数据源请求超时"
 
-# 失败场景通用：答案里应有"如实说明失败"类表述
+# Dùng chung cho tình huống lỗi: câu trả lời phải có cách diễn đạt kiểu "nói thật là đã thất bại"
 FAIL_PHRASES = ("失败", "无法", "未能", "暂时", "出错", "稍后", "获取不到", "拿不到")
 
 
@@ -156,7 +156,7 @@ CHAT_CASES: list[ChatEvalCase] = [
         answer_must_contain=("腾讯",),
         notes="需要基于自选列表判断",
     ),
-    # ──────── 多工具组合 ────────
+    # ──────── Kết hợp nhiều công cụ ────────
     ChatEvalCase(
         id="multi-1",
         question="结合实时行情和技术面，帮我分析下 600519",
@@ -189,7 +189,7 @@ CHAT_CASES: list[ChatEvalCase] = [
         answer_must_contain=("1712.5",),
         notes="至少要查行情；查不查自选列表均可接受",
     ),
-    # ──────── 不该调工具的场景 ────────
+    # ──────── Tình huống không được gọi công cụ ────────
     ChatEvalCase(
         id="chitchat-1",
         question="你好",
@@ -220,7 +220,7 @@ CHAT_CASES: list[ChatEvalCase] = [
         expect_no_tools=True,
         notes="指标科普不需要调工具",
     ),
-    # ──────── 工具失败降级 ────────
+    # ──────── Hạ cấp khi công cụ thất bại ────────
     ChatEvalCase(
         id="fail-1",
         question="600519 现在多少钱？",

@@ -1,7 +1,7 @@
-"""价格提醒规则的共享领域服务。
+"""Dịch vụ miền dùng chung cho quy tắc cảnh báo giá.
 
-HTTP API 和 PanAgent 工具都通过这里读写提醒规则，避免两条入口各自维护
-校验、条件转换和触发计数重置逻辑。
+Cả API HTTP lẫn công cụ PanAgent đều đọc ghi quy tắc cảnh báo qua đây, để hai lối vào
+khỏi mỗi bên tự giữ một bản logic kiểm hợp lệ, đổi điều kiện và đặt lại bộ đếm kích hoạt.
 """
 
 from __future__ import annotations

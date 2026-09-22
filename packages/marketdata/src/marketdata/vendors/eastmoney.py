@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 _URL = "https://push2.eastmoney.com/api/qt/stock/get"
 _HOST = "push2.eastmoney.com"
 _MIN_INTERVAL_S = 0.2
-# f43 最新价 / f44 最高 / f45 最低 / f46 今开 / f47 成交量 / f48 成交额 / f50 量比 /
-# f55(备用,CN 主用 f168) / f57 代码 / f58 名称 / f59 小数位数 / f60 昨收 /
-# f116 总市值 / f117 流通市值 / f168 换手率 / f169 涨跌额 / f170 涨跌幅 / f171 振幅(未映射)
+# f43 giá mới nhất / f44 cao nhất / f45 thấp nhất / f46 mở cửa / f47 khối lượng / f48 giá trị giao dịch / f50 tỷ lệ khối lượng /
+# f55 (dự phòng, CN chủ yếu dùng f168) / f57 mã / f58 tên / f59 số chữ số thập phân / f60 đóng cửa phiên trước /
+# f116 vốn hóa / f117 vốn hóa lưu hành / f168 tỷ lệ vòng quay / f169 mức tăng giảm / f170 biên độ / f171 biên dao động (chưa ánh xạ)
 _FIELDS = "f43,f44,f45,f46,f47,f48,f50,f55,f57,f58,f59,f60,f116,f117,f168,f169,f170,f171"
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -88,7 +88,7 @@ def _parse_one(data: dict | None, market: str, fallback_code: str) -> Quote | No
         turnover=_to_float(data.get("f48")),
         turnover_rate=turnover_rate,
         volume_ratio=_pct(data.get("f50")),
-        pe_ratio=None,  # 未确认稳定字段(f162 猜测,未经真实响应验证),宁缺毋错
+        pe_ratio=None,  # Trường chưa xác nhận ổn định (f162 mới là phỏng đoán, chưa kiểm chứng trên phản hồi thật), thà thiếu còn hơn sai
         circulating_market_value=(circ_mv / 1e8) if circ_mv is not None else None,
         total_market_value=(total_mv / 1e8) if total_mv is not None else None,
     )

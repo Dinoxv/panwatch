@@ -13,7 +13,7 @@ describe('AssistantSidebar', () => {
     render(
       <AssistantSidebar
         conversations={[
-          { id: 8, title: '贵州茅台走势', stock_symbol: '600519', stock_market: 'CN', created_at: '2026-09-12T00:00:00Z' },
+          { id: 8, title: 'Diễn biến 贵州茅台', stock_symbol: '600519', stock_market: 'CN', created_at: '2026-09-12T00:00:00Z' },
         ]}
         activeConversationId={null}
         onOpen={onOpen}
@@ -22,8 +22,8 @@ describe('AssistantSidebar', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: '新研究' }))
-    await user.click(screen.getByRole('button', { name: '贵州茅台走势' }))
+    await user.click(screen.getByRole('button', { name: 'Nghiên cứu mới' }))
+    await user.click(screen.getByRole('button', { name: 'Diễn biến 贵州茅台' }))
 
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 8 }))

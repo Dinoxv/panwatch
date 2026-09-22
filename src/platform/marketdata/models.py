@@ -5,39 +5,39 @@ from zoneinfo import ZoneInfo
 
 
 class MarketCode(str, Enum):
-    CN = "CN"  # A股
-    HK = "HK"  # 港股
-    US = "US"  # 美股
+    CN = "CN"  # Cổ phiếu A
+    HK = "HK"  # Cổ phiếu Hồng Kông
+    US = "US"  # Cổ phiếu Mỹ
 
 
 @dataclass
 class TradingSession:
-    """一个交易时段"""
+    """Một phiên giao dịch"""
     start: time
     end: time
 
 
 @dataclass
 class MarketDef:
-    """市场定义"""
+    """Định nghĩa thị trường"""
     code: MarketCode
     name: str
     timezone: str
     sessions: list[TradingSession]
-    symbol_pattern: str  # 正则，用于校验股票代码格式
+    symbol_pattern: str  # Biểu thức chính quy dùng để kiểm tra định dạng mã cổ phiếu
 
     def get_tz(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
 
     def is_trading_time(self, dt: datetime | None = None) -> bool:
-        """判断给定时间是否在交易时段内"""
+        """Xét xem thời điểm cho trước có nằm trong phiên giao dịch không"""
         if dt is None:
             dt = datetime.now(self.get_tz())
         else:
             dt = dt.astimezone(self.get_tz())
 
-        # 非交易日(周末 / A股法定节假日)一律不交易。
-        # 延迟导入:trading_calendar 依赖本模块的 MarketCode/MARKETS。
+        # Ngày không giao dịch (cuối tuần / nghỉ lễ theo quy định của thị trường A) thì nhất loạt không giao dịch.
+        # Import trễ: trading_calendar phụ thuộc MarketCode/MARKETS của chính module này.
         from src.platform.scheduling.trading_calendar import is_trading_day
 
         if not is_trading_day(self.code, dt.date()):
@@ -50,7 +50,7 @@ class MarketDef:
         )
 
 
-# 预定义市场
+# Các thị trường định nghĩa sẵn
 MARKETS: dict[MarketCode, MarketDef] = {
     MarketCode.CN: MarketDef(
         code=MarketCode.CN,
@@ -86,15 +86,15 @@ MARKETS: dict[MarketCode, MarketDef] = {
 
 @dataclass
 class StockData:
-    """标准化行情数据"""
+    """Dữ liệu bảng giá đã chuẩn hóa"""
     symbol: str
     name: str
     market: MarketCode
     current_price: float
-    change_pct: float       # 涨跌幅 %
-    change_amount: float    # 涨跌额
-    volume: float           # 成交量（手）
-    turnover: float         # 成交额（元）
+    change_pct: float       # Biên độ %
+    change_amount: float    # Mức tăng giảm tuyệt đối
+    volume: float           # Khối lượng (lô)
+    turnover: float         # Giá trị giao dịch (đồng)
     open_price: float
     high_price: float
     low_price: float
@@ -104,7 +104,7 @@ class StockData:
 
 @dataclass
 class IndexData:
-    """大盘指数数据"""
+    """Dữ liệu chỉ số chung"""
     symbol: str
     name: str
     market: MarketCode

@@ -9,7 +9,7 @@ def test_ai_score_mapping():
     assert to_ai_score(50) == 5
     assert to_ai_score(100) == 10
     assert to_ai_score(30) == 3
-    assert to_ai_score(None) == 1  # 兜底
+    assert to_ai_score(None) == 1  # Phương án dự phòng
 
 
 def test_explain_factors_splits_positive_negative():
@@ -20,9 +20,9 @@ def test_explain_factors_splits_positive_negative():
     pos = {x["factor"] for x in r["positive"]}
     neg = {x["factor"] for x in r["negative"]}
     assert "alpha_score" in pos and "quality_score" in pos
-    assert "catalyst_score" in neg   # 加分因子取负值 → 拖累
-    assert "risk_penalty" in neg     # 惩罚为正 → 拖累
-    assert "crowd_penalty" not in neg  # 为 0 不计
+    assert "catalyst_score" in neg   # Nhân tố cộng điểm nhận giá trị âm → kéo lùi
+    assert "risk_penalty" in neg     # Phần phạt dương → kéo lùi
+    assert "crowd_penalty" not in neg  # Bằng 0 thì không tính
 
 
 def test_explain_factors_penalty_contribution_negative():

@@ -1,7 +1,8 @@
-"""组合诊断(Phase 4):只读分析模拟盘持仓的集中度 / 分布 / 风险。
+"""Soi danh mục (Phase 4): chỉ đọc để phân tích mức tập trung / phân bố / rủi ro của vị thế mô phỏng.
 
-对标 PortfolioPilot 的「只读不下单」诊断 —— 纯读取持仓,**绝不下单**,只产出诊断与提示。
-纯函数 diagnose_positions 可单测;diagnose_paper_portfolio 读 DB。
+Đối chiếu với kiểu "chỉ đọc không đặt lệnh" của PortfolioPilot — thuần đọc vị thế,
+**tuyệt đối không đặt lệnh**, chỉ xuất ra phần soi và lời nhắc.
+Hàm thuần diagnose_positions unit test được; diagnose_paper_portfolio thì đọc DB.
 """
 
 from __future__ import annotations
@@ -13,15 +14,15 @@ from src.platform.persistence.models import PaperTradingPosition
 
 logger = logging.getLogger(__name__)
 
-# 风险阈值(可后续配置化)
-MAX_SINGLE_WEIGHT = 0.40   # 单仓占比上限
-HIGH_HHI = 0.50            # HHI 集中度高线
-MAX_MARKET_WEIGHT = 0.70   # 单市场占比上限
-MIN_POSITIONS = 3          # 最少分散持仓数
+# Ngưỡng rủi ro (có thể đưa vào cấu hình sau)
+MAX_SINGLE_WEIGHT = 0.40   # Trần tỷ trọng một vị thế
+HIGH_HHI = 0.50            # Mức cao của chỉ số tập trung HHI
+MAX_MARKET_WEIGHT = 0.70   # Trần tỷ trọng một thị trường
+MIN_POSITIONS = 3          # Số vị thế tối thiểu để coi là đã phân tán
 
 
 def herfindahl(values: list[float]) -> float:
-    """HHI 集中度 = Σ(w_i)²(w 为归一化权重)。范围 [1/n, 1],越大越集中。"""
+    """Mức tập trung HHI = Σ(w_i)² (w là trọng số đã chuẩn hóa). Nằm trong [1/n, 1], càng lớn càng tập trung."""
     total = sum(values)
     if total <= 0:
         return 0.0
@@ -29,7 +30,7 @@ def herfindahl(values: list[float]) -> float:
 
 
 def diagnose_positions(positions: list[dict]) -> dict:
-    """纯函数诊断。
+    """Soi bằng hàm thuần.
 
     positions: [{symbol, market, strategy_code, market_value, unrealized_pnl}]
     """
@@ -85,7 +86,7 @@ def diagnose_positions(positions: list[dict]) -> dict:
 
 
 def diagnose_paper_portfolio() -> dict:
-    """读模拟盘 open 持仓 → 组合诊断(只读)。"""
+    """Đọc vị thế open của mô phỏng → soi danh mục (chỉ đọc)."""
     db = SessionLocal()
     try:
         rows = (

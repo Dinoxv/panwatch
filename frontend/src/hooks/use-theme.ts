@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 
-/** 用户选择的主题模式(system = 跟随系统)。 */
+/** Chế độ giao diện người dùng chọn (system = theo hệ thống). */
 export type ThemeMode = 'light' | 'dark' | 'system'
-/** 实际生效的主题(system 解析后的结果)。 */
+/** Giao diện thực sự có hiệu lực (kết quả sau khi giải nghĩa system). */
 export type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'panwatch-theme'
@@ -19,7 +19,7 @@ export function useTheme() {
     () => window.matchMedia('(prefers-color-scheme: dark)').matches,
   )
 
-  // 跟随系统:监听 OS 主题变化,实时反映
+  // Theo hệ thống: nghe thay đổi giao diện của OS, phản ánh tức thì
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches)
@@ -27,7 +27,7 @@ export function useTheme() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  // 生效主题:显式 light/dark 直接用,system 则跟随当前系统
+  // Giao diện hiệu lực: light/dark tường minh thì dùng thẳng, system thì bám theo hệ thống hiện tại
   const theme: Theme = mode === 'system' ? (systemDark ? 'dark' : 'light') : mode
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function useTheme() {
     localStorage.setItem(STORAGE_KEY, mode)
   }, [theme, mode])
 
-  // 兼容旧调用:在亮/暗间切换(会把模式落为显式 light/dark)
+  // Tương thích lối gọi cũ: đảo qua lại sáng/tối (sẽ chốt chế độ thành light/dark tường minh)
   const toggleTheme = () => setMode(theme === 'dark' ? 'light' : 'dark')
 
   return { theme, mode, setMode, toggleTheme }

@@ -1,16 +1,17 @@
-"""盘中急涨/急跌联动:自动触发 TradingAgents 深度分析。
+"""Liên động tăng/giảm gấp trong phiên: tự kích hoạt phân tích chuyên sâu TradingAgents.
 
-设计:
-- intraday_monitor 完成单只股票分析后,调用 `try_auto_trigger`
-- 触发条件(MVP):|change_pct| >= threshold(默认 5%,从 tradingagents 配置读)
-- 护栏:冷却时间(默认 24h)+ 月度预算(复用 cost_tracker)
-- 默认关闭(enabled=false),需在 Agents 列表「深度配置」里显式打开
+Thiết kế:
+- intraday_monitor phân tích xong một mã thì gọi `try_auto_trigger`
+- Điều kiện kích hoạt (MVP): |change_pct| >= threshold (mặc định 5%, đọc từ cấu hình tradingagents)
+- Rào chắn: thời gian chờ (mặc định 24h) + ngân sách tháng (dùng lại cost_tracker)
+- Mặc định tắt (enabled=false), phải bật tường minh trong «Cấu hình chuyên sâu» ở danh sách Agents
 
-同一文件下半部承载历史建议回填和历史决策比较；这些能力不参与 TradingAgents 主图执行。
+Nửa dưới của cùng tệp này lo phần điền ngược khuyến nghị lịch sử và đối chiếu quyết định
+lịch sử; những phần đó không tham gia lượt chạy đồ thị chính của TradingAgents.
 
-为什么不直接复用 BaseAgent.run:
-- intraday_monitor 是单次循环里跑很多股票,每只都可能触发,需要 fire-and-forget
-- 触发后的 TA 分析走 trigger_agent_for_stock 自身的异步队列,避免阻塞主循环
+Vì sao không dùng thẳng BaseAgent.run:
+- intraday_monitor chạy rất nhiều mã trong một vòng, mã nào cũng có thể kích hoạt, nên cần fire-and-forget
+- Phân tích TA sau khi kích hoạt đi qua hàng đợi bất đồng bộ của chính trigger_agent_for_stock, tránh chặn vòng chính
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ from src.platform.persistence.models import (
 
 logger = logging.getLogger(__name__)
 
-# 这些函数是 API/盘中监控使用的外围运维入口，不参与主图执行。
+# Các hàm này là cửa vận hành ngoại vi cho API / giám sát trong phiên, không tham gia luồng chạy chính của đồ thị.
 __all__ = [
     "backfill_tradingagents_suggestions",
     "build_history_comparison",
@@ -47,14 +48,14 @@ DEFAULT_COOLDOWN_HOURS = 24
 
 
 def _read_auto_trigger_config(db: Session) -> dict | None:
-    """从 AgentConfig.raw_config 读 auto_trigger 配置。
+    """Đọc cấu hình auto_trigger từ AgentConfig.raw_config.
 
     Returns:
         {
             "enabled": bool,
             "change_pct_threshold": float,
             "cooldown_hours": int,
-        } 或 None(未配置/未启用)
+        } hoặc None (chưa cấu hình/chưa bật)
     """
     agent = db.query(AgentConfig).filter(AgentConfig.name == "tradingagents").first()
     if not agent:
@@ -71,7 +72,7 @@ def _read_auto_trigger_config(db: Session) -> dict | None:
 
 
 def _within_cooldown(db: Session, stock_symbol: str, cooldown_hours: int) -> bool:
-    """检查最近 N 小时内是否已为该股触发过 TA 分析(任何来源)。"""
+    """Kiểm tra xem trong N giờ gần nhất đã kích hoạt phân tích TA cho mã này chưa (từ bất kỳ nguồn nào)."""
     cutoff = datetime.utcnow() - timedelta(hours=cooldown_hours)
     recent = (
         db.query(AnalysisHistory)
@@ -86,7 +87,7 @@ def _within_cooldown(db: Session, stock_symbol: str, cooldown_hours: int) -> boo
 
 
 def _budget_allows(db: Session) -> bool:
-    """检查月度预算是否还有余量。预算从 tradingagents 的 raw_config.monthly_budget_usd 读。"""
+    """Kiểm tra ngân sách tháng còn dư không. Ngân sách đọc từ raw_config.monthly_budget_usd của tradingagents."""
     try:
         from src.modules.automation.tradingagents.observability import check_budget
     except ImportError:
@@ -98,7 +99,7 @@ def _budget_allows(db: Session) -> bool:
     raw = agent.raw_config or {}
     budget = float(raw.get("monthly_budget_usd") or 0.0)
     if budget <= 0:
-        return True  # 没设上限 = 不限制
+        return True  # Không đặt trần = không giới hạn
 
     try:
         status = check_budget(budget)
@@ -112,7 +113,7 @@ def should_auto_trigger(
     stock_symbol: str,
     change_pct: float | None,
 ) -> tuple[bool, str]:
-    """判断是否应该触发 TA 深度分析。
+    """Xét xem có nên kích hoạt phân tích chuyên sâu TA không.
 
     Returns:
         (should_trigger, reason)
@@ -141,14 +142,14 @@ def should_auto_trigger(
 
 
 def fire_and_forget_trigger(stock: Any, source_agent: str = "intraday_monitor") -> str | None:
-    """异步触发 TA 深度分析,不阻塞调用方。
+    """Kích hoạt phân tích chuyên sâu TA bất đồng bộ, không chặn bên gọi.
 
     Args:
-        stock: 至少包含 symbol/name/market 的对象(StockData 或 ORM Stock)
-        source_agent: 触发源 agent 名(用于日志/trace_id)
+        stock: đối tượng có ít nhất symbol/name/market (StockData hoặc ORM Stock)
+        source_agent: tên agent nguồn kích hoạt (dùng cho nhật ký/trace_id)
 
     Returns:
-        trace_id 或 None(触发失败)
+        trace_id hoặc None (kích hoạt thất bại)
     """
     import time as _time
 
@@ -181,7 +182,7 @@ def fire_and_forget_trigger(stock: Any, source_agent: str = "intraday_monitor") 
             logger.exception(f"[auto_trigger] TA 联动触发失败 - {symbol}")
 
     try:
-        # 优先在当前事件循环 schedule;无 loop 则起新线程兜底
+        # Ưu tiên xếp lịch trên event loop hiện tại; không có loop thì dự phòng bằng cách mở luồng mới
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.create_task(_run())
@@ -198,9 +199,9 @@ def fire_and_forget_trigger(stock: Any, source_agent: str = "intraday_monitor") 
 
 
 def try_auto_trigger(stock: Any, source_agent: str = "intraday_monitor") -> str | None:
-    """组合调用:判断 + 触发。
+    """Gọi gộp: xét + kích hoạt.
 
-    供 intraday_monitor.analyze 完成后调用。返回 trace_id 或 None。
+    Cho intraday_monitor.analyze gọi sau khi xong. Trả về trace_id hoặc None.
     """
     symbol = getattr(stock, "symbol", "") or ""
     change_pct = getattr(stock, "change_pct", None)
@@ -219,7 +220,7 @@ def try_auto_trigger(stock: Any, source_agent: str = "intraday_monitor") -> str 
 # ============================================================================
 
 def backfill_tradingagents_suggestions(days: int = 7) -> dict:
-    """把最近 N 天 analysis_history 里的 tradingagents 记录回填到 stock_suggestions。
+    """Điền ngược các bản ghi tradingagents trong analysis_history N ngày gần nhất vào stock_suggestions.
 
     Returns:
         {"checked": int, "written": int, "skipped": int}
@@ -248,8 +249,8 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
             action_label = sug.get("action_label") or "持有"
             confidence = sug.get("confidence")
 
-            # 检查 stock_suggestions 中是否已有(同股票 + 同 agent + 同 action + 近 24h)
-            # 简化:直接尝试 save,save_suggestion 会判重
+            # Kiểm tra stock_suggestions đã có chưa (cùng mã + cùng agent + cùng action + trong 24h qua)
+            # Làm gọn: cứ gọi save, chính save_suggestion sẽ lo khử trùng lặp
             existing = (
                 db.query(StockSuggestion)
                 .filter(
@@ -269,7 +270,7 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
                 else ""
             )
 
-            # 推断 market(分析记录里没存,从 stock_symbol 简单推断)
+            # Suy ra thị trường (bản ghi phân tích không lưu, suy đơn giản từ stock_symbol)
             symbol = r.stock_symbol
             if symbol.isdigit() and len(symbol) == 6:
                 market = "CN"
@@ -280,7 +281,7 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
             else:
                 market = "CN"
 
-            # 从 AnalysisHistory record 拿股票名(如果存在)
+            # Lấy tên cổ phiếu từ bản ghi AnalysisHistory (nếu có)
             stock_name = ""
             try:
                 from src.platform.persistence.models import Stock
@@ -341,7 +342,7 @@ def _resolve_market(market: str) -> MarketCode:
 
 
 def _classify_hit(action: str, ret_pct: float | None) -> bool | None:
-    """根据 action 和后续收益率判断决策是否"命中"。"""
+    """Xét theo action và tỷ suất lợi nhuận sau đó xem quyết định có "trúng" không."""
     if ret_pct is None:
         return None
     if action == "buy":
@@ -354,7 +355,7 @@ def _classify_hit(action: str, ret_pct: float | None) -> bool | None:
 
 
 def _find_close_on_or_after(klines_by_date: dict[str, float], target: str) -> tuple[str, float] | None:
-    """从 target 日期起向后找最近一个交易日的收盘价。最多回查 7 天(节假日)。"""
+    """Từ ngày target tìm ngược lại giá đóng cửa của phiên giao dịch gần nhất. Tra lùi tối đa 7 ngày (nghỉ lễ)."""
     base = date.fromisoformat(target)
     for offset in range(8):
         d = (base + timedelta(days=offset)).isoformat()
@@ -369,7 +370,7 @@ def _find_close_after_n_trading_days(
     n: int,
     klines_by_date: dict[str, float],
 ) -> float | None:
-    """从 base_date 之后 N 个交易日的收盘价。base_date 必须已是交易日。"""
+    """Giá đóng cửa sau N phiên giao dịch kể từ base_date. base_date bắt buộc đã là phiên giao dịch."""
     try:
         idx = sorted_dates.index(base_date)
     except ValueError:
@@ -385,17 +386,17 @@ def build_history_comparison(
     market: str = "CN",
     days: int = 90,
 ) -> dict:
-    """构建某只股票 TradingAgents 历史决策对比数据。
+    """Dựng dữ liệu đối chiếu quyết định lịch sử của TradingAgents cho một mã.
 
     Args:
-        stock_symbol: 股票代码
+        stock_symbol: mã cổ phiếu
         market: CN / US / HK
-        days: 回溯多少天的 TA 历史
+        days: truy lịch sử TA bao nhiêu ngày
 
     Returns:
         {
-            "items": [...],     # 按 analysis_date 倒序
-            "stats": {...},     # 命中率 + 平均收益
+            "items": [...],     # xếp theo analysis_date giảm dần
+            "stats": {...},     # tỷ lệ trúng + lợi nhuận bình quân
         }
     """
     symbol = (stock_symbol or "").strip()
@@ -426,7 +427,7 @@ def build_history_comparison(
     if not records:
         return {"items": [], "stats": _empty_stats()}
 
-    # 拉历史 K线(回溯天数 + 30 天缓冲让最早的决策也能算 20 日收益)
+    # Kéo nến lịch sử (số ngày nhìn lại + đệm 30 ngày để quyết định sớm nhất cũng tính được lợi nhuận 20 phiên)
     try:
         collector = KlineCollector(_resolve_market(market))
         klines = collector.get_klines(symbol, days=days + 40)
@@ -444,7 +445,7 @@ def build_history_comparison(
         action = (sug.get("action") or "hold").lower()
         confidence = sug.get("confidence")
         cost_usd = raw.get("cost_usd")
-        # 分析价优先用落库时存的"分析时实时价"(立即显示),K线 close 作 fallback
+        # Giá phân tích ưu tiên lấy "giá thời gian thực lúc phân tích" đã lưu (hiện ngay), giá đóng cửa của nến chỉ là dự phòng
         stored_price = raw.get("price_at_analysis")
         stored_price = round(float(stored_price), 2) if isinstance(stored_price, (int, float)) else None
 
@@ -509,7 +510,7 @@ def _empty_stats() -> dict:
 
 
 def _compute_stats(items: list[dict]) -> dict:
-    """统计:仅基于已有 20 日收益的条目。"""
+    """Thống kê: chỉ dựa trên các mục đã có lợi nhuận 20 ngày."""
     scored = [x for x in items if x.get("return_20d_pct") is not None]
     if not scored:
         return {**_empty_stats(), "total": len(items)}

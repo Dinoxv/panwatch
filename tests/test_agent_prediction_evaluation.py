@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import src.platform.persistence.models  # noqa: F401  注册 ORM 模型
+import src.platform.persistence.models  # noqa: F401  đăng ký mô hình ORM
 from src.platform.persistence.database import Base
 
 

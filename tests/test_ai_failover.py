@@ -82,7 +82,7 @@ class _FakeClient:
         return self._pop(temperature)
 
 
-# ── 错误分类 ────────────────────────────────────────────────────────────
+# ── Phân loại lỗi ──────────────────────────────────────────────────────
 
 
 def test_classify_timeout_switch():
@@ -137,7 +137,7 @@ def test_classify_unknown_defaults_switch():
     assert classify_ai_error(RuntimeError("mystery")) == ERR_SWITCH
 
 
-# ── FailoverAIClient 行为 ────────────────────────────────────────────────
+# ── Hành vi của FailoverAIClient ───────────────────────────────────────
 
 
 def test_failover_param_strip_retry_same_model():
@@ -151,7 +151,7 @@ def test_failover_param_strip_retry_same_model():
 
     assert result == "OK"
     assert c.calls == 2
-    assert c.temps == [0.4, None]  # 第二次摘除 temperature
+    assert c.temps == [0.4, None]  # Lần hai thì bỏ temperature
     assert fc.used_model_label == "svc/m1"
 
 
@@ -165,13 +165,13 @@ def test_failover_switch_to_next_and_cooldown():
     r = asyncio.run(fc.chat_multi([{"role": "user", "content": "x"}]))
     assert r == "OK2"
     assert fc.used_model_label == "svc/m2"
-    assert m._is_cooling("svc/m1")  # 主模型进入冷却
+    assert m._is_cooling("svc/m1")  # Mô hình chính vào thời gian chờ
 
-    # 第二次调用：m1 仍在冷却窗口内，直接用 m2，不再触碰 m1
+    # Lời gọi thứ hai: m1 vẫn trong cửa sổ chờ nên dùng thẳng m2, không đụng tới m1
     c2._script = ["OK3"]
     r2 = asyncio.run(fc.chat_multi([{"role": "user", "content": "y"}]))
     assert r2 == "OK3"
-    assert c1.calls == 1  # m1 未被再次调用
+    assert c1.calls == 1  # m1 không bị gọi lại
 
 
 def test_failover_fatal_raises_without_switch():
@@ -183,7 +183,7 @@ def test_failover_fatal_raises_without_switch():
 
     with pytest.raises(BadRequestError):
         asyncio.run(fc.chat_multi([{"role": "user", "content": "x"}]))
-    assert c2.calls == 0  # 未降级到下一候选
+    assert c2.calls == 0  # Không hạ cấp xuống ứng viên kế tiếp
 
 
 def test_failover_all_cooling_recovery_probe():
@@ -198,7 +198,7 @@ def test_failover_all_cooling_recovery_probe():
     r = asyncio.run(fc.chat_multi([{"role": "user", "content": "x"}]))
     assert r == "PRIMARY"
     assert c1.calls == 1
-    assert not m._is_cooling("svc/m1")  # 探测成功后清除冷却
+    assert not m._is_cooling("svc/m1")  # Dò thành công thì xóa thời gian chờ
 
 
 def test_failover_chain_exhausted_raises_last_error():
@@ -212,7 +212,7 @@ def test_failover_chain_exhausted_raises_last_error():
         asyncio.run(fc.chat_multi([{"role": "user", "content": "x"}]))
 
 
-# ── 流式 failover ────────────────────────────────────────────────────────
+# ── Hạ cấp khi chạy dạng luồng ─────────────────────────────────────────
 
 
 class _StreamRaiseBefore:
@@ -225,7 +225,7 @@ class _StreamRaiseBefore:
 
     async def chat_stream(self, messages, tools=None, temperature=0.4):
         raise _http_err(InternalServerError, 500, "stream boom")
-        yield  # 使函数成为异步生成器（不可达）
+        yield  # Biến hàm thành generator bất đồng bộ (không bao giờ chạy tới)
 
 
 class _StreamOK:
@@ -283,7 +283,7 @@ def test_failover_stream_raise_after_started():
         asyncio.run(run())
 
 
-# ── 候选链构建 ───────────────────────────────────────────────────────────
+# ── Dựng chuỗi ứng viên ────────────────────────────────────────────────
 
 
 def _mem_session():
@@ -310,8 +310,8 @@ def test_build_failover_client_chain_from_db():
 
     fc = build_failover_client(m1, svc, db=db)
     labels = [lbl for _, lbl in fc.candidates]
-    assert labels[0] == "S/glm-4"  # 主模型置首
-    assert "S/glm-4-flash" in labels  # 备选补齐
+    assert labels[0] == "S/glm-4"  # Mô hình chính đặt đầu chuỗi
+    assert "S/glm-4-flash" in labels  # Bổ sung các ứng viên dự phòng
     db.close()
 
 
@@ -326,7 +326,7 @@ def test_build_failover_client_env_fallback(monkeypatch):
     db.close()
 
 
-# ── run 记录实际使用的模型 ───────────────────────────────────────────────
+# ── Bản ghi run lưu lại mô hình thực dùng ──────────────────────────────
 
 
 def test_agent_context_model_label_reflects_used_model():
@@ -336,9 +336,9 @@ def test_agent_context_model_label_reflects_used_model():
     fc = FailoverAIClient([(_FakeClient("m1"), "svc/m1"), (_FakeClient("m2"), "svc/m2")])
     ctx = AgentContext(ai_client=fc, notifier=None, config=None, model_label="svc/m1")
 
-    # 未发生切换：返回主模型标签
+    # Không xảy ra chuyển đổi: trả nhãn mô hình chính
     assert ctx.model_label == "svc/m1"
 
-    # 发生 failover 后：反映实际跑通的模型
+    # Sau khi hạ cấp: phản ánh đúng mô hình thật sự chạy được
     fc.used_model_label = "svc/m2"
     assert ctx.model_label == "svc/m2"

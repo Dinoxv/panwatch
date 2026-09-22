@@ -1,14 +1,16 @@
-"""行情/数据采集的统一 HTTP 工具。
+"""Tiện ích HTTP thống nhất cho việc lấy bảng giá/thu thập dữ liệu.
 
-把散落在各 collector 的样板收敛到一处,避免每个文件各写一套且各有缺漏:
-- **走系统代理**:默认 trust_env=True,遵循进程 env 的 HTTP_PROXY/NO_PROXY(由 apply_proxy_env 按 UI 的 http_proxy 设置)。没配代理时即直连。
-- **按 host 节流**:同一域名请求最小间隔,平滑顺序/并发突发(第三方批量突发会限流)。
-- **退避重试**:空响应/异常退避 + 抖动重试。
-- **调用来源标记**:全项目共享一个 contextvar,失败日志带 [src=xxx],定位是哪个任务触发。
+Gom phần khuôn mẫu vốn rải rác ở các collector về một chỗ, tránh mỗi tệp tự viết một bản
+mà bản nào cũng thiếu chỗ này chỗ kia:
+- **Đi qua proxy hệ thống**: mặc định trust_env=True, tuân theo HTTP_PROXY/NO_PROXY trong env của tiến trình (do apply_proxy_env đặt theo thiết lập http_proxy trên giao diện). Không cấu hình proxy thì nối thẳng.
+- **Tiết lưu theo host**: khoảng cách tối thiểu giữa các yêu cầu tới cùng tên miền, làm mượt các đợt dồn tuần tự/song song (bên thứ ba gặp dồn hàng loạt sẽ giới hạn tần suất).
+- **Thử lại có lùi**: phản hồi rỗng/lỗi thì lùi + thêm nhiễu rồi thử lại.
+- **Đánh dấu nơi gọi**: cả dự án dùng chung một contextvar, nhật ký lỗi kèm [src=xxx], để lần ra tác vụ nào kích hoạt.
 
-来源标记是全局共享的:任何调度入口 `with fetch_source("xxx"):` 包裹后,
-该任务内所有 collector(K线/报价/资金流/...)的失败日志都会带上同一来源。
-asyncio.to_thread 会传播 contextvars,异步调度里设置也能透到 worker 线程。
+Dấu nơi gọi dùng chung toàn cục: lối vào lập lịch nào bọc `with fetch_source("xxx"):` thì
+mọi nhật ký lỗi của mọi collector (nến/báo giá/dòng tiền/...) trong tác vụ đó đều mang
+cùng một nơi gọi. asyncio.to_thread có truyền contextvars, nên đặt trong phần lập lịch bất
+đồng bộ cũng lọt được sang luồng worker.
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-# ── 调用来源标记(全局共享)──────────────────────────────────────────────
+# ── Dấu nguồn gọi (dùng chung toàn cục) ──────────────────────────────────
 _FETCH_SOURCE: contextvars.ContextVar[str] = contextvars.ContextVar(
     "fetch_source", default=""
 )
@@ -34,10 +36,11 @@ _FETCH_SOURCE: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 @contextmanager
 def fetch_source(name: str):
-    """标注当前取数的调用来源,写入失败日志便于定位触发方。
+    """Đánh dấu nơi gọi của lần lấy dữ liệu này, ghi vào nhật ký lỗi để dễ lần ra bên kích hoạt.
 
-    同步透传到 marketdata 包自己的 HTTP contextvar；否则宿主调度器虽然
-    已经标记了 ``outcome_eval``，包内腾讯/Stooq 日志仍会显示为空来源。
+    Đồng bộ chuyển thẳng sang contextvar HTTP của chính gói marketdata; nếu không thì dù
+    bộ lập lịch của host đã đánh dấu ``outcome_eval``, nhật ký Tencent/Stooq bên trong gói
+    vẫn hiện nơi gọi rỗng.
     """
     token = _FETCH_SOURCE.set(name or "")
     stack = ExitStack()
@@ -47,7 +50,7 @@ def fetch_source(name: str):
 
             stack.enter_context(package_fetch_source(name))
         except Exception:
-            # marketdata 是可选依赖；宿主采集器本身仍应能独立工作。
+            # marketdata là phụ thuộc tùy chọn; bộ thu thập của bên chủ quản vẫn phải chạy độc lập được.
             pass
         yield
     finally:
@@ -60,13 +63,13 @@ def source_suffix() -> str:
     return f" [src={src}]" if src else ""
 
 
-# ── 按 host 进程级节流 ───────────────────────────────────────────────────
+# ── Giãn nhịp theo host ở cấp tiến trình ─────────────────────────────────
 _THROTTLE_LOCK = threading.Lock()
 _last_call: dict[str, float] = {}
 
 
 def throttle(host_key: str, min_interval_s: float) -> None:
-    """保证对同一 host 的请求间隔 ≥ min_interval_s,平滑顺序/并发突发。"""
+    """Đảm bảo khoảng cách giữa các yêu cầu tới cùng một host ≥ min_interval_s, làm mượt các đợt dồn tuần tự/song song."""
     if min_interval_s <= 0:
         return
     with _THROTTLE_LOCK:
@@ -76,7 +79,7 @@ def throttle(host_key: str, min_interval_s: float) -> None:
         _last_call[host_key] = time.time()
 
 
-# ── 统一同步 GET ─────────────────────────────────────────────────────────
+# ── Hàm GET đồng bộ dùng chung ───────────────────────────────────────────
 def market_get(
     url: str,
     *,
@@ -89,15 +92,15 @@ def market_get(
     backoff: float = 0.4,
     jitter: float = 0.25,
     parse: str = "text",  # "text" | "json" | "content"
-    encoding: str | None = None,  # 强制解码(如 "gbk")
+    encoding: str | None = None,  # Ép bảng mã khi giải (ví dụ "gbk")
     symbol: str = "",
     log_label: str = "",
     raise_for_status: bool = True,
-    trust_env: bool = True,  # 遵循进程 env 代理(HTTP_PROXY/NO_PROXY),由 apply_proxy_env 统一设
+    trust_env: bool = True,  # Tuân theo proxy trong env của tiến trình (HTTP_PROXY/NO_PROXY), do apply_proxy_env đặt thống nhất
     follow_redirects: bool = True,
     verify: bool = True,
 ) -> Any | None:
-    """按系统代理(env)+ host 节流 + 退避重试。成功返回解析结果,失败返回 None 并打带来源的日志。"""
+    """Đi theo proxy hệ thống (env) + tiết lưu theo host + thử lại có lùi. Thành công trả kết quả đã đọc, hỏng trả None và ghi nhật ký kèm nơi gọi."""
     last_err: Any = None
     for attempt in range(max(1, retries + 1)):
         throttle(host_key, min_interval_s)
@@ -131,11 +134,11 @@ def market_get(
     return None
 
 
-# ── 轻量 TTL 缓存 ────────────────────────────────────────────────────────
-# 与 src/core/providers/cache.py 等价,但定义在采集层最底层模块,供各 collector
-# 直接复用——避免 collector 反向 import providers 包触发循环依赖。
+# ── Bộ đệm TTL nhẹ ───────────────────────────────────────────────────────
+# Tương đương src/core/providers/cache.py, nhưng đặt ở module tầng đáy của lớp thu thập để các collector
+# dùng lại trực tiếp — tránh việc collector import ngược gói providers gây phụ thuộc vòng.
 class TTLCache:
-    """单进程内存 TTL 缓存,线程安全,过期 key 在下次 get 时被动剔除。"""
+    """Đệm TTL trong bộ nhớ một tiến trình, an toàn với luồng, khóa hết hạn bị loại thụ động ở lần get kế tiếp."""
 
     def __init__(self, default_ttl_sec: float = 20.0, max_size: int = 2048):
         self._default_ttl = default_ttl_sec
@@ -158,7 +161,7 @@ class TTLCache:
     def set(self, key: str, value: Any, ttl_sec: float | None = None) -> None:
         ttl = ttl_sec if ttl_sec is not None else self._default_ttl
         if ttl <= 0:
-            return  # 显式不缓存
+            return  # Tường minh không đệm
         expires = time.monotonic() + ttl
         with self._lock:
             if len(self._store) >= self._max_size and key not in self._store:

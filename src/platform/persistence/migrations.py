@@ -369,7 +369,7 @@ def _m107_suggestion_market_dimension(conn: Connection) -> None:
     if not _has_table(conn, "stock_suggestions"):
         return
 
-    # 历史数据平滑回填：优先从 stocks 里推断 market，否则回退 CN。
+    # Bù dữ liệu cũ một cách êm: ưu tiên suy thị trường từ bảng stocks, không được thì lùi về CN.
     conn.execute(
         text(
             """
@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS entry_candidates (
         "CREATE INDEX ix_entry_candidate_status_updated ON entry_candidates(status, updated_at)",
     )
 
-    # 历史平滑迁移：将每个市场/股票最新建议回填为“今日候选”基线记录。
+    # Di trú dữ liệu cũ một cách êm: lấy khuyến nghị mới nhất của từng thị trường / mã bù vào làm bản ghi nền “ứng viên hôm nay”.
     today = date.today().strftime("%Y-%m-%d")
     conn.execute(
         text(
@@ -1394,7 +1394,7 @@ WHERE source_pool = 'market_scan'
 
 
 def _m114_paper_trading_tables(conn: Connection) -> None:
-    """创建模拟盘三张表。"""
+    """Tạo ba bảng của mô phỏng bàn giao dịch."""
     if not _has_table(conn, "paper_trading_account"):
         conn.execute(
             text(
@@ -1475,7 +1475,7 @@ CREATE TABLE paper_trading_trades (
 
 
 def _m115_paper_trading_excluded_markets(conn: Connection) -> None:
-    """模拟盘账户新增 excluded_markets 字段。"""
+    """Thêm trường excluded_markets cho tài khoản mô phỏng."""
     _add_column_if_missing(
         conn,
         "paper_trading_account",
@@ -1485,7 +1485,7 @@ def _m115_paper_trading_excluded_markets(conn: Connection) -> None:
 
 
 def _m116_chat_tables(conn: Connection) -> None:
-    """AI 对话表。"""
+    """Bảng phiên trò chuyện AI."""
     conn.execute(
         text("""
         CREATE TABLE IF NOT EXISTS chat_conversations (
@@ -1533,7 +1533,7 @@ def _m117_chat_initial_context(conn: Connection) -> None:
 
 
 def _m118_paper_trading_market_allocations(conn: Connection) -> None:
-    """模拟盘账户新增 market_allocations（各市场投资比例），并由 excluded_markets 回填。"""
+    """Thêm market_allocations (tỷ lệ rót vào từng thị trường) cho tài khoản mô phỏng, và điền ngược từ excluded_markets."""
     _add_column_if_missing(
         conn,
         "paper_trading_account",
@@ -1543,7 +1543,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
     if not _has_table(conn, "paper_trading_account"):
         return
 
-    # 迁移必须自包含，不能依赖业务模块的运行时代码。
+    # Migration phải tự chứa, không được phụ thuộc mã chạy của module nghiệp vụ.
     def allocations_from_excluded(excluded: list[str]) -> dict[str, float]:
         markets = ("CN", "HK", "US")
         defaults = {"CN": 0.5, "HK": 0.3, "US": 0.2}
@@ -1560,7 +1560,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
     for r in rows:
         row_id = r[0]
 
-        # 已有非空比例则跳过，避免覆盖用户配置
+        # Đã có tỷ trọng khác rỗng thì bỏ qua, tránh ghi đè cấu hình của người dùng
         raw_alloc = r[2]
         has_alloc = False
         if isinstance(raw_alloc, str) and raw_alloc.strip() and raw_alloc.strip() not in ("{}", "null"):
@@ -1593,7 +1593,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
 
 
 def _m119_pat_and_mcp_tables(conn: Connection) -> None:
-    """PAT 令牌表 + MCP 调用日志表(MCP Server 鉴权与审计)。"""
+    """Bảng mã PAT + bảng nhật ký gọi MCP (xác thực và kiểm toán cho MCP Server)."""
     conn.execute(
         text(
             """
@@ -1612,7 +1612,7 @@ def _m119_pat_and_mcp_tables(conn: Connection) -> None:
         """
         )
     )
-    # 与 ORM 模型的自动唯一索引同名(token_hash unique+index),便于 create_all 复核
+    # Trùng tên với chỉ mục duy nhất mà mô hình ORM tự tạo (token_hash unique+index), để create_all đối chiếu được
     _create_index_if_missing(
         conn,
         "ix_personal_access_tokens_token_hash",
@@ -1655,10 +1655,10 @@ def _m119_pat_and_mcp_tables(conn: Connection) -> None:
 
 
 def _m120_agent_prediction_evaluation(conn: Connection) -> None:
-    """建议后验分组与交易日口径。
+    """Nhóm hậu kiểm khuyến nghị và khẩu độ phiên giao dịch.
 
-    已存在记录保留旧自然日口径，避免升级时把历史结果悄悄改写；新记录由 ORM
-    默认写入 trading_days。
+    Bản ghi đã có giữ khẩu độ ngày tự nhiên cũ, tránh việc nâng cấp âm thầm viết lại kết
+    quả lịch sử; bản ghi mới thì ORM mặc định ghi trading_days.
     """
     _add_column_if_missing(
         conn,
@@ -1682,7 +1682,7 @@ def _m120_agent_prediction_evaluation(conn: Connection) -> None:
 
 
 def _m121_backtest_runs(conn: Connection) -> None:
-    """可持久化的策略回测运行记录。"""
+    """Bản ghi lượt chạy kiểm thử lịch sử chiến lược, lưu bền được."""
     conn.execute(
         text(
             """
@@ -1965,6 +1965,24 @@ def _m126_assistant_task_events(conn: Connection) -> None:
     )
 
 
+def _m127_outcome_horizon_unit(conn: Connection) -> None:
+    """Hậu kiểm chiến lược/ứng viên thống nhất đổi sang tính horizon theo phiên giao dịch.
+
+    Dùng lại cách chuyển khẩu độ mà v120 đã kiểm chứng trên agent_prediction_outcomes:
+    dòng đã có giữ khẩu độ ngày tự nhiên cũ (calendar_days_legacy), không truy ngược viết
+    lại thống kê lịch sử; bản ghi mới thì ORM mặc định ghi trading_days. Nhờ vậy hai khẩu
+    độ cùng tồn tại trong một bảng mà vẫn lọc riêng được.
+    """
+    for table in ("strategy_outcomes", "entry_candidate_outcomes"):
+        _add_column_if_missing(
+            conn,
+            table,
+            "horizon_unit",
+            f"ALTER TABLE {table} "
+            "ADD COLUMN horizon_unit TEXT NOT NULL DEFAULT 'calendar_days_legacy'",
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(101, "agent_config_kind_and_visibility", _m101_agent_config_kind),
     Migration(102, "backfill_agent_kind_data", _m102_backfill_agent_kind),
@@ -1992,6 +2010,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(124, "assistant_context_snapshots", _m124_assistant_context_snapshots),
     Migration(125, "assistant_task_protocol", _m125_assistant_task_protocol),
     Migration(126, "assistant_task_events", _m126_assistant_task_events),
+    Migration(127, "outcome_horizon_unit", _m127_outcome_horizon_unit),
 )
 
 

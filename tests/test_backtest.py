@@ -10,7 +10,7 @@ def _bar(date, o, h, low, c, v=1e6):
     return PriceBar(date=date, open=o, high=h, low=low, close=c, volume=v)
 
 
-# ──────────────── 成本模型 ────────────────
+# ──────────────── Mô hình chi phí ────────────────
 
 def test_cost_model_stamp_duty_sell_only():
     """印花税仅卖出单边收取,买入不收。"""
@@ -21,7 +21,7 @@ def test_cost_model_stamp_duty_sell_only():
 
 def test_cost_model_min_commission():
     """小额成交佣金不低于最低 5 元。"""
-    f = CostModel().fill("buy", 5.0, 100)  # gross≈500,万2.5≈0.125 → 取 5
+    f = CostModel().fill("buy", 5.0, 100)  # gross ≈ 500, mức 0,025% ≈ 0,125 → lấy 5
     assert f.commission == 5.0
 
 
@@ -32,7 +32,7 @@ def test_round_trip_pnl_deducts_cost():
     assert rt["total_cost"] > 0
 
 
-# ──────────────── 绩效指标 ────────────────
+# ──────────────── Chỉ tiêu hiệu quả ────────────────
 
 def test_metrics_max_drawdown():
     """最大回撤 = 峰值到谷底的最大跌幅。"""
@@ -49,7 +49,7 @@ def test_metrics_profit_factor():
     assert abs(M.profit_factor([3, -1, -1]) - 1.5) < 1e-9
 
 
-# ──────────────── 回测引擎 ────────────────
+# ──────────────── Engine kiểm thử lịch sử ────────────────
 
 def test_engine_entry_next_day():
     """信号次日开盘入场,防止用当日数据(无未来函数)。"""
@@ -87,12 +87,24 @@ def test_engine_expire():
 
 
 def test_horizon_return_matches_manual():
-    """horizon_return 复刻 StrategyOutcome 口径:(后收盘-基准)/基准。"""
+    """horizon_return sao lại khẩu độ StrategyOutcome: (đóng cửa sau N phiên - gốc)/gốc.
+
+    Đếm theo **phiên giao dịch**, không theo ngày tự nhiên: 01-02 → 01-06 nghỉ
+    cuối tuần ở giữa nhưng vẫn chỉ là 1 phiên kế tiếp.
+    """
     bars = [_bar("2026-01-01", 10, 10, 10, 10), _bar("2026-01-02", 10, 11, 10, 11),
             _bar("2026-01-06", 11, 12, 11, 12)]
     sig = Signal("X", "CN", "2026-01-01", entry_price=10.0)
-    r = horizon_return(sig, bars, horizon_days=5)  # target_day=01-06 → outcome=12 → +20%
+    r = horizon_return(sig, bars, horizon_days=2)  # phiên +2 = 01-06 → 12 → +20%
     assert r is not None and abs(r - 20.0) < 1e-6
+
+
+def test_horizon_return_is_none_when_bars_are_insufficient():
+    """Chưa đủ phiên để chốt → None (chưa tới hạn), không phải lợi nhuận 0."""
+    bars = [_bar("2026-01-01", 10, 10, 10, 10), _bar("2026-01-02", 10, 11, 10, 11),
+            _bar("2026-01-06", 11, 12, 11, 12)]
+    sig = Signal("X", "CN", "2026-01-01", entry_price=10.0)
+    assert horizon_return(sig, bars, horizon_days=5) is None
 
 
 def test_backtest_run_aggregates():

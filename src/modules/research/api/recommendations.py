@@ -1,4 +1,4 @@
-"""推荐相关 API（入场候选榜）。"""
+"""API liên quan tới gợi ý (bảng ứng viên vào lệnh)."""
 
 from datetime import datetime, timezone
 import logging
@@ -175,7 +175,7 @@ def refresh_candidates(
         max_inputs=max_inputs,
         market_scan_limit=market_scan_limit,
     )
-    # 同步刷新策略信号层，保持前端机会页一致。
+    # Làm mới đồng bộ tầng tín hiệu chiến lược, giữ trang cơ hội ở giao diện nhất quán.
     refresh_strategy_signals(
         snapshot_date=cand.get("snapshot_date", ""),
         rebuild_candidates=False,
@@ -244,7 +244,7 @@ def get_strategy_signal_list(
         risk_level=risk_level,
         include_payload=include_payload,
     )
-    # Phase 3: 注入 1-10 可解释评分 + 正负因子拆解
+    # Phase 3: nạp điểm số giải thích được 1-10 + tách nhân tố dương / âm
     for _it in result.get("items", []):
         enrich_signal(_it)
     return result
@@ -370,7 +370,7 @@ def strategy_factor_ic(
     days: int = Query(90, ge=7, le=365, description="回看快照天数"),
     horizon: int = Query(5, ge=1, le=60, description="持有期(交易日)"),
 ):
-    """各因子的 IC/IR 有效性评估(StrategyFactorSnapshot × StrategyOutcome)。"""
+    """Đánh giá hiệu lực IC/IR của từng nhân tố (StrategyFactorSnapshot × StrategyOutcome)."""
     return evaluate_factor_ic(days=days, horizon=horizon)
 
 

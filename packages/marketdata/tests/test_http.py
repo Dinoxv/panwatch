@@ -66,7 +66,7 @@ def test_capture_errors_empty_on_success(monkeypatch):
 
 
 def test_record_error_no_sink_is_noop():
-    mh.record_error("孤立调用不应抛错")  # 无 capture_errors 上下文
+    mh.record_error("孤立调用不应抛错")  # Không có ngữ cảnh capture_errors
 
 
 def test_market_get_passes_proxy_when_set(monkeypatch):
@@ -85,6 +85,6 @@ def test_throttle_sleeps_on_second_call(monkeypatch):
     slept = []
     monkeypatch.setattr(mh.time, "sleep", lambda s: slept.append(s))
     monkeypatch.setattr(mh.time, "time", lambda: 100.0)
-    mh.throttle("t4c", 0.15)   # 首次:last_call 默认 0,wait 为负,不睡
-    mh.throttle("t4c", 0.15)   # 二次:同一时刻,wait=0.15,应 sleep
+    mh.throttle("t4c", 0.15)   # Lần đầu: last_call mặc định 0, wait âm nên không ngủ
+    mh.throttle("t4c", 0.15)   # Lần hai: cùng thời điểm, wait=0,15 nên phải ngủ
     assert slept and abs(slept[-1] - 0.15) < 1e-9

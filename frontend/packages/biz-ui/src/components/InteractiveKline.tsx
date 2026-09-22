@@ -204,7 +204,7 @@ export default function InteractiveKline(props: {
       if (!best.length && lastError) throw lastError
       setData(best)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载K线失败')
+      setError(e instanceof Error ? e.message : 'Tải nến thất bại')
       setData([])
     } finally {
       setLoading(false)
@@ -550,16 +550,16 @@ export default function InteractiveKline(props: {
   return (
     <div className="card p-4 md:p-5">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
-        <div className="text-[13px] font-semibold text-foreground">K线图</div>
+        <div className="text-[13px] font-semibold text-foreground">Đồ thị nến</div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant={showRsi ? 'default' : 'secondary'} size="sm" className="h-8 px-2.5" onClick={() => setShowRsi(v => !v)}>
-            强弱线
+            Đường RSI
           </Button>
           <div className="inline-flex rounded-lg border border-border/60 bg-accent/20 p-0.5">
             {([
-              { value: '1d', label: '日K' },
-              { value: '1w', label: '周K' },
-              { value: '1m', label: '月K' },
+              { value: '1d', label: 'Nến ngày' },
+              { value: '1w', label: 'Nến tuần' },
+              { value: '1m', label: 'Nến tháng' },
             ] as const).map(item => (
               <button
                 key={item.value}
@@ -577,7 +577,7 @@ export default function InteractiveKline(props: {
           </div>
           <Button variant="secondary" size="sm" className="h-8" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">刷新</span>
+            <span className="hidden sm:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -590,7 +590,7 @@ export default function InteractiveKline(props: {
 
       {!lwReady && libError ? (
         <div className="text-[12px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-3">
-          图表库加载失败（网络受限时可能发生）。可稍后重试或检查网络/代理。
+          Tải thư viện đồ thị thất bại (hay gặp khi mạng bị chặn). Thử lại sau hoặc kiểm tra mạng/proxy.
         </div>
       ) : null}
 
@@ -605,11 +605,11 @@ export default function InteractiveKline(props: {
         </div>
       ) : latestMetrics ? (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">最新价</span> <span className="font-mono ml-1">{latestMetrics.last.close.toFixed(2)}</span></div>
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">涨跌</span> <span className={`font-mono ml-1 ${latestMetrics.changePct >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{latestMetrics.changePct >= 0 ? '+' : ''}{latestMetrics.changePct.toFixed(2)}%</span></div>
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">振幅</span> <span className="font-mono ml-1">{latestMetrics.ampPct.toFixed(2)}%</span></div>
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">区间高低</span> <span className="font-mono ml-1">{latestMetrics.maxHigh.toFixed(2)}/{latestMetrics.minLow.toFixed(2)}</span></div>
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">均量</span> <span className="font-mono ml-1">{(latestMetrics.avgVol / 10000).toFixed(1)}万</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Giá mới nhất</span> <span className="font-mono ml-1">{latestMetrics.last.close.toFixed(2)}</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Tăng giảm</span> <span className={`font-mono ml-1 ${latestMetrics.changePct >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{latestMetrics.changePct >= 0 ? '+' : ''}{latestMetrics.changePct.toFixed(2)}%</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Biên độ dao động</span> <span className="font-mono ml-1">{latestMetrics.ampPct.toFixed(2)}%</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Cao thấp trong khoảng</span> <span className="font-mono ml-1">{latestMetrics.maxHigh.toFixed(2)}/{latestMetrics.minLow.toFixed(2)}</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Khối lượng bình quân</span> <span className="font-mono ml-1">{(latestMetrics.avgVol / 10000).toFixed(1)}vạn</span></div>
         </div>
       ) : null}
       <div className="relative">
@@ -627,25 +627,25 @@ export default function InteractiveKline(props: {
           >
             <div className="text-[11px] text-foreground font-medium mb-1.5">{hoverTip.row.date}</div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-              <span>开盘价 <span className="font-mono text-foreground">{hoverTip.row.open.toFixed(2)}</span></span>
-              <span>收盘价 <span className="font-mono text-foreground">{hoverTip.row.close.toFixed(2)}</span></span>
-              <span>最高价 <span className="font-mono text-foreground">{hoverTip.row.high.toFixed(2)}</span></span>
-              <span>最低价 <span className="font-mono text-foreground">{hoverTip.row.low.toFixed(2)}</span></span>
-              <span>5日均线 <span className="font-mono text-foreground">{hoverTip.row.ma5 != null ? hoverTip.row.ma5.toFixed(2) : '--'}</span></span>
-              <span>10日均线 <span className="font-mono text-foreground">{hoverTip.row.ma10 != null ? hoverTip.row.ma10.toFixed(2) : '--'}</span></span>
-              <span>20日均线 <span className="font-mono text-foreground">{hoverTip.row.ma20 != null ? hoverTip.row.ma20.toFixed(2) : '--'}</span></span>
-              <span>MACD线 <span className="font-mono text-foreground">{hoverTip.row.macd != null ? hoverTip.row.macd.toFixed(3) : '--'}</span></span>
-              <span>信号线 <span className="font-mono text-foreground">{hoverTip.row.signal != null ? hoverTip.row.signal.toFixed(3) : '--'}</span></span>
-              <span>RSI强弱 <span className="font-mono text-foreground">{hoverTip.row.rsi6 != null ? hoverTip.row.rsi6.toFixed(1) : '--'}</span></span>
+              <span>Giá mở cửa <span className="font-mono text-foreground">{hoverTip.row.open.toFixed(2)}</span></span>
+              <span>Giá đóng cửa <span className="font-mono text-foreground">{hoverTip.row.close.toFixed(2)}</span></span>
+              <span>Giá cao nhất <span className="font-mono text-foreground">{hoverTip.row.high.toFixed(2)}</span></span>
+              <span>Giá thấp nhất <span className="font-mono text-foreground">{hoverTip.row.low.toFixed(2)}</span></span>
+              <span>MA5 <span className="font-mono text-foreground">{hoverTip.row.ma5 != null ? hoverTip.row.ma5.toFixed(2) : '--'}</span></span>
+              <span>MA10 <span className="font-mono text-foreground">{hoverTip.row.ma10 != null ? hoverTip.row.ma10.toFixed(2) : '--'}</span></span>
+              <span>MA20 <span className="font-mono text-foreground">{hoverTip.row.ma20 != null ? hoverTip.row.ma20.toFixed(2) : '--'}</span></span>
+              <span>Đường MACD <span className="font-mono text-foreground">{hoverTip.row.macd != null ? hoverTip.row.macd.toFixed(3) : '--'}</span></span>
+              <span>Đường tín hiệu <span className="font-mono text-foreground">{hoverTip.row.signal != null ? hoverTip.row.signal.toFixed(3) : '--'}</span></span>
+              <span>RSI <span className="font-mono text-foreground">{hoverTip.row.rsi6 != null ? hoverTip.row.rsi6.toFixed(1) : '--'}</span></span>
             </div>
           </div>
         ) : null}
       </div>
       <div className="mt-3 grid grid-cols-1 gap-3">
         <div>
-          <div className="text-[11px] text-muted-foreground mb-1">动能指标（MACD{showRsi ? ' + RSI强弱线' : ''}）</div>
+          <div className="text-[11px] text-muted-foreground mb-1">Chỉ báo động lượng (MACD{showRsi ? ' + đường RSI' : ''})</div>
           <div className="text-[11px] text-muted-foreground mb-2 rounded-lg bg-accent/15 border border-border/40 px-2.5 py-1.5">
-            MACD 用来看趋势动能和拐点；RSI 用来看是否偏热/偏弱（一般 70 以上偏热，30 以下偏弱）。
+            MACD dùng để nhìn động lượng xu thế và điểm ngoặt; RSI dùng để nhìn đang nóng hay yếu (thường trên 70 là nóng, dưới 30 là yếu).
           </div>
           {showSkeleton ? (
             <div className="w-full h-[150px] rounded-xl overflow-hidden border border-border/50 animate-pulse">

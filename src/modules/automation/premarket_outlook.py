@@ -1,4 +1,4 @@
-"""盘前分析 Agent - 开盘前展望今日走势"""
+"""Agent phân tích trước phiên - nhìn trước diễn biến hôm nay khi chưa mở cửa"""
 
 import logging
 import re
@@ -28,7 +28,7 @@ from src.platform.marketdata.models import MarketCode
 
 logger = logging.getLogger(__name__)
 
-# 盘前建议类型映射
+# Ánh xạ loại khuyến nghị trước phiên
 PREMARKET_ACTION_MAP = {
     "准备建仓": {"action": "buy", "label": "准备建仓"},
     "准备加仓": {"action": "add", "label": "准备加仓"},
@@ -41,14 +41,14 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "premarke
 
 
 class PremarketOutlookAgent(BaseAgent):
-    """盘前分析 Agent"""
+    """Agent phân tích trước phiên"""
 
     name = "premarket_outlook"
     display_name = "盘前分析"
     description = "开盘前综合昨日分析和隔夜信息，展望今日走势"
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集盘前数据"""
+        """Thu thập dữ liệu trước phiên"""
         trace_id = (
             get_log_context().get("trace_id")
             or datetime.now().strftime("%m%d%H%M%S%f")[-10:]
@@ -62,7 +62,7 @@ class PremarketOutlookAgent(BaseAgent):
             ",".join(symbols[:12]),
         )
 
-        # 1. 获取昨日盘后分析
+        # 1. Lấy phân tích sau phiên của hôm trước
         yesterday_analysis = get_latest_analysis(
             agent_name="daily_report",
             stock_symbol="*",
@@ -75,7 +75,7 @@ class PremarketOutlookAgent(BaseAgent):
             len((yesterday_analysis.content if yesterday_analysis else "") or ""),
         )
 
-        # 2. 获取美股指数（隔夜表现）
+        # 2. Lấy chỉ số Mỹ (diễn biến qua đêm)
         us_indices = []
         try:
             from src.platform.marketdata.marketdata_client import get_market_data
@@ -93,7 +93,7 @@ class PremarketOutlookAgent(BaseAgent):
             logger.warning("[%s] 获取美股指数失败: %s", trace_id, e)
         logger.info("[%s] 隔夜指数采集完成: count=%s", trace_id, len(us_indices))
 
-        # 3/4. SignalPack（技术面+持仓+新闻）
+        # 3/4. SignalPack (kỹ thuật + vị thế + tin tức)
         builder = SignalPackBuilder()
         sym_list = [(s.symbol, s.market, s.name) for s in context.watchlist]
         packs = await builder.build_for_symbols(
@@ -157,7 +157,7 @@ class PremarketOutlookAgent(BaseAgent):
             ",".join(low_quality[:8]) if low_quality else "-",
         )
 
-        # Flatten news for headline section (优先实时，其次扩展，再次历史记忆)
+        # Flatten news for headline section (ưu tiên tin thời gian thực, kế đến tin mở rộng, sau cùng là ký ức lịch sử)
         news_items = []
         try:
             seen = set()
@@ -214,10 +214,10 @@ class PremarketOutlookAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建盘前分析 Prompt"""
+        """Dựng Prompt phân tích trước phiên"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
@@ -244,17 +244,17 @@ class PremarketOutlookAgent(BaseAgent):
                 lines.append(f"- 历史新闻主题：{global_topic.get('summary')}")
             lines.append("")
 
-        # 昨日分析回顾
+        # Nhìn lại phân tích hôm trước
         if data.get("yesterday_analysis"):
             lines.append("## 昨日盘后分析回顾")
-            # 截取前 500 字，避免过长
+            # Cắt lấy 500 chữ đầu, tránh quá dài
             content = data["yesterday_analysis"]
             if len(content) > 500:
                 content = content[:500] + "..."
             lines.append(content)
             lines.append("")
 
-        # 隔夜美股表现
+        # Diễn biến cổ phiếu Mỹ qua đêm
         if data.get("us_indices"):
             lines.append("## 隔夜美股表现")
             for idx in data["us_indices"]:
@@ -272,7 +272,7 @@ class PremarketOutlookAgent(BaseAgent):
                 )
             lines.append("")
 
-        # 相关新闻
+        # Tin liên quan
         if data.get("news"):
             lines.append("## 相关新闻资讯")
             for news in data["news"]:
@@ -293,7 +293,7 @@ class PremarketOutlookAgent(BaseAgent):
                     lines.append(f"  > {news['content'][:100]}...")
             lines.append("")
 
-        # 自选股技术状态（来自 SignalPack）
+        # Trạng thái kỹ thuật của cổ phiếu theo dõi (lấy từ SignalPack)
         lines.append("## 自选股技术状态")
         packs = data.get("signal_packs", {}) or {}
         news_items = data.get("news", []) or []
@@ -323,7 +323,7 @@ class PremarketOutlookAgent(BaseAgent):
                 lines.append(f"- 均线趋势：{tech['trend']}")
             if tech.get("macd_status"):
                 lines.append(f"- MACD 状态：{tech['macd_status']}")
-            # RSI / KDJ / 布林 / 量能 / 形态
+            # RSI / KDJ / Bollinger / sức khối lượng / mẫu hình
             if tech.get("rsi6") is not None and tech.get("rsi_status"):
                 lines.append(
                     f"- RSI：{tech.get('rsi6'):.1f}（{tech.get('rsi_status')}）"
@@ -354,7 +354,7 @@ class PremarketOutlookAgent(BaseAgent):
             if tech.get("kline_pattern"):
                 lines.append(f"- 形态：{tech.get('kline_pattern')}")
 
-            # 资金流向（仅A股，若可用）
+            # Dòng tiền (chỉ cổ phiếu A, nếu có dữ liệu)
             flow = (pack.capital_flow if pack else None) or {}
             if (
                 getattr(stock, "market", None) == MarketCode.CN
@@ -379,7 +379,7 @@ class PremarketOutlookAgent(BaseAgent):
                 except Exception:
                     pass
 
-            # 个股相关新闻（分层：实时 > 扩展 > 历史）
+            # Tin liên quan tới từng mã (phân tầng: thời gian thực > mở rộng > lịch sử)
             stock_news = (
                 (stock_ctx.get("news") or {}).get("realtime")
                 or (stock_ctx.get("news") or {}).get("extended")
@@ -411,7 +411,7 @@ class PremarketOutlookAgent(BaseAgent):
             if history_topic.get("summary"):
                 lines.append(f"- 历史新闻记忆(近30天)：{history_topic.get('summary')}")
 
-            # 事件快照（近 N 天，来自公告结构化）
+            # Ảnh chụp sự kiện (N ngày gần nhất, bóc từ công bố thông tin)
             events = pack.events.items if (pack and pack.events) else []
             important_events = [e for e in events if (e.get("importance") or 0) >= 2]
             if important_events:
@@ -425,7 +425,7 @@ class PremarketOutlookAgent(BaseAgent):
                         f"  - [{time_str}] ({et}) {title}{(' ' + link) if link else ''}"
                     )
 
-            # 多级支撑压力（优先中期）
+            # Hỗ trợ / kháng cự nhiều tầng (ưu tiên khung trung hạn)
             support_m = tech.get("support_m")
             resistance_m = tech.get("resistance_m")
             if support_m is not None and resistance_m is not None:
@@ -460,7 +460,7 @@ class PremarketOutlookAgent(BaseAgent):
                 if kline_history.get("breakout_state") and kline_history.get("breakout_state") != "none":
                     lines.append(f"- 突破状态：{kline_history.get('breakout_state')}")
 
-            # 持仓信息
+            # Thông tin vị thế
             position = context.portfolio.get_aggregated_position(stock.symbol)
             if position:
                 style_labels = {"short": "短线", "swing": "波段", "long": "长线"}
@@ -490,8 +490,8 @@ class PremarketOutlookAgent(BaseAgent):
 
     def _parse_suggestions(self, content: str, watchlist: list) -> dict[str, dict]:
         """
-        从 AI 响应中解析个股建议
-        返回: {symbol: {action, action_label, reason, should_alert}}
+        Bóc khuyến nghị từng mã từ phản hồi của AI.
+        Trả về: {symbol: {action, action_label, reason, should_alert}}
         """
         suggestions: dict[str, dict] = {}
         if not content or not watchlist:
@@ -643,7 +643,7 @@ class PremarketOutlookAgent(BaseAgent):
         return suggestions
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """调用 AI 分析并保存到历史/建议池"""
+        """Gọi AI phân tích rồi lưu vào lịch sử và kho khuyến nghị."""
         trace_id = str(data.get("run_trace_id") or datetime.now().strftime("%m%d%H%M%S%f")[-10:])
         start_ts = time.monotonic()
         logger.info(
@@ -694,7 +694,7 @@ class PremarketOutlookAgent(BaseAgent):
             raw_data={**data, "structured": structured} if structured else data,
         )
 
-        # 解析个股建议
+        # Bóc khuyến nghị cho từng mã
         suggestions = self._parse_suggestions_json(structured, context.watchlist)
         suggestion_source = "json"
         if not suggestions:
@@ -710,7 +710,7 @@ class PremarketOutlookAgent(BaseAgent):
             dict(action_dist),
         )
 
-        # 保存各股票建议到建议池
+        # Lưu khuyến nghị từng mã vào kho khuyến nghị
         stock_map = {s.symbol: s for s in context.watchlist}
         packs = data.get("signal_packs", {}) or {}
         symbol_contexts = data.get("symbol_contexts", {}) or {}
@@ -744,7 +744,7 @@ class PremarketOutlookAgent(BaseAgent):
                     reason=sug.get("reason", ""),
                     agent_name=self.name,
                     agent_label=self.display_name,
-                    expires_hours=12,  # 盘前建议当日有效
+                    expires_hours=12,  # Khuyến nghị trước phiên có hiệu lực trong ngày
                     prompt_context=user_content,
                     ai_response=result.content,
                     stock_market=stock.market.value,
@@ -890,7 +890,7 @@ class PremarketOutlookAgent(BaseAgent):
             len(compact_context),
         )
 
-        # 保存到历史记录
+        # Lưu vào lịch sử
         history_saved = save_analysis(
             agent_name=self.name,
             stock_symbol="*",

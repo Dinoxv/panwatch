@@ -263,7 +263,7 @@ def test_progress_handler_uses_run_id_to_close_the_same_langgraph_node():
         run_id="node-1",
         metadata={"langgraph_node": "Market Analyst"},
     )
-    # 真实 LangChain 1.x 回调这里只有 run_id/parent_run_id，没有 name。
+    # Callback thật của LangChain 1.x ở chỗ này chỉ có run_id/parent_run_id, không có name.
     handler.on_chain_end({}, run_id="node-1", parent_run_id="root-1")
 
     assert [(stage, action) for stage, action, _ in emitted] == [

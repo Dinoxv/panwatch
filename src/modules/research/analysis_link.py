@@ -1,7 +1,7 @@
-"""PanWatch 内部页面链接生成：深度分析详情页等。
+"""Dựng liên kết tới trang nội bộ PanWatch: trang chi tiết phân tích chuyên sâu và tương tự.
 
-全局设置 key: panwatch_base_url(公开访问地址,用于通知里的详情页绝对链接)。
-读取模式与 stock_link.py 一致(AppSettings,miss 回退默认)。
+Khóa thiết lập toàn cục: panwatch_base_url (địa chỉ truy cập công khai, dùng cho liên kết tuyệt đối tới trang chi tiết trong thông báo).
+Cách đọc giống stock_link.py (AppSettings, thiếu thì lùi về mặc định).
 """
 
 from __future__ import annotations
@@ -17,10 +17,11 @@ SETTING_KEY = "panwatch_base_url"
 
 
 def get_base_url() -> str:
-    """从 AppSettings 读取公开访问地址(去尾部斜杠);未配置 / DB 不可用返回空串。
+    """Đọc địa chỉ truy cập công khai từ AppSettings (bỏ dấu gạch chéo ở cuối); chưa cấu hình / DB không dùng được thì trả chuỗi rỗng.
 
-    包一层兜底:单测或 DB 未初始化(app_settings 表不存在)时,读取设置不应让整个
-    分析结果映射崩掉 —— 读不到就降级为空串(不拼详情链接)。
+    Bọc thêm một lớp lưới hứng: lúc chạy unit test hoặc DB chưa khởi tạo (chưa có bảng
+    app_settings), việc đọc thiết lập không được làm sập cả phần ánh xạ kết quả phân tích
+    — đọc không ra thì hạ xuống chuỗi rỗng (không ghép liên kết chi tiết).
     """
     try:
         db = SessionLocal()
@@ -30,15 +31,15 @@ def get_base_url() -> str:
             return val.rstrip("/")
         finally:
             db.close()
-    except Exception as e:  # noqa: BLE001 — DB 未初始化/表缺失等均降级为空
+    except Exception as e:  # noqa: BLE001 — cơ sở dữ liệu chưa khởi tạo / thiếu bảng đều hạ cấp thành rỗng
         logger.debug(f"get_base_url 读取失败,降级为空: {e}")
         return ""
 
 
 def analysis_detail_url(symbol: str, date: str, base_url: str = "") -> str:
-    """深度分析详情页 URL: {base}/analysis/{symbol}/{date}。
+    """URL trang chi tiết phân tích chuyên sâu: {base}/analysis/{symbol}/{date}.
 
-    base_url 未配置(空)时返回空串 —— 调用方据此决定是否拼接链接。
+    base_url chưa cấu hình (rỗng) thì trả chuỗi rỗng — bên gọi dựa vào đó để quyết định có ghép liên kết hay không.
     """
     if not base_url:
         base_url = get_base_url()
@@ -50,7 +51,7 @@ def analysis_detail_url(symbol: str, date: str, base_url: str = "") -> str:
 def analysis_detail_markdown(
     symbol: str, date: str, label: str = "📊 查看完整分析详情", base_url: str = ""
 ) -> str:
-    """Markdown 链接 [label](url);无 base_url 时返回空串。"""
+    """Liên kết Markdown [label](url); không có base_url thì trả chuỗi rỗng."""
     url = analysis_detail_url(symbol, date, base_url)
     if not url:
         return ""

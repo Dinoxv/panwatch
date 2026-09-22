@@ -47,7 +47,7 @@ def test_fetch_index_context_computes_returns(monkeypatch):
         def __init__(self, c):
             self.close = c
 
-    # 25 根:从 100 等比每根 +1,最新 124;-6 根=119,-21 根=104
+    # 25 cây nến: từ 100 mỗi cây +1, cây mới nhất là 124; lùi 6 cây = 119, lùi 21 cây = 104
     closes = [_K(100 + i) for i in range(25)]
     monkeypatch.setattr(kline_collector, "get_index_klines", lambda *a, **k: closes)
     ctx = ContextBuilder()._fetch_index_context("000300", MarketCode.CN)

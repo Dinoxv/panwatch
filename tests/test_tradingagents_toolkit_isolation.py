@@ -54,18 +54,18 @@ def test_two_concurrent_contexts_do_not_cross_talk():
     ctx_a = contextvars.copy_context()
     ctx_b = contextvars.copy_context()
 
-    # A 先进入 context(模拟 worker A 开始,数据已注入但还没跑完工具)
+    # A vào ngữ cảnh trước (mô phỏng worker A khởi động, dữ liệu đã nạp nhưng công cụ chưa chạy xong)
     ctx_a.run(lambda: ta._PANWATCH_DATA.set(dict(GAC)))
-    # B 随后进入 context(并发任务 B 启动)—— 旧实现此处会覆盖全局
+    # B vào ngữ cảnh sau (tác vụ song song B khởi động) — bản cài đặt cũ tới đây sẽ ghi đè biến toàn cục
     ctx_b.run(lambda: ta._PANWATCH_DATA.set(dict(SERES)))
 
-    # A 继续跑工具调用:get_stock_data(601238) 必须返回广汽 K线/价格
+    # A chạy tiếp lời gọi công cụ: get_stock_data(601238) bắt buộc trả nến / giá của 广汽
     out_a = ctx_a.run(lambda: ta._serve_from_panwatch("get_stock_data", "601238", {}, args=("601238",)))
     out_b = ctx_b.run(lambda: ta._serve_from_panwatch("get_stock_data", "601127", {}, args=("601127",)))
 
     assert "广汽集团" in out_a and "赛力斯" not in out_a
-    assert "9.5" in out_a            # 广汽收盘价
-    assert "83.26" not in out_a      # 不含赛力斯价格
+    assert "9.5" in out_a            # Giá đóng cửa của 广汽
+    assert "83.26" not in out_a      # Không chứa giá của 赛力斯
 
     assert "赛力斯" in out_b and "广汽集团" not in out_b
 
@@ -76,7 +76,7 @@ def test_context_restored_after_exit():
         assert ta._cache() == {}
         with ta.panwatch_data_context(SERES):
             assert ta._cache().get("stock").symbol == "601127"
-        # 退出后还原
+        # Thoát ra thì khôi phục lại
         return ta._cache()
     assert contextvars.copy_context().run(_run) == {}
 
@@ -88,13 +88,13 @@ def test_nested_contexts_restore_outer():
             assert ta._cache().get("stock").symbol == "601238"
             with ta.panwatch_data_context(SERES):
                 assert ta._cache().get("stock").symbol == "601127"
-            # 内层退出,外层广汽恢复
+            # Lớp trong thoát ra, lớp ngoài khôi phục về 广汽
             assert ta._cache().get("stock").symbol == "601238"
     contextvars.copy_context().run(_run)
 
 
 # ---------------------------------------------------------------------------
-# 行业/主题新闻关键词搜索(B 功能:get_news 非 ticker 词 → 实时搜中文新闻)
+# Tìm tin theo từ khóa ngành / chủ đề (tính năng B: get_news nhận từ không phải mã → tìm tin tiếng Trung theo thời gian thực)
 # ---------------------------------------------------------------------------
 
 def test_keyword_news_formats():

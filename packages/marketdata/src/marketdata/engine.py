@@ -74,7 +74,7 @@ class Engine:
                     ttl = cache_ttl_sec if cache_ttl_sec is not None else self.default_ttl
                     self.cache.set(key, resp, ttl_sec=ttl)
                     return resp
-                # 非空但不足:记为候选,继续试更优
+                # Khác rỗng nhưng chưa đủ: ghi làm ứng viên rồi thử tiếp nguồn tốt hơn
                 if best is None or len(data) > len(best.data):
                     best = resp
             else:

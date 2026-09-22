@@ -207,7 +207,7 @@ export const chatApi = {
 }
 
 export interface ChatStreamCallbacks {
-  /** 已接受请求或正在执行的阶段提示 */
+  /** Gợi ý chặng: đã nhận yêu cầu hoặc đang chạy */
   onStatus?: (message: string) => void
   /** Server accepted a durable assistant task. */
   onRunStarted?: (info: { taskId: number; contextUsage?: ContextUsage }) => void
@@ -222,13 +222,13 @@ export interface ChatStreamCallbacks {
     usageAfter: ContextUsage
     compressedMessageCount: number
   }) => void
-  /** token 增量文本 */
+  /** Phần văn bản token tăng thêm */
   onToken?: (text: string) => void
-  /** 模型开始调用工具（前端应清空当前 token 缓冲并展示"正在查询…"） */
+  /** Mô hình bắt đầu gọi công cụ (frontend nên xóa vùng đệm token hiện tại và hiện "đang truy vấn…") */
   onToolCallStart?: (info: { name: string; arguments: Record<string, unknown> }) => void
-  /** 工具执行完成 */
+  /** Công cụ chạy xong */
   onToolResult?: (info: { name: string; ok: boolean; preview: string }) => void
-  /** 计划驱动(全面诊断持仓):计划生成/步骤推进/完成 */
+  /** Luồng do kế hoạch dẫn dắt (soi toàn diện danh mục): sinh kế hoạch/đẩy bước/hoàn tất */
   onPlan?: (info: {
     status: string
     steps: { id: number; title: string; status: string }[]
@@ -243,9 +243,9 @@ export interface ChatStreamCallbacks {
     resolvedApprovalId?: string
     resolvedStatus?: AssistantApproval['status']
   }) => void
-  /** 最终回答（已落库） */
+  /** Câu trả lời cuối (đã ghi xuống kho) */
   onDone?: (msg: { message_id: number; content: string; created_at: string }) => void
-  /** AI 服务异常（服务端已把错误文案落库） */
+  /** Dịch vụ AI gặp sự cố (server đã ghi chữ báo lỗi xuống kho) */
   onError?: (message: string) => void
   /** Factual runtime events for the user-facing trace panel. */
   onTrace?: (event: AssistantTraceEvent) => void
@@ -298,7 +298,7 @@ function dispatchAssistantEvent(
       break
     }
     case 'status':
-      callbacks.onStatus?.(d.message || '思考中…')
+      callbacks.onStatus?.(d.message || 'Đang nghĩ…')
       break
     case 'run_started':
       callbacks.onRunStarted?.({
@@ -332,9 +332,9 @@ function dispatchAssistantEvent(
       const call = d.calls?.[0] || {}
       callbacks.onApprovalRequired?.({
         id: d.approval_id || '',
-        tool_title: d.presentation?.tool_title || call.name || d.name || '需要确认的工具操作',
+        tool_title: d.presentation?.tool_title || call.name || d.name || 'Thao tác công cụ cần xác nhận',
         risk: call.risk || d.risk || 'write',
-        summary: d.presentation?.summary || call.summary || ('请求执行 ' + (call.name || d.name || '工具操作')),
+        summary: d.presentation?.summary || call.summary || ('Xin chạy ' + (call.name || d.name || 'Thao tác công cụ')),
         expires_at: d.expires_at || '',
         status: 'pending',
       })
@@ -360,19 +360,21 @@ function dispatchAssistantEvent(
       })
       break
     case 'error':
-      state.terminalError = d.message || '未知错误'
+      state.terminalError = d.message || 'Lỗi không rõ'
       callbacks.onError?.(state.terminalError)
       break
   }
 }
 
 /**
- * 流式发送消息（SSE）。
+ * Gửi tin nhắn theo luồng (SSE).
  *
- * - 首次连接 POST /chat/conversations/{id}/messages/stream；
- * - 旧流通过 meta 事件携带 stream_id，新助手流通过 task_created 事件携带 task_id；
- *   连接中断后分别从内存流或持久化任务事件流 + Last-Event-ID 续推；
- * - 若首次连接直接失败（未收到任何事件），抛异常，调用方降级到非流式 sendMessage。
+ * - Lần đầu kết nối POST /chat/conversations/{id}/messages/stream;
+ * - Luồng cũ mang stream_id qua sự kiện meta, luồng trợ lý mới mang task_id qua
+ *   sự kiện task_created; đứt kết nối thì đẩy tiếp lần lượt từ luồng trong bộ nhớ
+ *   hoặc luồng sự kiện tác vụ đã lưu bền + Last-Event-ID;
+ * - Nếu lần kết nối đầu hỏng thẳng (chưa nhận được sự kiện nào) thì ném lỗi, bên
+ *   gọi hạ xuống sendMessage không luồng.
  */
 async function sendMessageStream(
   conversationId: number,
@@ -419,7 +421,7 @@ async function sendMessageStream(
   // terminal failure for the caller.
   if (state.terminalError && !state.finished) throw new Error(state.terminalError)
 
-  // 连接被中断但生成未结束 → 经续推端点接回（服务端缓冲全量事件）
+  // Kết nối bị đứt nhưng chưa sinh xong → nối lại qua điểm cuối đẩy tiếp (server đệm toàn bộ sự kiện)
   let reconnects = 0
   const reconnectPath = taskEventPath || (streamId ? `/chat/streams/${streamId}` : '')
   while (!state.finished && !state.paused && reconnectPath && reconnects < CHAT_STREAM_MAX_RECONNECTS) {
@@ -432,12 +434,12 @@ async function sendMessageStream(
         onEvent: handleEvent,
       })
     } catch {
-      // 退避后再试
+      // Lùi một nhịp rồi thử lại
       await new Promise((r) => setTimeout(r, 1000 * reconnects))
     }
   }
 
-  if (!state.finished && !state.paused) throw primaryError || new Error('流式回复未完成')
+  if (!state.finished && !state.paused) throw primaryError || new Error('Trả lời theo luồng chưa xong')
 }
 
 async function subscribeAssistantTaskStream(
@@ -480,7 +482,7 @@ async function subscribeAssistantTaskStream(
 
   if (state.terminalError && !state.finished) throw new Error(state.terminalError)
   if (!state.finished && !state.paused && !signal?.aborted) {
-    throw primaryError || new Error('任务事件流未完成')
+    throw primaryError || new Error('Luồng sự kiện tác vụ chưa xong')
   }
 }
 
@@ -536,5 +538,5 @@ async function decideAssistantApprovalStream(
   }
 
   if (state.terminalError && !state.finished) throw new Error(state.terminalError)
-  if (!state.finished && !state.paused) throw primaryError || new Error('流式回复未完成')
+  if (!state.finished && !state.paused) throw primaryError || new Error('Trả lời theo luồng chưa xong')
 }

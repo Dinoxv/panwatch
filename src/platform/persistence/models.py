@@ -18,7 +18,7 @@ from src.platform.persistence.database import Base
 
 
 class AIService(Base):
-    """AI 服务商（base_url + api_key）"""
+    """Nhà cung cấp AI (base_url + api_key)"""
 
     __tablename__ = "ai_services"
 
@@ -34,16 +34,16 @@ class AIService(Base):
 
 
 class AIModel(Base):
-    """AI 模型（属于某个服务商）"""
+    """Mô hình AI (thuộc về một nhà cung cấp)"""
 
     __tablename__ = "ai_models"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)  # 显示名，如 "GLM-4-Flash"
+    name = Column(String, nullable=False)  # Tên hiển thị, ví dụ "GLM-4-Flash"
     service_id = Column(
         Integer, ForeignKey("ai_services.id", ondelete="CASCADE"), nullable=False
     )
-    model = Column(String, nullable=False)  # 实际模型标识，如 "glm-4-flash"
+    model = Column(String, nullable=False)  # Định danh mô hình thật, ví dụ "glm-4-flash"
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -63,13 +63,13 @@ class NotifyChannel(Base):
 
 
 class Account(Base):
-    """交易账户"""
+    """Tài khoản giao dịch"""
 
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)  # 账户名称，如 "招商证券"、"华泰证券"
-    available_funds = Column(Float, default=0)  # 可用资金
+    name = Column(String, nullable=False)  # Tên tài khoản, ví dụ "招商证券", "华泰证券"
+    available_funds = Column(Float, default=0)  # Tiền khả dụng
     enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -86,7 +86,7 @@ class Stock(Base):
     symbol = Column(String, nullable=False)
     name = Column(String, nullable=False)
     market = Column(String, nullable=False)  # CN / HK / US
-    # 以下字段已废弃，持仓信息移至 Position 表
+    # Các trường dưới đây đã bỏ, thông tin vị thế chuyển sang bảng Position
     cost_price = Column(Float, nullable=True)
     quantity = Column(Integer, nullable=True)
     invested_amount = Column(Float, nullable=True)
@@ -103,7 +103,7 @@ class Stock(Base):
 
 
 class Position(Base):
-    """持仓记录（多账户多股票）"""
+    """Bản ghi vị thế (nhiều tài khoản nhiều mã)"""
 
     __tablename__ = "positions"
     __table_args__ = (
@@ -117,13 +117,13 @@ class Position(Base):
     stock_id = Column(
         Integer, ForeignKey("stocks.id", ondelete="CASCADE"), nullable=False
     )
-    cost_price = Column(Float, nullable=False)  # 成本价
-    quantity = Column(Integer, nullable=False)  # 持仓数量
-    invested_amount = Column(Float, nullable=True)  # 投入资金（用于盘中监控）
+    cost_price = Column(Float, nullable=False)  # Giá vốn
+    quantity = Column(Integer, nullable=False)  # Khối lượng nắm giữ
+    invested_amount = Column(Float, nullable=True)  # Vốn đã giải ngân (dùng cho giám sát trong phiên)
     sort_order = Column(Integer, default=0)
     trading_style = Column(
         String, default="swing"
-    )  # short: 短线, swing: 波段, long: 长线
+    )  # short: lướt sóng, swing: trung hạn, long: dài hạn
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -132,7 +132,7 @@ class Position(Base):
 
 
 class StockAgent(Base):
-    """多对多: 每只股票可被多个 Agent 监控"""
+    """Nhiều-nhiều: mỗi mã được nhiều Agent giám sát"""
 
     __tablename__ = "stock_agents"
     __table_args__ = (
@@ -168,7 +168,7 @@ class AgentConfig(Base):
     display_order = Column(Integer, default=0)
     enabled = Column(Boolean, default=True)
     schedule = Column(String, default="")
-    # 执行模式: batch=批量(多只股票一起分析发送) / single=单只(逐只分析发送，实时性高)
+    # Chế độ thực thi: batch = hàng loạt (phân tích và gửi nhiều mã cùng lúc) / single = từng mã (phân tích và gửi lần lượt, tính thời gian thực cao hơn)
     execution_mode = Column(String, default="batch")
     ai_model_id = Column(
         Integer, ForeignKey("ai_models.id", ondelete="SET NULL"), nullable=True
@@ -230,7 +230,7 @@ class AppSettings(Base):
 
 
 class DataSource(Base):
-    """数据源配置（新闻、K线图、行情）"""
+    """Cấu hình nguồn dữ liệu (tin tức, đồ thị nến, bảng giá)"""
 
     __tablename__ = "data_sources"
 
@@ -240,16 +240,16 @@ class DataSource(Base):
         String, nullable=False
     )  # "news" / "chart" / "quote" / "kline" / "capital_flow"
     provider = Column(String, nullable=False)  # "xueqiu" / "eastmoney" / "tencent"
-    config = Column(JSON, default={})  # 配置参数
+    config = Column(JSON, default={})  # Tham số cấu hình
     enabled = Column(Boolean, default=True)
-    priority = Column(Integer, default=0)  # 越小优先级越高
-    supports_batch = Column(Boolean, default=False)  # 是否支持批量查询
-    test_symbols = Column(JSON, default=[])  # 测试用股票代码列表
+    priority = Column(Integer, default=0)  # Số càng nhỏ thì độ ưu tiên càng cao
+    supports_batch = Column(Boolean, default=False)  # Có hỗ trợ truy vấn hàng loạt hay không
+    test_symbols = Column(JSON, default=[])  # Danh sách mã cổ phiếu dùng để kiểm thử
     created_at = Column(DateTime, server_default=func.now())
 
 
 class NewsCache(Base):
-    """新闻缓存（用于去重）"""
+    """Đệm tin tức (dùng để gộp trùng)"""
 
     __tablename__ = "news_cache"
     __table_args__ = (
@@ -258,17 +258,17 @@ class NewsCache(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source = Column(String, nullable=False)  # "cls" / "eastmoney"
-    external_id = Column(String, nullable=False)  # 来源侧 ID
+    external_id = Column(String, nullable=False)  # ID phía nguồn
     title = Column(String, nullable=False)
     content = Column(String, default="")
     publish_time = Column(DateTime, nullable=False)
-    symbols = Column(JSON, default=[])  # 关联股票代码列表
-    importance = Column(Integer, default=0)  # 0-3 重要性
+    symbols = Column(JSON, default=[])  # Danh sách mã cổ phiếu liên quan
+    importance = Column(Integer, default=0)  # Mức quan trọng 0-3
     created_at = Column(DateTime, server_default=func.now())
 
 
 class NotifyThrottle(Base):
-    """通知节流记录（防止同一股票短时间内重复通知）"""
+    """Bản ghi tiết lưu thông báo (chặn báo lặp cùng một mã trong thời gian ngắn)"""
 
     __tablename__ = "notify_throttle"
     __table_args__ = (
@@ -279,11 +279,11 @@ class NotifyThrottle(Base):
     agent_name = Column(String, nullable=False)
     stock_symbol = Column(String, nullable=False)
     last_notify_at = Column(DateTime, nullable=False)
-    notify_count = Column(Integer, default=1)  # 当日通知次数
+    notify_count = Column(Integer, default=1)  # Số lần thông báo trong ngày
 
 
 class AnalysisHistory(Base):
-    """分析历史记录（盘后分析、盘前分析等）"""
+    """Bản ghi lịch sử phân tích (phân tích sau phiên, phân tích trước phiên…)"""
 
     __tablename__ = "analysis_history"
     __table_args__ = (
@@ -294,18 +294,18 @@ class AnalysisHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent_name = Column(String, nullable=False)  # "daily_report" / "premarket_outlook"
-    stock_symbol = Column(String, nullable=False)  # 股票代码，"*" 表示全部
-    analysis_date = Column(String, nullable=False)  # 分析日期 "YYYY-MM-DD"
-    title = Column(String, default="")  # 分析标题
-    content = Column(String, nullable=False)  # AI 分析结果
-    raw_data = Column(JSON, default={})  # 原始数据快照
+    stock_symbol = Column(String, nullable=False)  # Mã cổ phiếu, "*" nghĩa là tất cả
+    analysis_date = Column(String, nullable=False)  # Ngày phân tích "YYYY-MM-DD"
+    title = Column(String, default="")  # Tiêu đề phân tích
+    content = Column(String, nullable=False)  # Kết quả phân tích của AI
+    raw_data = Column(JSON, default={})  # Ảnh chụp dữ liệu gốc
     agent_kind_snapshot = Column(String, default="workflow")
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class StockContextSnapshot(Base):
-    """按股票/日期保存结构化上下文快照（用于跨天记忆）"""
+    """Lưu ảnh chụp ngữ cảnh có cấu trúc theo mã/ngày (dùng cho ký ức xuyên ngày)"""
 
     __tablename__ = "stock_context_snapshots"
     __table_args__ = (
@@ -335,7 +335,7 @@ class StockContextSnapshot(Base):
 
 
 class NewsTopicSnapshot(Base):
-    """新闻主题快照（按日期和窗口聚合）"""
+    """Ảnh chụp chủ đề tin tức (gộp theo ngày và theo cửa sổ)"""
 
     __tablename__ = "news_topic_snapshots"
     __table_args__ = (
@@ -359,7 +359,7 @@ class NewsTopicSnapshot(Base):
 
 
 class AgentContextRun(Base):
-    """每次 Agent 执行时使用的上下文摘要"""
+    """Tóm tắt ngữ cảnh dùng cho mỗi lượt chạy Agent"""
 
     __tablename__ = "agent_context_runs"
     __table_args__ = (
@@ -377,7 +377,7 @@ class AgentContextRun(Base):
 
 
 class AgentPredictionOutcome(Base):
-    """建议后验评估记录（用于回放与效果统计）"""
+    """Bản ghi hậu kiểm khuyến nghị (dùng để phát lại và thống kê hiệu quả)"""
 
     __tablename__ = "agent_prediction_outcomes"
     __table_args__ = (
@@ -397,9 +397,9 @@ class AgentPredictionOutcome(Base):
     stock_market = Column(String, nullable=False, default="CN")
     prediction_date = Column(String, nullable=False)  # YYYY-MM-DD
     horizon_days = Column(Integer, nullable=False, default=1)  # 1/5/10...
-    # 同一次建议的各 horizon 共用 UUID；历史记录为空时由查询侧兼容聚合。
+    # Các horizon của cùng một lần khuyến nghị dùng chung UUID; bản ghi cũ để trống thì phía truy vấn tự gộp tương thích.
     prediction_group_id = Column(String, nullable=True)
-    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
     horizon_unit = Column(String, nullable=False, default="trading_days")
     action = Column(String, nullable=False, default="watch")
     action_label = Column(String, nullable=False, default="观望")
@@ -414,7 +414,7 @@ class AgentPredictionOutcome(Base):
 
 
 class StockSuggestion(Base):
-    """股票建议池 - 汇总各 Agent 建议"""
+    """Kho khuyến nghị cho mã - gom khuyến nghị của các Agent"""
 
     __tablename__ = "stock_suggestions"
 
@@ -423,34 +423,34 @@ class StockSuggestion(Base):
     stock_market = Column(String, nullable=False, default="CN", index=True)
     stock_name = Column(String, default="")
 
-    # 建议内容
+    # Nội dung khuyến nghị
     action = Column(
         String, nullable=False
     )  # buy/add/reduce/sell/hold/watch/alert/avoid
     action_label = Column(
         String, nullable=False
-    )  # 中文标签：建仓/加仓/减仓/清仓/持有/观望
-    signal = Column(String, default="")  # 信号描述
-    reason = Column(String, default="")  # 建议理由
+    )  # Nhãn hiển thị: Mở vị thế / Gia tăng / Giảm bớt / Thanh lý / Nắm giữ / Quan sát
+    signal = Column(String, default="")  # Mô tả tín hiệu
+    reason = Column(String, default="")  # Lý do khuyến nghị
 
-    # 来源追踪
+    # Truy vết nguồn
     agent_name = Column(
         String, nullable=False
     )  # intraday_monitor/daily_report/premarket_outlook
-    agent_label = Column(String, default="")  # 盘中监测/盘后日报/盘前分析
+    agent_label = Column(String, default="")  # Giám sát trong phiên / Báo cáo sau phiên / Phân tích trước phiên
 
-    # 上下文信息
-    prompt_context = Column(String, default="")  # Prompt 上下文摘要
-    ai_response = Column(String, default="")  # AI 原始响应
+    # Thông tin ngữ cảnh
+    prompt_context = Column(String, default="")  # Tóm tắt ngữ cảnh của prompt
+    ai_response = Column(String, default="")  # Phản hồi gốc của AI
 
-    # 元数据（输入快照/触发原因等）
+    # Siêu dữ liệu (ảnh chụp đầu vào / lý do kích hoạt...)
     meta = Column(JSON, default={})
 
-    # 时间信息
+    # Thông tin thời gian
     created_at = Column(DateTime, server_default=func.now())
-    expires_at = Column(DateTime, nullable=True)  # 建议过期时间
+    expires_at = Column(DateTime, nullable=True)  # Thời điểm khuyến nghị hết hạn
 
-    # 索引：按市场+股票+时间快速查询
+    # Chỉ mục: truy vấn nhanh theo thị trường + mã + thời gian
     __table_args__ = (
         Index(
             "ix_suggestion_market_symbol_time",
@@ -463,7 +463,7 @@ class StockSuggestion(Base):
 
 
 class EntryCandidate(Base):
-    """入场候选榜快照（按天去重，可追溯来源建议与证据）。"""
+    """Ảnh chụp bảng ứng viên vào lệnh (gộp trùng theo ngày, truy ngược được khuyến nghị nguồn và bằng chứng)."""
 
     __tablename__ = "entry_candidates"
     __table_args__ = (
@@ -509,7 +509,7 @@ class EntryCandidate(Base):
 
 
 class MarketScanSnapshot(Base):
-    """市场池候选快照（用于多源回退与覆盖诊断）。"""
+    """Ảnh chụp ứng viên trong kho thị trường (dùng cho việc lùi nhiều nguồn và soi mức phủ)."""
 
     __tablename__ = "market_scan_snapshots"
     __table_args__ = (
@@ -537,7 +537,7 @@ class MarketScanSnapshot(Base):
 
 
 class EntryCandidateFeedback(Base):
-    """入场候选反馈（用于策略迭代与质量评估）。"""
+    """Phản hồi về ứng viên vào lệnh (dùng để cải tiến chiến lược và đánh giá chất lượng)."""
 
     __tablename__ = "entry_candidate_feedback"
     __table_args__ = (
@@ -558,7 +558,7 @@ class EntryCandidateFeedback(Base):
 
 
 class EntryCandidateOutcome(Base):
-    """入场候选后验结果（自动评估）。"""
+    """Kết quả hậu kiểm ứng viên vào lệnh (hậu kiểm tự động)."""
 
     __tablename__ = "entry_candidate_outcomes"
     __table_args__ = (
@@ -579,6 +579,8 @@ class EntryCandidateOutcome(Base):
     candidate_source = Column(String, nullable=False, default="watchlist")
     strategy_tags = Column(JSON, default=[])
     horizon_days = Column(Integer, nullable=False, default=1)
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
+    horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
     outcome_price = Column(Float, nullable=True)
@@ -592,7 +594,7 @@ class EntryCandidateOutcome(Base):
 
 
 class StrategyCatalog(Base):
-    """策略目录（可版本化、可启停、可调权重）。"""
+    """Danh mục chiến lược (đánh phiên bản được, bật tắt được, chỉnh trọng số được)."""
 
     __tablename__ = "strategy_catalog"
     __table_args__ = (
@@ -615,7 +617,7 @@ class StrategyCatalog(Base):
 
 
 class StrategySignalRun(Base):
-    """策略信号执行快照（按日/股票/策略去重）。"""
+    """Ảnh chụp lượt chạy tín hiệu chiến lược (gộp trùng theo ngày/mã/chiến lược)."""
 
     __tablename__ = "strategy_signal_runs"
     __table_args__ = (
@@ -674,7 +676,7 @@ class StrategySignalRun(Base):
 
 
 class StrategyOutcome(Base):
-    """策略后验结果。"""
+    """Kết quả hậu kiểm chiến lược."""
 
     __tablename__ = "strategy_outcomes"
     __table_args__ = (
@@ -698,6 +700,8 @@ class StrategyOutcome(Base):
     stock_market = Column(String, nullable=False, default="CN")
     source_pool = Column(String, default="watchlist")
     horizon_days = Column(Integer, nullable=False, default=1)
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
+    horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
     outcome_price = Column(Float, nullable=True)
@@ -711,7 +715,7 @@ class StrategyOutcome(Base):
 
 
 class BacktestRun(Base):
-    """一次可回看的策略历史回测。"""
+    """Một lượt kiểm thử lịch sử chiến lược xem lại được."""
 
     __tablename__ = "backtest_runs"
     __table_args__ = (
@@ -736,7 +740,7 @@ class BacktestRun(Base):
 
 
 class StrategyWeight(Base):
-    """策略权重（当前生效值）。"""
+    """Trọng số chiến lược (giá trị đang có hiệu lực)."""
 
     __tablename__ = "strategy_weights"
     __table_args__ = (
@@ -762,7 +766,7 @@ class StrategyWeight(Base):
 
 
 class StrategyWeightHistory(Base):
-    """策略调权历史。"""
+    """Lịch sử điều chỉnh trọng số chiến lược."""
 
     __tablename__ = "strategy_weight_history"
     __table_args__ = (
@@ -784,10 +788,10 @@ class StrategyWeightHistory(Base):
 
 
 class FactorWeight(Base):
-    """因子权重（当前生效值）——每因子 × 市场,由 IC/IR 自动标定 + 可手动覆盖。
+    """Trọng số nhân tố (giá trị đang có hiệu lực) — mỗi nhân tố × thị trường, do IC/IR tự chuẩn định + ghi đè tay được.
 
-    镜像 StrategyWeight,但作用于因子级(alpha/catalyst/quality/risk/crowd),
-    让信号合成从「隐式权重=1 的黑盒」变成「外置可标定」。
+    Soi gương StrategyWeight, nhưng tác dụng ở cấp nhân tố (alpha/catalyst/quality/risk/crowd),
+    để việc tổng hợp tín hiệu từ «hộp đen với trọng số ngầm = 1» thành «để ngoài, chuẩn định được».
     """
 
     __tablename__ = "factor_weights"
@@ -800,8 +804,8 @@ class FactorWeight(Base):
     factor_code = Column(String, nullable=False)
     market = Column(String, nullable=False, default="CN")  # CN/HK/US
     weight = Column(Float, nullable=False, default=1.0)
-    is_pinned = Column(Boolean, nullable=False, default=False)  # 手动锁定,标定跳过
-    auto_calibrate = Column(Boolean, nullable=False, default=True)  # 关掉则标定跳过
+    is_pinned = Column(Boolean, nullable=False, default=False)  # Khóa thủ công, phép hiệu chỉnh sẽ bỏ qua
+    auto_calibrate = Column(Boolean, nullable=False, default=True)  # Tắt thì phép hiệu chỉnh bỏ qua
     reason = Column(String, default="")
     meta = Column(JSON, default={})
     effective_from = Column(DateTime, server_default=func.now())
@@ -810,7 +814,7 @@ class FactorWeight(Base):
 
 
 class FactorWeightHistory(Base):
-    """因子调权历史(审计)。"""
+    """Lịch sử điều chỉnh trọng số nhân tố (kiểm toán)."""
 
     __tablename__ = "factor_weight_history"
     __table_args__ = (
@@ -832,7 +836,7 @@ class FactorWeightHistory(Base):
 
 
 class MarketRegimeSnapshot(Base):
-    """市场状态快照（用于按市场动态调权与解释）。"""
+    """Ảnh chụp trạng thái thị trường (dùng để điều chỉnh trọng số động theo thị trường và để giải thích)."""
 
     __tablename__ = "market_regime_snapshots"
     __table_args__ = (
@@ -862,7 +866,7 @@ class MarketRegimeSnapshot(Base):
 
 
 class StrategyFactorSnapshot(Base):
-    """每条策略信号的因子分解快照。"""
+    """Ảnh chụp bóc tách nhân tố của từng tín hiệu chiến lược."""
 
     __tablename__ = "strategy_factor_snapshots"
     __table_args__ = (
@@ -893,7 +897,7 @@ class StrategyFactorSnapshot(Base):
 
 
 class PortfolioRiskSnapshot(Base):
-    """按快照/市场聚合的组合风险画像。"""
+    """Chân dung rủi ro danh mục gộp theo ảnh chụp/thị trường."""
 
     __tablename__ = "portfolio_risk_snapshots"
     __table_args__ = (
@@ -922,7 +926,7 @@ class PortfolioRiskSnapshot(Base):
 
 
 class SuggestionFeedback(Base):
-    """建议反馈（匿名、轻量）"""
+    """Phản hồi về khuyến nghị (ẩn danh, nhẹ)"""
 
     __tablename__ = "suggestion_feedback"
 
@@ -938,7 +942,7 @@ class SuggestionFeedback(Base):
 
 
 class PriceAlertRule(Base):
-    """价格提醒规则"""
+    """Quy tắc cảnh báo giá"""
 
     __tablename__ = "price_alert_rules"
     __table_args__ = (
@@ -970,7 +974,7 @@ class PriceAlertRule(Base):
 
 
 class PriceAlertHit(Base):
-    """价格提醒命中记录"""
+    """Bản ghi lượt chạm cảnh báo giá"""
 
     __tablename__ = "price_alert_hits"
     __table_args__ = (
@@ -1001,7 +1005,7 @@ class PriceAlertHit(Base):
 
 
 class PaperTradingAccount(Base):
-    """模拟盘账户（单例）"""
+    """Tài khoản mô phỏng bàn giao dịch (đơn nhất)"""
 
     __tablename__ = "paper_trading_account"
 
@@ -1014,15 +1018,15 @@ class PaperTradingAccount(Base):
     max_drawdown_pct = Column(Float, nullable=False, default=0.0)
     peak_capital = Column(Float, nullable=False, default=1000000.0)
     enabled = Column(Boolean, default=True)
-    excluded_markets = Column(JSON, default=[])  # 排除的市场，如 ["US"]（兼容旧字段，由 market_allocations 派生）
-    # 各市场投资比例 {"CN":0.5,"HK":0.3,"US":0.2}，比例 0~1、合计 ≤ 1；比例 0 表示不投入该市场
+    excluded_markets = Column(JSON, default=[])  # Các thị trường bị loại, ví dụ ["US"] (trường cũ giữ để tương thích, suy ra từ market_allocations)
+    # Tỷ trọng giải ngân từng thị trường {"CN":0.5,"HK":0.3,"US":0.2}, mỗi tỷ trọng 0~1, tổng ≤ 1; bằng 0 nghĩa là không giải ngân vào thị trường đó
     market_allocations = Column(JSON, default={})
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class PaperTradingPosition(Base):
-    """模拟盘持仓"""
+    """Vị thế mô phỏng bàn giao dịch"""
 
     __tablename__ = "paper_trading_positions"
     __table_args__ = (
@@ -1039,7 +1043,7 @@ class PaperTradingPosition(Base):
     stop_loss = Column(Float, nullable=True)
     target_price = Column(Float, nullable=True)
     current_price = Column(Float, nullable=True)
-    highest_price = Column(Float, nullable=True)  # 持仓期最高价(移动止损用)
+    highest_price = Column(Float, nullable=True)  # Giá cao nhất trong kỳ nắm giữ (dùng cho cắt lỗ động)
     unrealized_pnl = Column(Float, nullable=False, default=0.0)
     status = Column(String, nullable=False, default="open")  # open/closed
     signal_run_id = Column(Integer, nullable=True)
@@ -1052,7 +1056,7 @@ class PaperTradingPosition(Base):
 
 
 class PaperTradingTrade(Base):
-    """模拟盘已平仓记录"""
+    """Bản ghi đã đóng của mô phỏng bàn giao dịch"""
 
     __tablename__ = "paper_trading_trades"
     __table_args__ = (
@@ -1080,7 +1084,7 @@ class PaperTradingTrade(Base):
 
 
 class ChatConversation(Base):
-    """AI 对话会话"""
+    """Phiên trò chuyện AI"""
 
     __tablename__ = "chat_conversations"
     __table_args__ = (
@@ -1099,7 +1103,7 @@ class ChatConversation(Base):
 
 
 class ChatMessage(Base):
-    """AI 对话消息"""
+    """Tin nhắn trong phiên trò chuyện AI"""
 
     __tablename__ = "chat_messages"
     __table_args__ = (
@@ -1287,11 +1291,13 @@ class AssistantArtifact(Base):
 
 
 class PersonalAccessToken(Base):
-    """个人访问令牌(PAT)—— MCP 端点专用的独立长期凭据。
+    """Mã truy cập cá nhân (PAT) — chứng thực dài hạn riêng cho điểm cuối MCP.
 
-    与登录 JWT 分流:JWT 是单用户会话态(30 天、不可吊销、无 scope),不适合作为
-    分发给外部 MCP client 的长期凭据;PAT 可独立吊销/审计、天然只读 scope。
-    库里只存 sha256(token_hash),明文仅创建时返回一次。单用户应用,不设 user_id。
+    Tách khỏi JWT đăng nhập: JWT là trạng thái phiên của một người dùng (30 ngày, không
+    thu hồi được, không có scope), không hợp làm chứng thực dài hạn phát cho MCP client
+    bên ngoài; PAT thu hồi/kiểm toán độc lập được, tự nhiên mang scope chỉ đọc.
+    Trong kho chỉ lưu sha256(token_hash), bản chữ thường chỉ trả về một lần lúc tạo.
+    Ứng dụng một người dùng nên không đặt user_id.
     """
 
     __tablename__ = "personal_access_tokens"
@@ -1300,19 +1306,19 @@ class PersonalAccessToken(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False, default="")  # 用户可读的用途备注
+    name = Column(String, nullable=False, default="")  # Ghi chú mục đích để người dùng đọc
     token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    prefix = Column(String(32), nullable=False, default="")  # 明文前缀,列表展示用
+    prefix = Column(String(32), nullable=False, default="")  # Tiền tố bản rõ, dùng để hiển thị trong danh sách
     scopes_json = Column(Text, nullable=False, default="[]")  # JSON: ["mcp:read"]
-    expires_at = Column(DateTime, nullable=True)  # None = 永不过期
+    expires_at = Column(DateTime, nullable=True)  # None = không bao giờ hết hạn
     last_used_at = Column(DateTime, nullable=True)
     last_used_ip = Column(String, nullable=True)
-    revoked_at = Column(DateTime, nullable=True)  # 非空即已吊销
+    revoked_at = Column(DateTime, nullable=True)  # Khác rỗng nghĩa là đã bị thu hồi
     created_at = Column(DateTime, server_default=func.now())
 
 
 class MCPCallLog(Base):
-    """每次 MCP tool 调用的审计记录(只存元数据,不存参数/结果明文)。"""
+    """Bản ghi kiểm toán cho mỗi lần gọi tool MCP (chỉ lưu siêu dữ liệu, không lưu tham số/kết quả dạng chữ thường)."""
 
     __tablename__ = "mcp_call_logs"
     __table_args__ = (
@@ -1321,12 +1327,12 @@ class MCPCallLog(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    pat_id = Column(Integer, nullable=True)  # 软引用,PAT 删除后仍保留历史
+    pat_id = Column(Integer, nullable=True)  # Tham chiếu mềm, xóa PAT rồi vẫn giữ được lịch sử
     pat_prefix = Column(String, nullable=True)
     tool_name = Column(String, nullable=False, default="")
     status = Column(String, nullable=False, default="ok")  # ok / error
     error_message = Column(Text, nullable=True)
-    args_summary = Column(Text, nullable=True)  # 脱敏摘要,截断
+    args_summary = Column(Text, nullable=True)  # Tóm tắt đã che thông tin nhạy cảm, có cắt bớt
     duration_ms = Column(Integer, default=0)
     client_ip = Column(String, nullable=True)
     called_at = Column(DateTime, server_default=func.now())

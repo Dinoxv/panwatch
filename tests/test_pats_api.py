@@ -4,7 +4,7 @@
 """
 
 import src.modules.administration.api.mcp as mcp_module
-import src.modules.administration.api.pats as pats_module  # noqa: F401 (确保模块可导入)
+import src.modules.administration.api.pats as pats_module  # noqa: F401 (bảo đảm module import được)
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -52,7 +52,7 @@ def test_create_pat_returns_plaintext_once(monkeypatch):
 
     listed = client.get("/api/pats").json()["items"]
     assert len(listed) == 1
-    assert "token" not in listed[0]  # 列表不返回明文
+    assert "token" not in listed[0]  # Danh sách không trả về bản rõ
     assert listed[0]["prefix"].startswith("pwmcp_")
 
 
@@ -70,7 +70,7 @@ def test_revoke_then_mcp_rejects(monkeypatch):
     token = created["token"]
     pat_id = created["id"]
 
-    # 吊销前可用
+    # Trước khi thu hồi thì dùng được
     ok = client.post(
         "/mcp",
         json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
@@ -78,11 +78,11 @@ def test_revoke_then_mcp_rejects(monkeypatch):
     )
     assert ok.status_code == 200
 
-    # 吊销
+    # Thu hồi
     dele = client.delete(f"/api/pats/{pat_id}")
     assert dele.status_code == 200
 
-    # 吊销后被拒
+    # Sau khi thu hồi thì bị từ chối
     denied = client.post(
         "/mcp",
         json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
@@ -90,6 +90,6 @@ def test_revoke_then_mcp_rejects(monkeypatch):
     )
     assert denied.status_code == 401
 
-    # 列表中标记为已吊销
+    # Trong danh sách được đánh dấu là đã thu hồi
     listed = client.get("/api/pats").json()["items"]
     assert listed[0]["revoked"] is True

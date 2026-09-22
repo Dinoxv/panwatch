@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import src.platform.persistence.models  # noqa: F401  注册所有 ORM 模型到 Base.metadata
+import src.platform.persistence.models  # noqa: F401  đăng ký toàn bộ mô hình ORM vào Base.metadata
 from src.platform.persistence.database import Base
 
 
@@ -55,7 +55,7 @@ def test_get_factor_weights_reads_stored_value():
         db.commit()
         w = get_factor_weights("CN", db=db)
         assert w["alpha_score"] == 1.3
-        # 其余因子仍补齐为默认 1.0
+        # Các nhân tố còn lại vẫn được bù về mặc định 1,0
         assert w["catalyst_score"] == 1.0
     finally:
         db.close()

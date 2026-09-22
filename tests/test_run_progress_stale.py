@@ -26,10 +26,10 @@ def test_recent_log_status_running():
     recent = _fake_log(now - timedelta(seconds=30))
 
     db = MagicMock()
-    # query(LogEntry) 链 → all() 返回日志
+    # Chuỗi query(LogEntry) → all() trả về nhật ký
     log_query = MagicMock()
     log_query.filter.return_value.order_by.return_value.limit.return_value.all.return_value = [recent]
-    # query(AgentRun) 链 → first() 返回 None
+    # Chuỗi query(AgentRun) → first() trả về None
     run_query = MagicMock()
     run_query.filter.return_value.order_by.return_value.first.return_value = None
     db.query.side_effect = [log_query, run_query]

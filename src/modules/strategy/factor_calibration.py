@@ -1,13 +1,14 @@
-"""因子自校准(M2):把孤立的 IC/IR 接进因子权重的轻量标定闭环。
+"""Tự chuẩn định nhân tố (M2): nối phần IC/IR vốn đứng riêng vào vòng chuẩn định nhẹ cho trọng số nhân tố.
 
-把 `factor_eval.evaluate_factor_ic` 算出的每因子 IC/IR,符号感知地转成目标权重,
-EMA 平滑 + clamp 后写入 `FactorWeight`(并审计到 `FactorWeightHistory`)。
-镜像 `strategy_engine.rebalance_strategy_weights` 的机制,但作用于因子级。
+Lấy IC/IR của từng nhân tố mà `factor_eval.evaluate_factor_ic` tính ra, đổi thành trọng số
+mục tiêu có xét dấu, làm mượt bằng EMA + clamp rồi ghi vào `FactorWeight` (và ghi kiểm
+toán vào `FactorWeightHistory`).
+Soi gương cơ chế của `strategy_engine.rebalance_strategy_weights`, nhưng tác dụng ở cấp nhân tố.
 
-设计要点(见 .docs/factor-self-calibration-design-2026-06-20.md):
-- IC 必须测在「原始因子」上(快照存 raw,权重只在合成时乘),否则闭环自我强化失真。
-- 惩罚因子(risk/crowd)IC 预期为负:用 −IC 驱动,惩罚有效→提权,失效→降权。
-- 只吃「持有期已走完」的 outcome(point-in-time),防未来函数。
+Điểm thiết kế (xem .docs/factor-self-calibration-design-2026-06-20.md):
+- IC bắt buộc đo trên «nhân tố thô» (ảnh chụp lưu raw, trọng số chỉ nhân lúc tổng hợp), nếu không vòng lặp sẽ tự củng cố mà méo đi.
+- Nhân tố phạt (risk/crowd) có IC kỳ vọng âm: lấy −IC làm động lực, phạt hiệu quả → tăng trọng số, mất hiệu lực → giảm trọng số.
+- Chỉ ăn outcome «đã đi hết kỳ nắm giữ» (point-in-time), chống hàm nhìn trước tương lai.
 """
 
 from __future__ import annotations
@@ -27,16 +28,16 @@ from src.platform.persistence.models import FactorWeight, FactorWeightHistory
 
 logger = logging.getLogger(__name__)
 
-# 归一化基准:一个「不错」的 IR / 一个「有意义」的单期 IC。
+# Mốc chuẩn hóa: một IR ở mức «khá» / một IC một kỳ ở mức «có ý nghĩa».
 IR_REF = 0.5
 IC_REF = 0.05
 
 
 def compute_target(factor_code: str, ic, ir, *, beta: float = 0.4) -> float | None:
-    """由 IC/IR 算目标权重;优先 IR(更稳),fallback IC;惩罚因子翻符号。
+    """Tính trọng số mục tiêu từ IC/IR; ưu tiên IR (ổn hơn), lùi về IC; nhân tố phạt thì đảo dấu.
 
-    返回 None 表示信息不足(IC、IR 均缺失),应跳过该因子。
-    term 归一化并 clamp 到 [-1, 1];target = 1 + beta·term。
+    Trả None nghĩa là thiếu thông tin (thiếu cả IC lẫn IR), nên bỏ qua nhân tố đó.
+    term được chuẩn hóa và clamp về [-1, 1]; target = 1 + beta·term.
     """
     if ir is not None:
         term = ir / IR_REF
@@ -45,14 +46,14 @@ def compute_target(factor_code: str, ic, ir, *, beta: float = 0.4) -> float | No
     else:
         return None
     if factor_code in PENALTY_FACTORS:
-        term = -term  # 惩罚因子:IC 越负越该信
+        term = -term  # Nhân tố phạt: IC càng âm thì càng đáng tin
     term = max(-1.0, min(1.0, term))
     return 1.0 * (1.0 + beta * term)
 
 
 def blend(old: float, target: float, *, alpha: float = 0.35,
           lo: float = 0.5, hi: float = 1.5) -> float:
-    """EMA 平滑(防跳变)+ clamp 到 [lo, hi]。"""
+    """Làm mượt bằng EMA (chống nhảy đột ngột) + clamp về [lo, hi]."""
     new = old * (1.0 - alpha) + target * alpha
     return max(lo, min(hi, new))
 
@@ -62,11 +63,11 @@ def calibrate_factor_weights(
     clamp: tuple[float, float] = (0.5, 1.5),
     min_samples: int = 20, horizon: int = 5, days: int = 90, db=None,
 ) -> dict:
-    """对单个市场跑一轮因子权重标定,写 FactorWeight + FactorWeightHistory。
+    """Chạy một vòng chuẩn định trọng số nhân tố cho một thị trường, ghi FactorWeight + FactorWeightHistory.
 
-    门控:is_pinned / auto_calibrate=False / 样本不足 / IC 缺失 → 跳过(不改权重)。
-    每次都把最近观测(last_ic/ir/sample_size)写入 FactorWeight.meta 供 API 展示;
-    History 只记录「实际发生的调整」(reason=auto),避免冷启动期审计噪声。
+    Cổng chặn: is_pinned / auto_calibrate=False / mẫu chưa đủ / thiếu IC → bỏ qua (không đổi trọng số).
+    Lần nào cũng ghi quan sát gần nhất (last_ic/ir/sample_size) vào FactorWeight.meta cho API hiển thị;
+    History chỉ ghi «điều chỉnh đã thực sự xảy ra» (reason=auto), tránh nhiễu kiểm toán trong giai đoạn khởi động nguội.
     """
     own = db is None
     db = db or SessionLocal()
@@ -75,7 +76,7 @@ def calibrate_factor_weights(
             days=days, horizon=horizon, min_samples=min_samples, market=market, db=db
         )
         factors = ic_result.get("factors", {})
-        get_factor_weights(market, db=db)  # 确保 5 个因子行存在
+        get_factor_weights(market, db=db)  # Bảo đảm đủ 5 dòng nhân tố
 
         lo, hi = float(clamp[0]), float(clamp[1])
         changed = 0
@@ -93,7 +94,7 @@ def calibrate_factor_weights(
             ir = stats.get("ir")
             n = int(stats.get("sample_size", 0))
 
-            # 记录最近一次观测(供 API 展示),无论是否调整。
+            # Ghi lại quan sát gần nhất (để API hiển thị), bất kể có điều chỉnh hay không.
             row.meta = {
                 **(row.meta or {}),
                 "last_ic": ic, "last_ir": ir, "last_sample_size": n,
@@ -128,7 +129,7 @@ def calibrate_factor_weights(
         db.commit()
         return {"market": market, "checked": len(CALIBRATABLE_FACTORS),
                 "changed": changed, "rows": rows_changed}
-    except Exception as e:  # pragma: no cover - 防御性
+    except Exception as e:  # pragma: no cover - nhánh phòng thủ
         logger.warning(f"[因子标定] market={market} 失败: {e}")
         db.rollback()
         return {"market": market, "checked": 0, "changed": 0, "rows": [], "error": str(e)}
@@ -138,9 +139,9 @@ def calibrate_factor_weights(
 
 
 def calibrate_all_markets(*, db=None, **kwargs) -> dict[str, dict]:
-    """对所有市场(CN/HK/US)各跑一轮因子标定;供调度器每日 outcome 评估后调用。
+    """Chạy một vòng chuẩn định nhân tố cho mọi thị trường (CN/HK/US); cho bộ lập lịch gọi sau khi hậu kiểm outcome hằng ngày.
 
-    kwargs 透传给 calibrate_factor_weights(alpha/beta/clamp/min_samples/horizon/days)。
+    kwargs chuyển thẳng cho calibrate_factor_weights (alpha/beta/clamp/min_samples/horizon/days).
     """
     own = db is None
     db = db or SessionLocal()

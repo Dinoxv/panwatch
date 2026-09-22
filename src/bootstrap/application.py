@@ -1,8 +1,9 @@
-"""PanWatch 的 ASGI 应用装配根。
+"""Gốc lắp ráp ứng dụng ASGI của PanWatch.
 
-这里是进程启动时唯一创建 :class:`fastapi.FastAPI` 实例的位置。它只连接
-HTTP 中间件、认证依赖和各模块 router；具体业务规则仍由 ``modules`` 与
-``platform`` 承担，避免把应用入口演变成新的通用业务层。
+Đây là chỗ duy nhất tạo thực thể :class:`fastapi.FastAPI` lúc tiến trình khởi động. Nó chỉ
+nối middleware HTTP, phụ thuộc xác thực và router của từng module; quy tắc nghiệp vụ cụ
+thể vẫn do ``modules`` và ``platform`` gánh, tránh để lối vào ứng dụng biến thành một tầng
+nghiệp vụ dùng chung mới.
 """
 
 from fastapi import Depends, FastAPI, Request
@@ -49,7 +50,7 @@ from src.web.response import ResponseWrapperMiddleware
 app = FastAPI(
     title="PanWatch API",
     version="0.1.0",
-    redirect_slashes=False,  # 避免重定向丢失 Authorization header
+    redirect_slashes=False,  # Tránh chuyển hướng làm mất header Authorization
 )
 
 app.add_middleware(ResponseWrapperMiddleware)
@@ -61,12 +62,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 认证路由（无需登录）
+# Route xác thực (không cần đăng nhập)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# 市场指数（公共数据，无需登录）
+# Chỉ số thị trường (dữ liệu công khai, không cần đăng nhập)
 app.include_router(market.router, prefix="/api/market", tags=["market"])
 
-# 需要登录的路由
+# Các route bắt buộc đăng nhập
 protected = [Depends(get_current_user)]
 app.include_router(
     stocks.router, prefix="/api/stocks", tags=["stocks"], dependencies=protected
@@ -198,12 +199,12 @@ app.include_router(
 
 
 app.router.on_startup.append(assistant_task_runner.recover_pending)
-# PAT 管理(需登录):创建/列出/吊销 MCP 用的个人访问令牌
+# Quản lý PAT (cần đăng nhập): tạo / liệt kê / thu hồi mã truy cập cá nhân dùng cho MCP
 app.include_router(
     pats.router, prefix="/api/pats", tags=["pats"], dependencies=protected
 )
-# MCP Server:挂在顶层 /mcp(不在 /api/ 下,绕开响应包装中间件保证 JSON-RPC 原样),
-# 自带 PAT 鉴权,不走登录 JWT
+# MCP Server: gắn ở cấp cao nhất /mcp (không nằm dưới /api/, đi vòng qua middleware bọc phản hồi để giữ nguyên dạng JSON-RPC),
+# tự mang xác thực PAT, không dùng JWT đăng nhập
 app.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 
 
@@ -213,11 +214,12 @@ app.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
     include_in_schema=False,
 )
 def oauth_protected_resource_metadata(request: Request, _resource_path: str = ""):
-    """RFC 9728 元数据:MCP 客户端握手前会探测此端点决定鉴权方式。
+    """Siêu dữ liệu RFC 9728: máy khách MCP dò điểm cuối này trước khi bắt tay để quyết cách xác thực.
 
-    PanWatch 用静态 PAT(无 OAuth server),返回 authorization_servers=[] +
-    bearer_methods_supported=["header"],告诉客户端直接用 Authorization Bearer。
-    即便不用 OAuth 此端点也必须存在,否则客户端拿到 404 会因 schema 不匹配报错。
+    PanWatch dùng PAT tĩnh (không có OAuth server), trả về authorization_servers=[] +
+    bearer_methods_supported=["header"], bảo máy khách dùng thẳng Authorization Bearer.
+    Dù không dùng OAuth thì điểm cuối này vẫn phải có, nếu không máy khách nhận 404 sẽ báo
+    lỗi vì schema không khớp.
     """
     base = str(request.base_url).rstrip("/")
     return {
@@ -234,5 +236,5 @@ async def health():
 
 @app.get("/api/version")
 async def version():
-    """获取应用版本号（公开接口）"""
+    """Lấy số phiên bản của ứng dụng (giao diện công khai)"""
     return {"version": get_app_version()}

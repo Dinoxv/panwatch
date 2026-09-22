@@ -63,7 +63,7 @@ def _exec_ok(db, name, args):
     return _inner()
 
 
-# ── 意图识别 ────────────────────────────────────────────────────────────
+# ── Nhận diện ý định ───────────────────────────────────────────────────
 def test_should_use_planning_hits():
     """命中触发词 → 走计划驱动"""
     assert should_use_planning("帮我全面诊断我的持仓")
@@ -77,7 +77,7 @@ def test_should_use_planning_miss():
     assert not should_use_planning("")
 
 
-# ── 计划解析容错 ──────────────────────────────────────────────────────────
+# ── Bóc kế hoạch có khả năng chịu lỗi ──────────────────────────────────
 def test_parse_plan_plain_list():
     """纯 JSON 列表"""
     steps = parse_plan('[{"title":"A","action":"portfolio_risk"}]')
@@ -117,7 +117,7 @@ def test_normalize_steps_filters_summarize_and_assigns_ids():
     assert all(s["action"] != "summarize" for s in steps)
 
 
-# ── 编排:正常 / 重规划 / 降级 ────────────────────────────────────────────
+# ── Điều phối: bình thường / lập lại kế hoạch / hạ cấp ─────────────────
 def test_run_diagnosis_happy_path():
     """正常:生成计划 → 逐步执行 → 流式汇总,plan 事件推进到 done"""
     plan = '{"steps":[{"title":"组合整体风险","action":"portfolio_risk"}]}'
@@ -126,18 +126,18 @@ def test_run_diagnosis_happy_path():
 
     summary = asyncio.run(run_portfolio_diagnosis(None, stream, ai, _exec_ok))
 
-    assert summary == "诊断完"  # 流式 token 拼接
+    assert summary == "诊断完"  # Ghép token theo luồng
     plans = stream.plan_events()
     assert plans[0]["status"] == "planning"
     assert plans[-1]["status"] == "done"
-    # 最终步骤全部完成
+    # Toàn bộ bước cuối đã hoàn tất
     assert all(s["status"] == "done" for s in plans[-1]["steps"])
     assert stream.tokens() == "诊断完"
 
 
 def test_run_diagnosis_replan_on_step_failure():
     """步骤失败 → 重规划一次 → 用新计划继续"""
-    # 初始计划:analyze_stock(会因 get_technical_analysis 抛错而失败)
+    # Kế hoạch ban đầu: analyze_stock (sẽ thất bại vì get_technical_analysis ném lỗi)
     plan = '{"steps":[{"title":"分析茅台","action":"analyze_stock","params":{"symbol":"600519"}}]}'
     replan = '{"steps":[{"title":"改为组合风险","action":"portfolio_risk"}]}'
     ai = FakeAI(multi_queue=[plan, replan, "组合风险结果"])
@@ -160,9 +160,9 @@ def test_run_diagnosis_replan_on_step_failure():
     summary = asyncio.run(run_portfolio_diagnosis(None, stream, ai, _exec))
 
     assert summary == "诊断完"
-    # 触发过重规划(plan+replan+step 共 3 次 chat_multi)
+    # Đã kích hoạt việc lập lại kế hoạch (plan + replan + step, tổng 3 lần gọi chat_multi)
     assert ai.multi_calls == 3
-    # 最终计划里出现重规划后的步骤且已完成
+    # Kế hoạch cuối có bước sinh ra sau khi lập lại và bước đó đã hoàn tất
     final_steps = stream.plan_events()[-1]["steps"]
     assert any("组合风险" in s["title"] and s["status"] == "done" for s in final_steps)
 
@@ -177,7 +177,7 @@ def test_run_diagnosis_degrades_when_plan_generation_fails():
     assert summary == "诊断完"
     plans = stream.plan_events()
     assert plans[-1]["status"] == "done"
-    # 默认计划只有组合风险一步
+    # Kế hoạch mặc định chỉ có một bước là rủi ro danh mục
     assert len(plans[-1]["steps"]) == 1
 
 

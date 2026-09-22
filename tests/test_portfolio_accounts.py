@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.platform.persistence.database import Base
-from src.platform.persistence.models import Account, Position, Stock  # noqa: F401 - 注册关系模型
+from src.platform.persistence.models import Account, Position, Stock  # noqa: F401 - đăng ký mô hình quan hệ
 
 
 def test_delete_position_logs_relationship_names_before_commit():

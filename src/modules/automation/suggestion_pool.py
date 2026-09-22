@@ -1,4 +1,4 @@
-"""建议池管理 - 汇总各 Agent 建议"""
+"""Quản lý kho khuyến nghị - gom khuyến nghị của các Agent"""
 
 import logging
 from datetime import datetime, timedelta
@@ -28,15 +28,15 @@ def _dedupe_window_minutes(agent_name: str) -> int:
     return 180
 
 
-# Agent 有效期配置（小时）
+# Cấu hình thời hạn hiệu lực của Agent (giờ)
 AGENT_EXPIRY_HOURS = {
-    "premarket_outlook": 12,  # 盘前建议当日有效（约12小时）
-    "intraday_monitor": 6,  # 盘中建议6小时有效
-    "daily_report": 16,  # 盘后建议隔夜有效（到次日开盘，约16小时）
-    "news_digest": 12,  # 新闻速递建议半天有效
+    "premarket_outlook": 12,  # Khuyến nghị trước phiên có hiệu lực trong ngày (khoảng 12 giờ)
+    "intraday_monitor": 6,  # Khuyến nghị trong phiên có hiệu lực 6 giờ
+    "daily_report": 16,  # Khuyến nghị sau phiên có hiệu lực qua đêm (tới lúc mở cửa phiên sau, khoảng 16 giờ)
+    "news_digest": 12,  # Khuyến nghị từ bản tin nhanh có hiệu lực nửa ngày
 }
 
-# Agent 中文名称映射
+# Ánh xạ tên hiển thị của Agent
 AGENT_LABELS = {
     "premarket_outlook": "盘前分析",
     "intraday_monitor": "盘中监测",
@@ -60,41 +60,41 @@ def save_suggestion(
     meta: dict | None = None,
 ) -> bool:
     """
-    保存 Agent 建议到建议池
+    Lưu khuyến nghị của Agent vào kho khuyến nghị
 
     Args:
-        stock_symbol: 股票代码
-        stock_name: 股票名称
-        action: 操作类型 (buy/add/reduce/sell/hold/watch/alert/avoid)
-        action_label: 操作中文标签
-        agent_name: Agent 名称
-        signal: 信号描述
-        reason: 建议理由
-        agent_label: Agent 中文名称（可选，自动推断）
-        expires_hours: 过期时间（小时），不指定则使用默认配置
-        prompt_context: Prompt 上下文摘要
-        ai_response: AI 原始响应
+        stock_symbol: mã cổ phiếu
+        stock_name: tên cổ phiếu
+        action: loại thao tác (buy/add/reduce/sell/hold/watch/alert/avoid)
+        action_label: nhãn hiển thị của thao tác
+        agent_name: tên Agent
+        signal: mô tả tín hiệu
+        reason: lý do khuyến nghị
+        agent_label: tên hiển thị của Agent (tùy chọn, tự suy ra)
+        expires_hours: thời gian hết hạn (giờ), không truyền thì dùng cấu hình mặc định
+        prompt_context: tóm tắt ngữ cảnh Prompt
+        ai_response: phản hồi gốc của AI
 
     Returns:
-        是否保存成功
+        lưu thành công hay không
     """
     db = SessionLocal()
     try:
         market = (stock_market or "CN").strip().upper() or "CN"
 
-        # 计算过期时间（使用 UTC）
+        # Tính thời điểm hết hạn (theo UTC)
         if expires_hours is None:
             expires_hours = AGENT_EXPIRY_HOURS.get(agent_name, 8)
 
         now = utc_now()
         expires_at = now + timedelta(hours=expires_hours)
 
-        # Agent 标签
+        # Nhãn Agent
         if not agent_label:
             agent_label = AGENT_LABELS.get(agent_name, agent_name)
 
         # Dedupe: if the latest suggestion from the same agent is essentially the same,
-        # do not create a new row. This prevents "AI 建议反复" in the UI.
+        # do not create a new row. This prevents "khuyến nghị AI nhảy qua nhảy lại" in the UI.
         try:
             latest = (
                 db.query(StockSuggestion)
@@ -165,7 +165,7 @@ def save_suggestion(
             # Best-effort only; never block saving.
             db.rollback()
 
-        # 创建新建议
+        # Tạo khuyến nghị mới
         suggestion = StockSuggestion(
             stock_symbol=stock_symbol,
             stock_market=market,
@@ -177,8 +177,8 @@ def save_suggestion(
             agent_name=agent_name,
             agent_label=agent_label,
             expires_at=expires_at,
-            prompt_context=prompt_context[:2000] if prompt_context else "",  # 限制长度
-            ai_response=ai_response[:2000] if ai_response else "",  # 限制长度
+            prompt_context=prompt_context[:2000] if prompt_context else "",  # Giới hạn độ dài
+            ai_response=ai_response[:2000] if ai_response else "",  # Giới hạn độ dài
             meta=to_jsonable(meta or {}),
         )
         db.add(suggestion)
@@ -202,15 +202,15 @@ def get_suggestions_for_stock(
     limit: int = 10,
 ) -> list[dict]:
     """
-    获取某只股票的建议列表
+    Lấy danh sách khuyến nghị của một mã
 
     Args:
-        stock_symbol: 股票代码
-        include_expired: 是否包含已过期建议
-        limit: 返回数量限制
+        stock_symbol: mã cổ phiếu
+        include_expired: có lấy cả khuyến nghị đã hết hạn không
+        limit: giới hạn số bản ghi trả về
 
     Returns:
-        建议列表，按时间倒序
+        danh sách khuyến nghị, xếp theo thời gian giảm dần
     """
     db = SessionLocal()
     try:
@@ -243,11 +243,11 @@ def get_latest_suggestions(
     include_expired: bool = False,
 ) -> dict[str, dict]:
     """
-    获取所有股票的最新建议（每只股票只返回最新的一条）
+    Lấy khuyến nghị mới nhất của mọi mã (mỗi mã chỉ trả về bản mới nhất)
 
     Args:
-        stock_symbols: 股票代码列表，None 表示所有
-        include_expired: 是否包含已过期建议
+        stock_symbols: danh sách mã cổ phiếu, None nghĩa là tất cả
+        include_expired: có lấy cả khuyến nghị đã hết hạn không
 
     Returns:
         {symbol: suggestion_dict}
@@ -317,13 +317,13 @@ def get_latest_suggestions(
 
 
 def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dict:
-    """将 StockSuggestion 转换为字典（时间使用 ISO 格式带时区）"""
+    """Đổi StockSuggestion sang dict (thời gian dùng định dạng ISO kèm múi giờ)"""
     if now is None:
         now = utc_now()
 
     is_expired = False
     if suggestion.expires_at:
-        # 确保比较时都使用 UTC
+        # Bảo đảm mọi phép so sánh đều theo UTC
         expires_utc = suggestion.expires_at
         if expires_utc.tzinfo is None:
             from src.platform.scheduling.timezone import timezone
@@ -331,7 +331,7 @@ def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dic
             expires_utc = expires_utc.replace(tzinfo=timezone.utc)
         is_expired = expires_utc < now
 
-    # 转换时间为带时区的 ISO 格式
+    # Chuyển thời gian sang định dạng ISO có múi giờ
     created_at_str = None
     if suggestion.created_at:
         created_at = suggestion.created_at
@@ -374,13 +374,13 @@ def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dic
 
 def cleanup_expired_suggestions(days: int = 7) -> int:
     """
-    清理过期的建议记录
+    Dọn các bản ghi khuyến nghị đã hết hạn
 
     Args:
-        days: 清理多少天前的记录
+        days: dọn bản ghi cũ hơn bao nhiêu ngày
 
     Returns:
-        删除的记录数
+        số bản ghi đã xóa
     """
     db = SessionLocal()
     try:

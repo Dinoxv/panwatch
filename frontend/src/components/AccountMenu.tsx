@@ -12,26 +12,26 @@ export interface AccountNavItem {
 }
 
 const THEME_OPTIONS: { value: ThemeMode; icon: LucideIcon; label: string }[] = [
-  { value: 'light', icon: Sun, label: '亮色' },
-  { value: 'dark', icon: Moon, label: '暗色' },
-  { value: 'system', icon: Monitor, label: '跟随系统' },
+  { value: 'light', icon: Sun, label: 'Sáng' },
+  { value: 'dark', icon: Moon, label: 'Tối' },
+  { value: 'system', icon: Monitor, label: 'Theo hệ thống' },
 ]
 
 interface AccountMenuProps {
-  /** 原“更多”里折叠的导航项(Agent / 历史 / 数据源 / 设置)。 */
+  /** Các mục điều hướng vốn gập trong "Thêm" (Agent / Lịch sử / Nguồn dữ liệu / Cài đặt). */
   navItems: AccountNavItem[]
   mode: ThemeMode
   onSetMode: (m: ThemeMode) => void
-  /** 打开「系统自检」弹窗(状态由上层 App 托管,避免桌面/移动两个实例重复)。 */
+  /** Mở hộp thoại «Tự kiểm hệ thống» (trạng thái do App tầng trên giữ, tránh dựng trùng hai bản desktop/di động). */
   onOpenSelfCheck: () => void
-  /** 头像尺寸:桌面 md,移动端 sm。 */
+  /** Cỡ ảnh đại diện: desktop md, di động sm. */
   size?: 'sm' | 'md'
 }
 
 /**
- * 右上角头像区域 + 下拉菜单(参考 beecount-cloud):
- * 把原“更多”导航、主题色(亮/暗/跟随系统)、退出登录收进头像下拉
- * (查看日志 / GitHub 仍在外侧)。
+ * Vùng ảnh đại diện góc trên phải + menu xổ xuống (tham khảo beecount-cloud):
+ * gom điều hướng "Thêm", màu giao diện (sáng/tối/theo hệ thống) và đăng xuất vào
+ * menu xổ xuống của ảnh đại diện (Xem nhật ký / GitHub vẫn để ngoài).
  */
 export default function AccountMenu({
   navItems,
@@ -44,12 +44,12 @@ export default function AccountMenu({
   const ref = useRef<HTMLDivElement | null>(null)
   const location = useLocation()
   const avatar = useAvatar()
-  // 仅在支持 hover 的设备(PC)启用悬停展开;触屏维持点击
+  // Chỉ bật mở theo rê chuột trên thiết bị có hover (PC); màn cảm ứng vẫn dùng chạm
   const [canHover] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches,
   )
 
-  // 点击外部关闭
+  // Bấm ra ngoài thì đóng
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
       if (open && ref.current && !ref.current.contains(e.target as Node)) {
@@ -60,7 +60,7 @@ export default function AccountMenu({
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open])
 
-  // 路由变化时关闭
+  // Đổi route thì đóng
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
@@ -80,21 +80,21 @@ export default function AccountMenu({
         className={`${avatarSize} rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm ring-1 transition-all ${
           open ? 'ring-primary/50' : 'ring-border/40 hover:ring-primary/40'
         }`}
-        title="账户与设置"
-        aria-label="账户与设置"
+        title="Tài khoản và cài đặt"
+        aria-label="Tài khoản và cài đặt"
       >
         {avatar ? (
-          <img src={avatar} alt="头像" className="w-full h-full object-cover" />
+          <img src={avatar} alt="Ảnh đại diện" className="w-full h-full object-cover" />
         ) : (
           <User className={`${iconSize} text-white`} />
         )}
       </button>
 
       {open && (
-        // top-full + pt-2:用透明内边距桥接头像与菜单,hover 移入不断开
+        // top-full + pt-2: lấy đệm trong suốt nối ảnh đại diện với menu, rê chuột vào không bị đứt
         <div className="absolute right-0 top-full pt-2 z-50">
           <div className="w-48 rounded-xl border border-border/60 bg-card/95 backdrop-blur p-1.5 shadow-xl">
-          {/* 原“更多”导航 */}
+          {/* Điều hướng vốn nằm trong "Thêm" */}
           {navItems.map(({ to, icon: Icon, label }) => {
             const isActive = location.pathname.startsWith(to)
             return (
@@ -116,8 +116,8 @@ export default function AccountMenu({
 
           <div className="my-1 h-px bg-border/50" />
 
-          {/* 主题色:亮 / 暗 / 跟随系统 */}
-          <div className="px-2.5 pt-0.5 pb-1 text-[11px] text-muted-foreground">主题</div>
+          {/* Màu giao diện: sáng / tối / theo hệ thống */}
+          <div className="px-2.5 pt-0.5 pb-1 text-[11px] text-muted-foreground">Giao diện</div>
           {THEME_OPTIONS.map(({ value, icon: Icon, label }) => {
             const active = mode === value
             return (
@@ -138,7 +138,7 @@ export default function AccountMenu({
           })}
 
           <div className="my-1 h-px bg-border/50" />
-          {/* 系统自检:打开弹窗(逐项检查数据源/AI/通知连通性) */}
+          {/* Tự kiểm hệ thống: mở hộp thoại (soi từng mục nguồn dữ liệu/AI/thông báo còn thông không) */}
           <button
             onClick={() => {
               setOpen(false)
@@ -147,7 +147,7 @@ export default function AccountMenu({
             className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
           >
             <Stethoscope className="w-3.5 h-3.5" />
-            系统自检
+            Tự kiểm hệ thống
           </button>
 
           {isAuthenticated() && (
@@ -158,7 +158,7 @@ export default function AccountMenu({
                 className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                退出登录
+                Đăng xuất
               </button>
             </>
           )}

@@ -1,4 +1,4 @@
-"""盘中监测 Agent - 实时监控持仓，AI 判断是否需要提醒"""
+"""Agent theo dõi trong phiên - giám sát vị thế thời gian thực, để AI xét có cần cảnh báo không"""
 
 import json
 import logging
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_market_trading(market: MarketCode) -> bool:
-    """按市场判断是否在交易时段。"""
+    """Xét theo thị trường xem có đang trong giờ giao dịch không."""
     market_def = MARKETS.get(market)
     if not market_def:
         return False
@@ -41,14 +41,14 @@ def market_label(market: MarketCode) -> str:
     return market.value
 
 
-# 标准化操作建议
+# Chuẩn hóa khuyến nghị hành động
 SUGGESTION_TYPES = {
-    "建仓": "buy",  # 新开仓位
-    "加仓": "add",  # 增加现有仓位
-    "减仓": "reduce",  # 减少仓位
-    "清仓": "sell",  # 全部卖出
-    "持有": "hold",  # 维持现状
-    "观望": "watch",  # 暂不操作
+    "建仓": "buy",  # Mở vị thế mới
+    "加仓": "add",  # Gia tăng vị thế đang có
+    "减仓": "reduce",  # Giảm bớt vị thế
+    "清仓": "sell",  # Bán toàn bộ
+    "持有": "hold",  # Giữ nguyên hiện trạng
+    "观望": "watch",  # Tạm thời chưa hành động
 }
 
 PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "intraday_monitor.txt"
@@ -56,13 +56,13 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "intraday
 
 class IntradayMonitorAgent(BaseAgent):
     """
-    盘中监测 Agent
+    Agent theo dõi trong phiên
 
-    特点：
-    - 单只模式 (single): 逐只股票分析，每只单独发送通知
-    - AI 智能判断: 把股票数据发给 AI，由 AI 决定是否值得提醒
-    - 通知节流: 同一股票短时间内不重复通知
-    - 技术分析: 包含 K 线和技术指标
+    Đặc điểm:
+    - Chế độ từng mã (single): phân tích lần lượt, mỗi mã gửi thông báo riêng
+    - AI tự xét: đưa dữ liệu mã cho AI, để AI quyết định có đáng cảnh báo không
+    - Tiết lưu thông báo: cùng một mã trong thời gian ngắn không báo lặp
+    - Phân tích kỹ thuật: gồm nến và chỉ báo kỹ thuật
     """
 
     name = "intraday_monitor"
@@ -82,13 +82,13 @@ class IntradayMonitorAgent(BaseAgent):
     ):
         """
         Args:
-            throttle_minutes: 同一股票通知间隔（分钟）
-            bypass_throttle: 是否跳过节流（测试用）
-            bypass_market_hours: 是否跳过交易时段门禁（仅手动分析场景）
-            price_alert_threshold: 涨跌幅超过阈值视为价格异动（%）
-            volume_alert_ratio: 量比超过阈值视为放量异动
-            stop_loss_warning: 浮亏超过阈值触发止损预警（%）
-            take_profit_warning: 浮盈超过阈值触发止盈提醒（%）
+            throttle_minutes: khoảng cách thông báo cho cùng một mã (phút)
+            bypass_throttle: có bỏ qua tiết lưu không (dùng khi test)
+            bypass_market_hours: có bỏ qua cổng giờ giao dịch không (chỉ cho tình huống phân tích tay)
+            price_alert_threshold: biên độ vượt ngưỡng thì coi là biến động giá (%)
+            volume_alert_ratio: tỷ lệ khối lượng vượt ngưỡng thì coi là bùng khối lượng bất thường
+            stop_loss_warning: lỗ tạm tính vượt ngưỡng thì cảnh báo cắt lỗ (%)
+            take_profit_warning: lãi tạm tính vượt ngưỡng thì nhắc chốt lời (%)
         """
         self.throttle_minutes = throttle_minutes
         self.bypass_throttle = bypass_throttle
@@ -100,18 +100,18 @@ class IntradayMonitorAgent(BaseAgent):
         self.take_profit_warning = take_profit_warning
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集实时行情 + K线 + 历史分析"""
+        """Thu thập bảng giá thời gian thực + nến + phân tích lịch sử"""
         if not context.watchlist:
             logger.warning("自选股列表为空，跳过盘中监测")
             return {"stocks": [], "stock_data": None}
 
-        # SignalPack: 统一结构化输入（quote/technical/position）
+        # SignalPack: đầu vào có cấu trúc thống nhất (quote/technical/position)
         stock_config = context.watchlist[0] if context.watchlist else None
         market = stock_config.market if stock_config else MarketCode.CN
         symbol = stock_config.symbol if stock_config else ""
         name = stock_config.name if stock_config else symbol
 
-        # 按股票所属市场做交易时段门禁（而非全局任一市场开盘）
+        # Chặn theo giờ giao dịch của đúng thị trường mà mã thuộc về (chứ không phải hễ có một thị trường nào mở là cho qua)
         if not self.bypass_market_hours and not is_market_trading(market):
             msg = f"当前{market_label(market)}非交易时段，已跳过执行"
             logger.info(f"{msg}: {symbol}")
@@ -152,7 +152,7 @@ class IntradayMonitorAgent(BaseAgent):
 
         kline_summary = pack.technical if pack else None
 
-        # 获取历史分析（为 AI 提供更多上下文）
+        # Lấy phân tích lịch sử (cấp thêm ngữ cảnh cho AI)
         daily_analysis = get_latest_analysis(
             agent_name="daily_report",
             stock_symbol="*",
@@ -179,10 +179,10 @@ class IntradayMonitorAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建盘中分析 Prompt"""
+        """Dựng Prompt phân tích trong phiên"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
@@ -195,14 +195,14 @@ class IntradayMonitorAgent(BaseAgent):
         if not stock:
             return system_prompt, "无股票数据"
 
-        # 获取所有账户的持仓信息
+        # Lấy thông tin vị thế của mọi tài khoản
         positions = context.portfolio.get_positions_for_stock(stock.symbol)
         style_labels = {"short": "短线", "swing": "波段", "long": "长线"}
 
         lines = []
         lines.append(f"## 时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
 
-        # 股票行情
+        # Giá cổ phiếu
         current_price = safe_num(stock.current_price)
         change_pct = safe_num(stock.change_pct)
         change_amount = safe_num(stock.change_amount)
@@ -227,8 +227,8 @@ class IntradayMonitorAgent(BaseAgent):
         if turnover > 0:
             lines.append(f"- 成交额：{turnover / 10000:.0f} 万")
 
-        # 系统阈值（帮助 AI 做出更稳定的“提醒/不提醒”判断）
-        # 价格异动改为相对个股自身波动率(ATR%)的自适应阈值,固定阈值作为下限/兜底。
+        # Ngưỡng hệ thống (giúp AI quyết định “cảnh báo / không cảnh báo” ổn định hơn)
+        # Biến động giá chuyển sang ngưỡng thích ứng theo chính độ biến động của mã (ATR%), ngưỡng cố định chỉ làm cận dưới / dự phòng.
         from src.modules.strategy.intraday_event_gate import (
             DEFAULT_ATR_K,
             adaptive_price_threshold,
@@ -303,12 +303,12 @@ class IntradayMonitorAgent(BaseAgent):
             if kline_history.get("breakout_state") and kline_history.get("breakout_state") != "none":
                 lines.append(f"- 突破状态：{kline_history.get('breakout_state')}")
 
-        # K 线和技术指标
+        # Nến và chỉ báo kỹ thuật
         kline = data.get("kline_summary")
         if kline and not kline.get("error"):
             lines.append("\n## 技术分析")
 
-            # 基础趋势
+            # Xu hướng cơ sở
             lines.append(f"- 趋势：{kline.get('trend', 'N/A')}")
             lines.append(
                 f"- 近5日：{kline.get('recent_5_up', 0)}涨{5 - kline.get('recent_5_up', 0)}跌"
@@ -341,7 +341,7 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- KDJ：K={kdj_k:.1f} D={kdj_d:.1f} J={kdj_j:.1f}（{kdj_status}）"
                 )
 
-            # 布林带
+            # Dải Bollinger
             boll_status = kline.get("boll_status")
             boll_upper, boll_lower = kline.get("boll_upper"), kline.get("boll_lower")
             if boll_status and boll_upper is not None:
@@ -349,7 +349,7 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- 布林带：上轨={format_num(boll_upper)} 下轨={format_num(boll_lower)}（{boll_status}）"
                 )
 
-            # 量能
+            # Sức khối lượng
             volume_trend = kline.get("volume_trend")
             volume_ratio = kline.get("volume_ratio")
             if volume_trend:
@@ -363,7 +363,7 @@ class IntradayMonitorAgent(BaseAgent):
                     )
                     lines.append(f"- 量比阈值判断：{vol_hit}")
 
-            # 波动率（ATR）：个股自身波动基准，用于判断"异动 vs 正常波动"
+            # Độ biến động (ATR): mốc dao động của chính mã đó, dùng để phân biệt "biến động bất thường vs dao động bình thường"
             atr_val = kline.get("atr")
             atr_pct_val = kline.get("atr_pct")
             if atr_pct_val is not None:
@@ -379,12 +379,12 @@ class IntradayMonitorAgent(BaseAgent):
                 )
                 lines.append(f"- {atr_line}")
 
-            # 均线
+            # Đường trung bình
             lines.append(
                 f"- MA5：{format_num(kline.get('ma5'))} | MA10：{format_num(kline.get('ma10'))} | MA20：{format_num(kline.get('ma20'))} | MA60：{format_num(kline.get('ma60'))}"
             )
 
-        # 资金流向（仅A股，若可用）
+        # Dòng tiền (chỉ cổ phiếu A, nếu có dữ liệu)
         pack = data.get("signal_pack")
         flow = getattr(pack, "capital_flow", None) if pack else None
         if (
@@ -410,7 +410,7 @@ class IntradayMonitorAgent(BaseAgent):
             except Exception:
                 pass
 
-            # 多级支撑压力
+            # Hỗ trợ / kháng cự nhiều tầng
             support_m, resistance_m = kline.get("support_m"), kline.get("resistance_m")
             if support_m and resistance_m:
                 lines.append(
@@ -423,12 +423,12 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- 短期支撑：{format_num(support_s)} | 短期压力：{format_num(resistance_s)}"
                 )
 
-            # K线形态
+            # Mẫu hình nến
             kline_pattern = kline.get("kline_pattern")
             if kline_pattern:
                 lines.append(f"- K线形态：{kline_pattern}")
 
-            # 振幅
+            # Biên dao động
             amplitude = kline.get("amplitude")
             amplitude_avg5 = kline.get("amplitude_avg5")
             if amplitude is not None:
@@ -437,7 +437,7 @@ class IntradayMonitorAgent(BaseAgent):
                     amp_info += f"（5日平均：{amplitude_avg5:.2f}%）"
                 lines.append(f"- {amp_info}")
 
-        # 账户资金情况
+        # Tình hình vốn của tài khoản
         lines.append(f"\n## 账户资金")
         lines.append(f"- 总可用资金：{context.portfolio.total_available_funds:.0f} 元")
         for acc in context.portfolio.accounts:
@@ -455,7 +455,7 @@ class IntradayMonitorAgent(BaseAgent):
             if memory.get("latest_history_topic"):
                 lines.append(f"- 历史记忆主题：{memory.get('latest_history_topic')}")
 
-        # 各账户持仓信息
+        # Thông tin vị thế của từng tài khoản
         if positions:
             lines.append(f"\n## 持仓情况（共 {len(positions)} 个账户）")
             for i, pos in enumerate(positions, 1):
@@ -467,7 +467,7 @@ class IntradayMonitorAgent(BaseAgent):
                 )
                 style_label = style_labels.get(pos.trading_style, "波段")
                 market_value = current_price * pos.quantity
-                # 找到对应账户的可用资金
+                # Tìm tiền khả dụng của đúng tài khoản tương ứng
                 acc_funds = 0
                 for acc in context.portfolio.accounts:
                     if acc.id == pos.account_id:
@@ -490,7 +490,7 @@ class IntradayMonitorAgent(BaseAgent):
             lines.append("\n## 未持仓（仅关注）")
             lines.append(f"- 可用资金充足，可考虑建仓")
 
-        # 历史分析上下文（帮助 AI 做出更好的判断）
+        # Ngữ cảnh từ phân tích lịch sử (giúp AI phán đoán tốt hơn)
         daily_analysis = data.get("daily_analysis")
         premarket_analysis = data.get("premarket_analysis")
 
@@ -498,7 +498,7 @@ class IntradayMonitorAgent(BaseAgent):
             lines.append("\n## 历史分析参考")
 
             if daily_analysis:
-                # 截取与当前股票相关的部分（最多 300 字）
+                # Cắt lấy phần liên quan tới mã đang xét (tối đa 300 chữ)
                 content = (
                     daily_analysis[:300] + "..."
                     if len(daily_analysis) > 300
@@ -523,12 +523,12 @@ class IntradayMonitorAgent(BaseAgent):
 
     def _parse_suggestion(self, content: str) -> dict:
         """
-        从 AI 响应中解析操作建议
+        Đọc khuyến nghị thao tác từ phản hồi của AI
 
         Returns:
             {
                 "action": "hold",  # buy/add/reduce/sell/hold/watch
-                "action_label": "持有",
+                "action_label": "Nắm giữ",
                 "signal": "...",
                 "reason": "...",
                 "should_alert": True
@@ -573,21 +573,21 @@ class IntradayMonitorAgent(BaseAgent):
             )
             return result
 
-        # 检查是否无需提醒
+        # Kiểm tra xem có thuộc diện không cần cảnh báo không
         if "[无需提醒]" in content:
             result["should_alert"] = False
             result["action"] = "hold"
             result["action_label"] = "持有"
             return result
 
-        # 提取建议类型（从全文搜索）
+        # Bóc loại khuyến nghị (tìm trong toàn văn)
         for label, action in SUGGESTION_TYPES.items():
             if label in content:
                 result["action"] = action
                 result["action_label"] = label
                 break
 
-        # 提取信号（支持多种格式）
+        # Bóc tín hiệu (hỗ trợ nhiều định dạng)
         signal_patterns = [
             r"「信号」\s*[:：]?\s*(.+?)(?=「|$|\n\n)",
             r"\*\*信号\*\*\s*[:：]?\s*(.+?)(?=\*\*|$|\n\n)",
@@ -599,7 +599,7 @@ class IntradayMonitorAgent(BaseAgent):
                 result["signal"] = match.group(1).strip()[:50]
                 break
 
-        # 提取建议内容（支持多种格式）
+        # Bóc nội dung khuyến nghị (hỗ trợ nhiều định dạng)
         suggest_patterns = [
             r"「建议」\s*[:：]?\s*(.+?)(?=「|$|\n\n)",
             r"\*\*建议\*\*\s*[:：]?\s*(.+?)(?=\*\*|$|\n\n)",
@@ -609,18 +609,18 @@ class IntradayMonitorAgent(BaseAgent):
             match = re.search(pattern, content, re.DOTALL)
             if match:
                 suggest_text = match.group(1).strip()
-                # 从建议中提取操作类型
+                # Bóc loại hành động từ khuyến nghị
                 for label, action in SUGGESTION_TYPES.items():
                     if label in suggest_text:
                         result["action"] = action
                         result["action_label"] = label
                         break
-                # 如果信号为空，使用建议内容作为信号
+                # Nếu tín hiệu rỗng thì lấy luôn nội dung khuyến nghị làm tín hiệu
                 if not result["signal"]:
                     result["signal"] = suggest_text[:50]
                 break
 
-        # 提取理由（支持多种格式）
+        # Bóc lý do (hỗ trợ nhiều định dạng)
         reason_patterns = [
             r"「理由」\s*[:：]?\s*(.+?)(?=「|$|\n\n)",
             r"\*\*理由\*\*\s*[:：]?\s*(.+?)(?=\*\*|$|\n\n)",
@@ -632,30 +632,30 @@ class IntradayMonitorAgent(BaseAgent):
                 result["reason"] = match.group(1).strip()[:100]
                 break
 
-        # 如果没有提取到信号和理由，尝试使用整段内容的前部分
+        # Nếu không bóc được tín hiệu lẫn lý do thì thử lấy phần đầu của cả đoạn
         if not result["signal"] and not result["reason"]:
-            # 清理 markdown 格式后取前 100 字符
+            # Dọn định dạng markdown rồi lấy 100 ký tự đầu
             clean_content = re.sub(r"\*\*|##|#", "", content).strip()
-            # 跳过无需提醒的情况
+            # Bỏ qua các trường hợp không cần cảnh báo
             if not clean_content.startswith("[无需提醒]"):
                 result["reason"] = clean_content[:100]
 
-        # 最终 should_alert 判定：只在明确“建仓/加仓/减仓/清仓”时提醒
+        # Chốt should_alert: chỉ cảnh báo khi hành động rõ ràng là “mở vị thế / gia tăng / giảm bớt / thanh lý”
         result["should_alert"] = result["action"] in {"buy", "add", "reduce", "sell"}
         return result
 
     def _try_parse_loose_json(self, text: str) -> dict | None:
-        """宽松解析 JSON 输出，兜底兼容模型异常格式。"""
+        """Đọc JSON kiểu nới tay, hứng luôn các định dạng bất thường của mô hình."""
         raw = (text or "").strip()
         if not raw:
             return None
 
-        # 兼容首行 "json"
+        # Tương thích dòng đầu là "json"
         lines = raw.splitlines()
         if lines and lines[0].strip().lower() == "json":
             raw = "\n".join(lines[1:]).strip()
 
-        # 去掉 fenced code block
+        # Bỏ khối mã bao bởi dấu nháy
         if raw.startswith("```"):
             block_lines = raw.splitlines()
             if len(block_lines) >= 3 and block_lines[-1].strip().startswith("```"):
@@ -663,7 +663,7 @@ class IntradayMonitorAgent(BaseAgent):
                 if raw.lower().startswith("json\n"):
                     raw = raw[5:].strip()
 
-        # 优先直接解析，失败则提取首个 JSON 对象片段
+        # Ưu tiên phân tích trực tiếp, thất bại thì bóc mảnh đối tượng JSON đầu tiên
         try:
             obj = json.loads(raw)
         except Exception:
@@ -678,7 +678,7 @@ class IntradayMonitorAgent(BaseAgent):
         if not isinstance(obj, dict):
             return None
 
-        # 没有关键字段时不认为是建议 JSON
+        # Thiếu các trường then chốt thì không coi là JSON khuyến nghị
         keys = {"action", "action_label", "signal", "reason", "triggers", "invalidations", "risks"}
         if not any(k in obj for k in keys):
             return None
@@ -687,7 +687,7 @@ class IntradayMonitorAgent(BaseAgent):
     def _format_human_readable_content(
         self, stock: StockData, suggestion: dict, raw_content: str
     ) -> str:
-        """当模型返回 JSON 时，生成可读通知内容。"""
+        """Khi mô hình trả về JSON thì dựng nội dung thông báo cho người đọc được."""
         action_label = suggestion.get("action_label") or "观望"
         signal = suggestion.get("signal") or "无明显新信号"
         reason = suggestion.get("reason") or "请结合盘面与风控策略审慎判断。"
@@ -724,7 +724,7 @@ class IntradayMonitorAgent(BaseAgent):
         if risks:
             lines.append("风险提示：")
             lines.extend([f"- {str(x)}" for x in risks[:3]])
-        # 若本次并非纯 JSON，附上简短原文摘要便于核对
+        # Nếu lần này không phải JSON thuần thì kèm tóm tắt nguyên văn ngắn để tiện đối chiếu
         if not (try_parse_action_json(raw_content) or self._try_parse_loose_json(raw_content)):
             brief = re.sub(r"\s+", " ", (raw_content or "").strip())[:200]
             if brief:
@@ -732,8 +732,8 @@ class IntradayMonitorAgent(BaseAgent):
         return "\n".join(lines)
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """AI 分析并判断是否需要提醒"""
-        # 非交易时段跳过
+        """AI phân tích rồi xét có cần cảnh báo không"""
+        # Ngoài giờ giao dịch thì bỏ qua
         if data.get("skip_reason"):
             return AnalysisResult(
                 agent_name=self.name,
@@ -754,15 +754,15 @@ class IntradayMonitorAgent(BaseAgent):
 
         system_prompt, user_content = self.build_prompt(data, context)
 
-        # 打印完整 prompt 用于调试
+        # In toàn bộ prompt để gỡ lỗi
         logger.info(f"=== Prompt for {stock.symbol} ===\n{user_content}")
 
         raw_content = await context.ai_client.chat(system_prompt, user_content)
 
-        # 打印 AI 返回结果
+        # In kết quả AI trả về
         logger.info(f"=== AI Response for {stock.symbol} ===\n{raw_content}")
 
-        # 解析操作建议
+        # Bóc khuyến nghị hành động
         suggestion = self._parse_suggestion(raw_content)
         content = raw_content
         analysis_date = (data.get("timestamp") or "")[:10] or datetime.now().strftime(
@@ -771,11 +771,11 @@ class IntradayMonitorAgent(BaseAgent):
         quality_score = (
             (data.get("symbol_context") or {}).get("data_quality", {}).get("score")
         )
-        # JSON/类 JSON 输出时，统一转换为可读通知文本，避免渠道直接推送原始 JSON
+        # Khi đầu ra là JSON hoặc gần giống JSON thì chuyển thành văn bản thông báo đọc được, tránh đẩy JSON thô ra kênh
         if try_parse_action_json(raw_content) or self._try_parse_loose_json(raw_content):
             content = self._format_human_readable_content(stock, suggestion, raw_content)
 
-        # 保存到建议池（包含 prompt 上下文）
+        # Lưu vào kho khuyến nghị (kèm ngữ cảnh prompt)
         save_suggestion(
             stock_symbol=stock.symbol,
             stock_name=stock.name,
@@ -785,9 +785,9 @@ class IntradayMonitorAgent(BaseAgent):
             reason=suggestion.get("reason", ""),
             agent_name=self.name,
             agent_label=self.display_name,
-            expires_hours=6,  # 盘中建议 6 小时有效
-            prompt_context=user_content,  # 保存 prompt 上下文
-            ai_response=raw_content,  # 保存 AI 原始响应
+            expires_hours=6,  # Khuyến nghị trong phiên có hiệu lực 6 giờ
+            prompt_context=user_content,  # Lưu ngữ cảnh prompt
+            ai_response=raw_content,  # Lưu phản hồi gốc của AI
             stock_market=stock.market.value,
             meta={
                 "quote": {
@@ -847,14 +847,14 @@ class IntradayMonitorAgent(BaseAgent):
             quality={"score": quality_score or 0},
         )
 
-        # 构建标题
+        # Dựng tiêu đề
         title = f"【{self.display_name}】{stock.name} {stock.change_pct:+.2f}%"
 
-        # 附 AI 模型信息
+        # Kèm thông tin mô hình AI
         if context.model_label:
             content = content.rstrip() + f"\n\n---\nAI: {context.model_label}"
 
-        # 急涨/急跌联动:满足阈值时异步触发 TradingAgents 深度分析(默认关闭)
+        # Liên động khi tăng / giảm đột ngột: chạm ngưỡng thì kích hoạt bất đồng bộ phân tích chuyên sâu TradingAgents (mặc định tắt)
         try:
             from src.modules.automation.tradingagents.operations import try_auto_trigger
             try_auto_trigger(stock, source_agent=self.name)
@@ -882,12 +882,12 @@ class IntradayMonitorAgent(BaseAgent):
         )
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """检查是否需要通知"""
-        # 跳过的结果不通知
+        """Kiểm tra xem có cần thông báo không"""
+        # Kết quả bị bỏ qua thì không gửi thông báo
         if result.raw_data.get("skipped"):
             return False
 
-        # AI 判断不需要提醒
+        # AI kết luận là không cần cảnh báo
         if not result.raw_data.get("should_alert", True):
             logger.info(
                 f"AI 判断无需提醒: {result.raw_data.get('stock', {}).get('symbol')}"
@@ -902,7 +902,7 @@ class IntradayMonitorAgent(BaseAgent):
         if not symbol:
             return False
 
-        # 检查节流（测试模式可跳过）
+        # Kiểm tra giãn nhịp (chế độ kiểm thử có thể bỏ qua)
         if not self.bypass_throttle:
             if not self._check_throttle(symbol):
                 logger.info(
@@ -915,7 +915,7 @@ class IntradayMonitorAgent(BaseAgent):
         return True
 
     def _check_throttle(self, symbol: str) -> bool:
-        """检查是否可以发送通知（未被节流）"""
+        """Kiểm tra xem có gửi thông báo được không (chưa bị tiết lưu)"""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import NotifyThrottle
 
@@ -933,7 +933,7 @@ class IntradayMonitorAgent(BaseAgent):
             if not record:
                 return True
 
-            # 以 UTC 进行比较，避免容器/部署时区变化导致异常
+            # So sánh theo UTC, tránh sự cố khi múi giờ của container / môi trường triển khai thay đổi
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             threshold = now - timedelta(minutes=self.throttle_minutes)
             last = record.last_notify_at
@@ -944,7 +944,7 @@ class IntradayMonitorAgent(BaseAgent):
             db.close()
 
     def _update_throttle(self, symbol: str):
-        """更新节流记录"""
+        """Cập nhật bản ghi tiết lưu"""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import NotifyThrottle
 
@@ -961,7 +961,7 @@ class IntradayMonitorAgent(BaseAgent):
 
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             if record:
-                # 检查是否是新的一天
+                # Kiểm tra đã sang ngày mới chưa
                 if record.last_notify_at.date() < now.date():
                     record.notify_count = 1
                 else:
@@ -985,11 +985,11 @@ class IntradayMonitorAgent(BaseAgent):
         self, context: AgentContext, stock_symbol: str
     ) -> AnalysisResult | None:
         """
-        单只模式执行：只分析指定的一只股票
+        Chạy ở chế độ từng mã: chỉ phân tích đúng một mã đã chỉ định
 
-        用于实时监控场景，每只股票独立分析和通知
+        Dùng cho tình huống giám sát thời gian thực, mỗi mã phân tích và thông báo riêng
         """
-        # 过滤只保留指定股票
+        # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist
         context.config.watchlist = [
             s for s in original_watchlist if s.symbol == stock_symbol
@@ -1003,8 +1003,8 @@ class IntradayMonitorAgent(BaseAgent):
             if not data.get("stock_data"):
                 return None
 
-            # 事件门禁仅作为上下文信号，不阻断 AI 分析。
-            # 产品策略：建议持续刷新，通知再由 should_alert + throttle 控制降噪。
+            # Cổng sự kiện chỉ đóng vai trò tín hiệu ngữ cảnh, không chặn AI phân tích.
+            # Định hướng sản phẩm: khuyến nghị cứ làm mới liên tục, còn thông báo thì để should_alert + giãn nhịp lọc bớt nhiễu.
             if self.event_only:
                 try:
                     from src.modules.strategy.intraday_event_gate import check_and_update

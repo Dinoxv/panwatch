@@ -44,7 +44,7 @@ def list_channels(db: Session = Depends(get_db)):
 
 @router.get("/types")
 def list_channel_types():
-    """返回支持的渠道类型及其字段"""
+    """Trả về các loại kênh được hỗ trợ và trường của chúng"""
     return CHANNEL_TYPES
 
 
@@ -89,7 +89,7 @@ def delete_channel(channel_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{channel_id}/test")
 async def test_channel(channel_id: int, db: Session = Depends(get_db)):
-    """发送测试通知"""
+    """Gửi thông báo thử"""
     channel = db.query(NotifyChannel).filter(NotifyChannel.id == channel_id).first()
     if not channel:
         raise HTTPException(404, "通知渠道不存在")

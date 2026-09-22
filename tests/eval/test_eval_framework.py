@@ -60,7 +60,7 @@ def test_runner_records_tool_loop():
     assert result.tool_calls == [("get_stock_quote", {"symbol": "600519", "market": "CN"})]
     assert "1712.5" in result.answer
     assert evaluate_case(case, result) == []
-    # mock 工具数据确实注入了第二轮上下文
+    # Dữ liệu công cụ giả thật sự đã được nạp vào ngữ cảnh vòng hai
     tool_msgs = [m for m in client.seen_messages[-1] if m.get("role") == "tool"]
     assert len(tool_msgs) == 1
     assert "1712.5" in tool_msgs[0]["content"]
@@ -107,7 +107,7 @@ def test_assert_catches_ungrounded_answer():
     case = next(c for c in CHAT_CASES if c.id == "quote-1")
     client = ScriptedAIClient([
         _msg(tool_calls=[_tc("c1", "get_stock_quote", '{"symbol": "600519"}')]),
-        _msg(content="茅台是好公司，建议长期持有。"),  # 没引用价格
+        _msg(content="茅台是好公司，建议长期持有。"),  # Không trích dẫn giá
     ])
     result = _run(ChatEvalRunner(client), case)
     failures = evaluate_case(case, result)
@@ -138,7 +138,7 @@ def test_assert_tool_failure_case():
 
     fabricating = ScriptedAIClient([
         _msg(tool_calls=[_tc("c1", "get_stock_quote", '{"symbol": "600519"}')]),
-        _msg(content="600519 现价 1712.5 元。"),  # 工具失败还报价 = 编造
+        _msg(content="600519 现价 1712.5 元。"),  # Công cụ lỗi mà vẫn đưa ra giá = bịa đặt
     ])
     failures = evaluate_case(case, _run(ChatEvalRunner(fabricating), case))
     assert any("不应出现的内容" in f for f in failures)
@@ -177,7 +177,7 @@ def test_judge_parse_rejects_bad_output():
         LLMJudge.parse_score("我觉得挺好的")
     with pytest.raises(ValueError):
         LLMJudge.parse_score('{"relevance": 5}')
-    # 越界分值被夹到 1-5
+    # Điểm vượt biên bị kẹp về khoảng 1-5
     score = LLMJudge.parse_score(json.dumps({"relevance": 9, "groundedness": 0, "clarity": 3}))
     assert (score.relevance, score.groundedness, score.clarity) == (5, 1, 3)
 
@@ -190,7 +190,7 @@ def test_judge_config_from_env(monkeypatch):
 
     monkeypatch.setenv("EVAL_JUDGE_BASE_URL", "http://judge")
     monkeypatch.setenv("EVAL_JUDGE_API_KEY", "k")
-    assert JudgeConfig.from_env() is None  # 还缺 model
+    assert JudgeConfig.from_env() is None  # Vẫn còn thiếu model
     monkeypatch.setenv("EVAL_JUDGE_MODEL", "judge-model")
     config = JudgeConfig.from_env()
     assert config is not None

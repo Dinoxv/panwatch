@@ -1,4 +1,4 @@
-"""上下文维护调度器：后验评估 + 过期数据清理 + 机会自动刷新。"""
+"""Bộ lập lịch bảo trì ngữ cảnh: hậu kiểm + dọn dữ liệu hết hạn + tự làm mới cơ hội."""
 
 from __future__ import annotations
 
@@ -104,8 +104,8 @@ class ContextMaintenanceScheduler:
                 rebalance.get("skipped_low_sample", 0),
             )
 
-            # Phase 4 → 因子自校准闭环:把 IC/IR 接进每因子权重的轻量标定
-            # (calibrate_all_markets 内部按市场算 IC 并据此调权,不再只是记录)。
+            # Phase 4 → vòng tự hiệu chỉnh nhân tố: đấu IC/IR vào phép hiệu chỉnh nhẹ cho trọng số từng nhân tố
+            # (calibrate_all_markets tính IC theo từng thị trường rồi điều chỉnh trọng số, không còn chỉ ghi nhận).
             try:
                 from src.modules.strategy.factor_calibration import calibrate_all_markets
 
@@ -137,7 +137,7 @@ class ContextMaintenanceScheduler:
                 context_run_days=self.snapshot_retention_days,
                 outcome_days=self.outcome_retention_days,
             )
-            # deleted 是 dict,任一字段 >0 就是有清理动作
+            # deleted là dict, bất kỳ trường nào > 0 nghĩa là đã có thao tác dọn dẹp
             has_work = bool(deleted and any(deleted.values()) if isinstance(deleted, dict) else deleted)
             level = logging.INFO if has_work else logging.DEBUG
             logger.log(level, "[上下文维护] 清理完成: %s", deleted)
@@ -173,7 +173,7 @@ class ContextMaintenanceScheduler:
             strategy_eval_task,
             strategy_rebalance_task,
         )
-        # 因子自校准:须在 outcome 评估之后(IC 才新鲜),不能并进上面的 gather。
+        # Tự hiệu chỉnh nhân tố: phải chạy sau khi đánh giá outcome (IC mới tươi), không gộp vào gather phía trên được.
         from src.modules.strategy.factor_calibration import calibrate_all_markets
 
         factor_calibration_stats = await asyncio.to_thread(calibrate_all_markets)
@@ -186,7 +186,7 @@ class ContextMaintenanceScheduler:
         }
 
     async def _refresh_opportunities_job(self):
-        """定时刷新机会池（候选 + 策略信号）。全市场休市日跳过。"""
+        """Làm mới kho cơ hội theo lịch (ứng viên + tín hiệu chiến lược). Ngày cả ba thị trường nghỉ thì bỏ qua."""
         from src.platform.scheduling.trading_calendar import any_market_trading_day
 
         if not any_market_trading_day():
@@ -219,7 +219,7 @@ class ContextMaintenanceScheduler:
             self._refreshing = False
 
     async def refresh_opportunities_once(self) -> dict:
-        """手动触发一次机会刷新。"""
+        """Kích hoạt tay một lượt làm mới cơ hội."""
         with kline_source("refresh_opportunities"):
             return await asyncio.to_thread(
                 refresh_strategy_signals,
@@ -240,16 +240,17 @@ class ContextMaintenanceScheduler:
         )
 
     async def _refresh_trading_calendar_job(self):
-        """每日刷新 A 股交易日历。
+        """Làm mới lịch giao dịch cổ phiếu A hằng ngày.
 
-        日历只覆盖到当年年底,长跑实例跨年后会超出覆盖范围而降级为"只判周末",
-        因此每天凌晨拉一次。安排在各类盘前通知之前,保证当天判断用的是新日历。
+        Lịch chỉ phủ tới cuối năm hiện tại, thực thể chạy dài qua năm mới sẽ vượt phạm vi
+        phủ và hạ xuống "chỉ xét cuối tuần", nên mỗi rạng sáng kéo một lần. Xếp trước các
+        thông báo trước phiên, để hôm đó xét bằng lịch mới.
         """
         from src.platform.scheduling.trading_calendar import refresh
 
         try:
             await refresh()
-        except Exception as e:  # refresh 内部已兜异常,这里只防意外
+        except Exception as e:  # refresh đã tự bắt ngoại lệ bên trong, ở đây chỉ phòng sự cố ngoài dự kiến
             logger.exception(f"[上下文维护] 交易日历刷新异常: {e}")
 
     def start(self):
@@ -257,7 +258,7 @@ class ContextMaintenanceScheduler:
             self._evaluate_job,
             "interval",
             hours=self.eval_interval_hours,
-            jitter=120,  # 错峰,避免与 price_alert/paper_trading(60s)同刻写 SQLite
+            jitter=120,  # Lệch pha, tránh ghi SQLite cùng lúc với price_alert / paper_trading (60s)
             id="context_maintenance_evaluate",
             replace_existing=True,
             coalesce=True,
@@ -274,7 +275,7 @@ class ContextMaintenanceScheduler:
             coalesce=True,
             max_instances=1,
         )
-        # 交易日历每日刷新 —— 03:00,早于所有盘前通知
+        # Lịch giao dịch làm mới hằng ngày — 03:00, sớm hơn mọi thông báo trước phiên
         self.scheduler.add_job(
             self._refresh_trading_calendar_job,
             "cron",
@@ -286,15 +287,15 @@ class ContextMaintenanceScheduler:
             coalesce=True,
             max_instances=1,
         )
-        # 机会自动刷新 —— 09:15 盘前 / 13:30 午盘 / 22:00 晚间。
-        # 时间点按调度器时区(app_timezone,默认 Asia/Shanghai)解释,与 Agent cron 语义一致。
+        # Cơ hội tự làm mới — 09:15 trước phiên / 13:30 giữa phiên / 22:00 buổi tối.
+        # Các mốc giờ hiểu theo múi giờ của bộ lập lịch (app_timezone, mặc định Asia/Shanghai), thống nhất với ngữ nghĩa cron của Agent.
         for job_hour, job_minute in ((9, 15), (13, 30), (22, 0)):
             self.scheduler.add_job(
                 self._refresh_opportunities_job,
                 "cron",
                 hour=job_hour,
                 minute=job_minute,
-                jitter=120,  # 错峰,避免与其它调度同刻写 SQLite
+                jitter=120,  # Lệch pha, tránh ghi SQLite cùng lúc với các bộ lập lịch khác
                 id=f"context_maintenance_refresh_opportunities_{job_hour:02d}{job_minute:02d}",
                 replace_existing=True,
                 coalesce=True,

@@ -1,8 +1,8 @@
-"""股票标的清单的数据源适配器、项目级缓存与模糊搜索。
+"""Adapter nguồn dữ liệu cho danh sách mã, đệm ở cấp dự án và tìm kiếm kiểu mờ.
 
-清单可被 API、任务调度和业务模块共同使用，因此属于市场数据平台，而不是
-HTTP 层。缓存仍固定保存在项目根目录的 ``data/``，避免移动代码后悄然生成
-另一份 ``src/data`` 缓存。
+Danh sách này API, lập lịch tác vụ và các module nghiệp vụ đều dùng chung, nên nó thuộc
+nền tảng dữ liệu thị trường chứ không phải tầng HTTP. Đệm vẫn cố định nằm trong ``data/``
+ở gốc dự án, tránh việc dời mã đi rồi âm thầm sinh thêm một bản đệm ``src/data``.
 """
 import json
 import os
@@ -20,7 +20,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 CACHE_FILE = DATA_DIR / "stock_list_cache.json"
 CACHE_TTL = 86400 * 7  # 7 days
 
-# 东方财富 A 股（使用 push2delay 域名，避免重定向）
+# Cổ phiếu A trên EastMoney (dùng tên miền push2delay để tránh chuyển hướng)
 EASTMONEY_URL = "http://80.push2delay.eastmoney.com/api/qt/clist/get"
 EASTMONEY_PARAMS = {
     "po": "1",
@@ -32,36 +32,36 @@ EASTMONEY_PARAMS = {
     "fields": "f12,f14",
 }
 
-# 东方财富港股参数
+# Tham số cổ phiếu Hồng Kông của EastMoney
 EASTMONEY_HK_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2",  # 港股主板、创业板等
+    "fs": "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2",  # Sàn chính, sàn GEM... của Hồng Kông
     "fields": "f12,f14",
 }
 
-# 东方财富美股参数
+# Tham số cổ phiếu Mỹ của EastMoney
 EASTMONEY_US_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:105,m:106,m:107",  # 美股 NYSE, NASDAQ, AMEX
+    "fs": "m:105,m:106,m:107",  # Cổ phiếu Mỹ: NYSE, NASDAQ, AMEX
     "fields": "f12,f14",
 }
 
-# 东方财富北交所参数（北证A股）
+# Tham số Sở giao dịch Bắc Kinh của EastMoney (cổ phiếu A sàn Bắc Kinh)
 EASTMONEY_BJ_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:0+t:81",  # 北交所
+    "fs": "m:0+t:81",  # Sở giao dịch Bắc Kinh
     "fields": "f12,f14",
 }
 PAGE_SIZE = 100
@@ -94,7 +94,7 @@ HEADERS = {
 
 
 def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富股票列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu của Đông Tài"""
     params = {**EASTMONEY_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -104,9 +104,9 @@ def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_from_eastmoney() -> list[dict]:
-    """东方财富 A 股列表（HTTP 分页并发获取）"""
+    """Danh sách cổ phiếu A của Đông Tài (phân trang HTTP, lấy song song)"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
-        # 第一页: 获取总数
+        # Trang đầu: lấy tổng số
         params = {**EASTMONEY_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
         data = resp.json()
@@ -119,7 +119,7 @@ def _fetch_from_eastmoney() -> list[dict]:
         if total <= PAGE_SIZE:
             return stocks
 
-        # 剩余页并发获取
+        # Các trang còn lại lấy song song
         pages_needed = (total + PAGE_SIZE - 1) // PAGE_SIZE
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             futures = {pool.submit(_fetch_page, client, pn): pn for pn in range(2, pages_needed + 1)}
@@ -133,7 +133,7 @@ def _fetch_from_eastmoney() -> list[dict]:
 
 
 def _fetch_hk_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富港股列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu HK của Đông Tài"""
     params = {**EASTMONEY_HK_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -143,7 +143,7 @@ def _fetch_hk_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_hk_from_eastmoney() -> list[dict]:
-    """东方财富港股列表"""
+    """Danh sách cổ phiếu HK của Đông Tài"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         params = {**EASTMONEY_HK_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
@@ -170,7 +170,7 @@ def _fetch_hk_from_eastmoney() -> list[dict]:
 
 
 def _fetch_bj_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富北交所列表的单页"""
+    """Lấy một trang trong danh sách sàn Bắc Kinh của Đông Tài"""
     params = {**EASTMONEY_BJ_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -180,9 +180,9 @@ def _fetch_bj_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_bj_from_eastmoney() -> list[dict]:
-    """东方财富北交所列表（HTTP 分页并发获取）"""
+    """Danh sách sàn Bắc Kinh của Đông Tài (phân trang HTTP, lấy song song)"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
-        # 第一页: 获取总数
+        # Trang đầu: lấy tổng số
         params = {**EASTMONEY_BJ_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
         data = resp.json()
@@ -195,7 +195,7 @@ def _fetch_bj_from_eastmoney() -> list[dict]:
         if total <= PAGE_SIZE:
             return stocks
 
-        # 剩余页并发获取
+        # Các trang còn lại lấy song song
         pages_needed = (total + PAGE_SIZE - 1) // PAGE_SIZE
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             futures = {pool.submit(_fetch_bj_page, client, pn): pn for pn in range(2, pages_needed + 1)}
@@ -209,7 +209,7 @@ def _fetch_bj_from_eastmoney() -> list[dict]:
 
 
 def _fetch_us_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富美股列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu Mỹ của Đông Tài"""
     params = {**EASTMONEY_US_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -219,7 +219,7 @@ def _fetch_us_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_us_from_eastmoney() -> list[dict]:
-    """东方财富美股列表"""
+    """Danh sách cổ phiếu Mỹ của Đông Tài"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         params = {**EASTMONEY_US_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
@@ -246,7 +246,7 @@ def _fetch_us_from_eastmoney() -> list[dict]:
 
 
 def _fetch_from_akshare() -> list[dict]:
-    """akshare 数据源（备用，可能有 SSL 问题）"""
+    """Nguồn dữ liệu akshare (dự phòng, có thể gặp vấn đề SSL)"""
     import akshare as ak
 
     df = ak.stock_info_a_code_name()
@@ -261,10 +261,10 @@ def _fetch_from_akshare() -> list[dict]:
 
 
 def refresh_stock_list() -> list[dict]:
-    """拉取 A 股和港股列表并缓存"""
+    """Kéo danh sách cổ phiếu A và cổ phiếu HK rồi đệm lại"""
     stocks = []
 
-    # A 股: 东方财富优先，akshare 备用
+    # Cổ phiếu A: ưu tiên EastMoney, akshare là dự phòng
     try:
         cn_stocks = _fetch_from_eastmoney()
         stocks.extend(cn_stocks)
@@ -282,7 +282,7 @@ def refresh_stock_list() -> list[dict]:
         except Exception as e2:
             logger.error(f"A 股数据源获取失败: {e2}")
 
-    # 港股: 东方财富
+    # Cổ phiếu Hồng Kông: EastMoney
     try:
         hk_stocks = _fetch_hk_from_eastmoney()
         stocks.extend(hk_stocks)
@@ -290,7 +290,7 @@ def refresh_stock_list() -> list[dict]:
     except Exception as e:
         logger.warning(f"东方财富获取港股失败: {e}")
 
-    # 美股: 东方财富
+    # Cổ phiếu Mỹ: EastMoney
     try:
         us_stocks = _fetch_us_from_eastmoney()
         stocks.extend(us_stocks)
@@ -298,7 +298,7 @@ def refresh_stock_list() -> list[dict]:
     except Exception as e:
         logger.warning(f"东方财富获取美股失败: {e}")
 
-    # 北交所: 东方财富
+    # Sở giao dịch Bắc Kinh: EastMoney
     try:
         bj_stocks = _fetch_bj_from_eastmoney()
         stocks.extend(bj_stocks)
@@ -312,7 +312,7 @@ def refresh_stock_list() -> list[dict]:
 
 
 def get_stock_list() -> list[dict]:
-    """获取股票列表(优先缓存)"""
+    """Lấy danh sách mã (ưu tiên đệm)"""
     cached = _load_cache()
     if cached:
         return cached
@@ -320,9 +320,9 @@ def get_stock_list() -> list[dict]:
 
 
 def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """东方财富实时搜索 API"""
+    """API tìm kiếm thời gian thực của Đông Tài"""
     import urllib.parse
-    # 提高 count 以覆盖更多候选项（包含北交所）
+    # Nâng count để phủ thêm ứng viên (gồm cả sàn Bắc Kinh)
     url = f"https://searchapi.eastmoney.com/api/suggest/get?input={urllib.parse.quote(query)}&type=14&count={limit * 5}"
 
     try:
@@ -339,16 +339,16 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
 
     def _normalize_symbol(code: str, mkt: str) -> str:
         c = (code or "").strip().upper()
-        # 去掉可能的市场前缀/后缀，如 SH000001 / SZ000001 / BJ830799 / 00700.HK / 836239.BJ
+        # Bỏ tiền tố / hậu tố thị trường nếu có, ví dụ SH000001 / SZ000001 / BJ830799 / 00700.HK / 836239.BJ
         for p in ("SH", "SZ", "BJ", "US", "HK"):
             if c.startswith(p):
                 c = c[len(p):]
                 break
         if "." in c:
-            # 形如 00700.HK / 836239.BJ
+            # Dạng như 00700.HK / 836239.BJ
             c = c.split(".")[0]
         if mkt == "HK":
-            # 保证为 5 位代码
+            # Bảo đảm mã có 5 chữ số
             c = c.zfill(5)
         return c
 
@@ -358,7 +358,7 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
         security_type = (item.get("SecurityTypeName") or "").strip()
         code_raw = (item.get("Code") or "").strip().upper()
 
-        # 判断市场
+        # Xác định thị trường
         if (
             classify in ("AStock", "BJStock")
             or any(ch in security_type for ch in ("沪", "深", "北"))
@@ -371,15 +371,15 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
         elif classify == "UsStock" or "美" in security_type:
             stock_market = "US"
         else:
-            continue  # 跳过其他类型（债券、基金等）
+            continue  # Bỏ qua các loại khác (trái phiếu, quỹ...)
 
-        # 市场筛选
+        # Lọc theo thị trường
         if market and stock_market != market:
             continue
 
-        # 只保留股票（排除债券等）
+        # Chỉ giữ cổ phiếu (loại trái phiếu và các loại khác)
         type_us = item.get("TypeUS", "")
-        if stock_market == "US" and type_us and type_us not in ("1", "2", "3"):  # 1=普通股, 3=ADR/ADS 等；5=ETF 等
+        if stock_market == "US" and type_us and type_us not in ("1", "2", "3"):  # 1 = cổ phiếu phổ thông, 3 = ADR/ADS...; 5 = ETF...
             continue
 
         code = item.get("Code", "")
@@ -398,17 +398,17 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
 
 
 def search_stocks(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """搜索股票 - 优先使用实时搜索，失败则使用缓存"""
+    """Tìm mã - ưu tiên tìm thời gian thực, hỏng thì dùng đệm"""
     q = query.strip()
     if not q:
         return []
 
-    # 尝试实时搜索
+    # Thử tìm theo thời gian thực
     results = _realtime_search(q, market, limit)
     if len(results) >= limit:
         return results[:limit]
 
-    # 实时搜索结果不足时，用缓存补全（便于聚合多市场搜索结果）
+    # Kết quả tìm thời gian thực chưa đủ thì bù bằng bộ đệm (tiện gộp kết quả tìm của nhiều thị trường)
     cached = _cached_search(q, market, limit)
     if not results:
         if cached:
@@ -428,7 +428,7 @@ def search_stocks(query: str, market: str = "", limit: int = 20) -> list[dict]:
 
 
 def _cached_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """从缓存中模糊搜索股票"""
+    """Tìm mã theo kiểu mờ trong đệm"""
     stocks = get_stock_list()
     if not stocks:
         return []
@@ -443,7 +443,7 @@ def _cached_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
             continue
         code = s["symbol"].upper()
         name = s["name"].upper()
-        # 代码前缀匹配优先
+        # Ưu tiên khớp theo tiền tố mã
         if code.startswith(q):
             results.append((0, s))
         elif q in name:

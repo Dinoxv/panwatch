@@ -7,9 +7,12 @@ export interface AnalysisSection {
 }
 
 /**
- * 从深度分析 raw_data 组装各部分(决策正文 / 四分析师 / 看多看空辩论 / 风控辩论)。
- * 弹窗的 tab 与详细阅读页的长文共用这一份组装逻辑,避免两处渲染漂移。
- * 顺序即详细页从上到下、弹窗 tab 从左到右的顺序。只返回有内容的部分。
+ * Ghép các phần từ raw_data của phân tích chuyên sâu (nội dung quyết định / bốn
+ * chuyên viên phân tích / tranh luận xem tăng xem giảm / tranh luận kiểm soát rủi ro).
+ * Tab của hộp thoại và bài dài của trang đọc chi tiết dùng chung logic ghép này,
+ * để hai chỗ khỏi dựng lệch nhau.
+ * Thứ tự ở đây chính là thứ tự trên xuống của trang chi tiết, trái sang phải của
+ * tab hộp thoại. Chỉ trả về những phần có nội dung.
  */
 export function buildAnalysisSections(
   rawData: Partial<DeepAnalysisResult['raw_data']>,
@@ -19,40 +22,40 @@ export function buildAnalysisSections(
   const riskDebate = rawData.risk_debate
   const sections: AnalysisSection[] = []
 
-  // 决策书:section 标题直接用「PM 最终决策书」(去掉原先重复的前置「最终决策」标题);
-  // 交易员执行计划作为子标题保留(与决策书区分)。
+  // Bản quyết định: tiêu đề section dùng thẳng «Bản quyết định cuối của PM» (bỏ tiêu đề «Quyết định cuối» lặp lại trước đó);
+  // Kế hoạch thực thi của trader giữ làm tiêu đề con (để phân biệt với bản quyết định).
   const decisionBody = [
     rawData.final_decision || '',
-    rawData.trader_plan && `### 💼 交易员执行计划\n\n${rawData.trader_plan}`,
+    rawData.trader_plan && `### 💼 Kế hoạch thực thi của trader\n\n${rawData.trader_plan}`,
   ]
     .filter(Boolean)
     .join('\n\n')
-  if (decisionBody) sections.push({ id: 'decision', title: 'PM 最终决策书', markdown: decisionBody })
+  if (decisionBody) sections.push({ id: 'decision', title: 'Bản quyết định cuối của PM', markdown: decisionBody })
 
-  // 四位分析师
+  // Bốn chuyên viên phân tích
   const analysts: [string, string][] = [
-    ['market', '技术分析师'],
-    ['social', '情绪分析师'],
-    ['news', '新闻分析师'],
-    ['fundamentals', '基本面分析师'],
+    ['market', 'Chuyên viên phân tích kỹ thuật'],
+    ['social', 'Chuyên viên phân tích tâm lý'],
+    ['news', 'Chuyên viên phân tích tin tức'],
+    ['fundamentals', 'Chuyên viên phân tích cơ bản'],
   ]
   for (const [k, title] of analysts) {
     const text = (reports as unknown as Record<string, string>)[k] || ''
     if (text) sections.push({ id: k, title, markdown: text })
   }
 
-  // 看多看空辩论(研究团队:辩论历史 + 研究主管裁决)
+  // Tranh luận xem tăng xem giảm (đội nghiên cứu: lịch sử tranh luận + phán quyết của trưởng nhóm nghiên cứu)
   if (debate?.history) {
     let dc = debate.history
-    if (debate.judge_decision) dc += `\n\n### ⚖️ 研究主管裁决\n\n${debate.judge_decision}`
-    sections.push({ id: 'debate', title: '看多看空辩论', markdown: dc })
+    if (debate.judge_decision) dc += `\n\n### ⚖️ Phán quyết của trưởng nhóm nghiên cứu\n\n${debate.judge_decision}`
+    sections.push({ id: 'debate', title: 'Tranh luận xem tăng xem giảm', markdown: dc })
   }
 
-  // 风控辩论(风控团队:激进/中立/保守辩论 + 风控裁决)
+  // Tranh luận kiểm soát rủi ro (đội kiểm soát rủi ro: quyết liệt/trung lập/thận trọng tranh luận + phán quyết kiểm soát rủi ro)
   if (riskDebate?.history) {
     let rc = riskDebate.history
-    if (riskDebate.judge_decision) rc += `\n\n### 🛡️ 风控裁决\n\n${riskDebate.judge_decision}`
-    sections.push({ id: 'risk', title: '风控辩论', markdown: rc })
+    if (riskDebate.judge_decision) rc += `\n\n### 🛡️ Phán quyết kiểm soát rủi ro\n\n${riskDebate.judge_decision}`
+    sections.push({ id: 'risk', title: 'Tranh luận kiểm soát rủi ro', markdown: rc })
   }
 
   return sections

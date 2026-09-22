@@ -27,7 +27,7 @@ import os
 import sys
 from pathlib import Path
 
-# 支持 `python tests/eval/run_eval.py` 直跑
+# Hỗ trợ chạy thẳng `python tests/eval/run_eval.py`
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))

@@ -1,10 +1,10 @@
-"""TradingAgentsAgent — PanWatch 的 BaseAgent 子类,集成 TauricResearch/TradingAgents。
+"""TradingAgentsAgent — lớp con BaseAgent của PanWatch, tích hợp TauricResearch/TradingAgents.
 
-设计要点(详见 .docs/tradingagents/02-technical-design.md):
-1. collect() 走 PanWatch Provider Orchestrator,4 类数据并发拉
-2. analyze() 重写,不走单次 ai_client.chat,而是调 TradingAgentsGraph
-3. monkeypatch route_to_vendor 让 TradingAgents 拿到 PanWatch 数据(A 股专用)
-4. progress callback + cost tracker + 月度预算 + 同日缓存
+Điểm thiết kế (chi tiết xem .docs/tradingagents/02-technical-design.md):
+1. collect() đi qua Provider Orchestrator của PanWatch, kéo song song 4 nhóm dữ liệu
+2. analyze() được ghi đè, không gọi ai_client.chat một lần mà gọi TradingAgentsGraph
+3. monkeypatch route_to_vendor để TradingAgents lấy được dữ liệu PanWatch (riêng cổ phiếu A)
+4. progress callback + cost tracker + ngân sách tháng + đệm trong ngày
 """
 
 from __future__ import annotations
@@ -47,23 +47,23 @@ __all__ = ["TradingAgentsAgent", "TradingAgentsUnavailable"]
 
 
 def get_market_data():
-    """lazy import,便于测试 monkeypatch(module 级)。"""
+    """lazy import, cho tiện monkeypatch lúc test (ở cấp module)."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()
 
 
 class TradingAgentsUnavailable(RuntimeError):
-    """tradingagents 库未安装或上游 API 变更导致不可用。"""
+    """Thư viện tradingagents chưa cài hoặc API thượng nguồn đổi nên không dùng được."""
 
 
 def _bounded_graph_class(graph_cls):
-    """让 TradingAgentsGraph 把请求边界传给 LangChain LLM 客户端。
+    """Để TradingAgentsGraph truyền các mốc giới hạn của yêu cầu xuống máy khách LLM của LangChain.
 
-    TradingAgents 0.5.0 已支持 ``llm_max_retries``/``max_tokens``，但当前
-    版本的 ``_get_provider_kwargs`` 尚未读取自定义 timeout。通过一个很小的
-    子类适配该差异，避免直接修改 site-packages，也兼容后续上游自行支持
-    timeout 的版本。
+    TradingAgents 0.5.0 đã hỗ trợ ``llm_max_retries``/``max_tokens``, nhưng
+    ``_get_provider_kwargs`` ở bản hiện tại chưa đọc timeout tự đặt. Dùng một lớp con rất
+    nhỏ để khớp chỗ lệch đó, vừa khỏi sửa thẳng site-packages, vừa tương thích với bản
+    thượng nguồn sau này tự hỗ trợ timeout.
     """
 
     class BoundedTradingAgentsGraph(graph_cls):
@@ -93,18 +93,18 @@ class TradingAgentsAgent(BaseAgent):
         over_budget_action: str = "reject",  # reject / warn / continue
         cache_ttl_hours: int = 12,
         output_language: str = "Chinese",
-        deep_model: str | None = None,    # 推理/辩论/PM 用的强模型 (留空走默认)
-        quick_model: str | None = None,   # 分析师工具调用用的快模型 (留空 = deep_model)
-        timeout_minutes: int = 30,        # 整个流程硬超时;0.3.0 工具链更重,默认提到 30 min
-        collection_timeout_seconds: int = 45,  # 单个外部数据源采集硬超时
-        emit_paper_trading_signal: bool = False,  # 是否把 BUY 决策写入 StrategySignalRun 驱动模拟盘
-        enable_sec_edgar: bool = False,   # 美股财报可显式优先使用 SEC EDGAR
-        holding_period_days: int = 5,     # 上游决策质量回测/持仓期限语义
-        llm_timeout_seconds: int = 120,   # 单次 LLM 请求硬超时,避免图卡死
-        llm_max_retries: int = 0,         # 深度分析不在图内重复重试供应商请求
-        llm_max_tokens: int = 4096,       # 限制推理/报告输出,避免网关空闲超时
+        deep_model: str | None = None,    # Mô hình mạnh dùng cho suy luận / tranh luận / PM (để trống thì dùng mặc định)
+        quick_model: str | None = None,   # Mô hình nhanh dùng cho lời gọi công cụ của chuyên viên phân tích (để trống = deep_model)
+        timeout_minutes: int = 30,        # Thời gian chờ cứng cho cả luồng; chuỗi công cụ của 0.3.0 nặng hơn nên mặc định nâng lên 30 phút
+        collection_timeout_seconds: int = 45,  # Thời gian chờ cứng khi thu thập từ một nguồn dữ liệu bên ngoài
+        emit_paper_trading_signal: bool = False,  # Có ghi quyết định MUA vào StrategySignalRun để dẫn động mô phỏng hay không
+        enable_sec_edgar: bool = False,   # Báo cáo tài chính cổ phiếu Mỹ có thể ưu tiên tường minh dùng SEC EDGAR
+        holding_period_days: int = 5,     # Ngữ nghĩa kiểm thử chất lượng quyết định / kỳ nắm giữ của thượng nguồn
+        llm_timeout_seconds: int = 120,   # Thời gian chờ cứng cho một request LLM, tránh làm treo đồ thị
+        llm_max_retries: int = 0,         # Phân tích chuyên sâu không thử lại request tới nhà cung cấp ngay bên trong đồ thị
+        llm_max_tokens: int = 4096,       # Giới hạn đầu ra suy luận / báo cáo, tránh gateway hết hạn vì nhàn rỗi
     ):
-        # 校验分析师配置
+        # Kiểm tra cấu hình chuyên viên phân tích
         analysts = list(analyst_types or sorted(VALID_ANALYSTS))
         invalid = [a for a in analysts if a not in VALID_ANALYSTS]
         if invalid:
@@ -130,16 +130,16 @@ class TradingAgentsAgent(BaseAgent):
         self.llm_max_retries = max(0, int(llm_max_retries))
         self.llm_max_tokens = max(256, int(llm_max_tokens))
 
-        # 软依赖检测
+        # Dò các phụ thuộc mềm
         self._available, self._import_error = self._check_availability()
 
-    # ---- BaseAgent 抽象方法 ----
+    # ---- Phương thức trừu tượng của BaseAgent ----
 
     async def collect(self, context: AgentContext) -> dict:
-        """从 PanWatch 数据体系收集数据,并发拉 4 类(走 marketdata 包)。"""
+        """Thu thập dữ liệu từ hệ dữ liệu PanWatch, kéo song song 4 nhóm (qua gói marketdata)."""
         if not context.watchlist:
             raise ValueError("TradingAgents 需要至少 1 只股票")
-        # 单只标的为粒度;若 watchlist 多只,取第一只
+        # Lấy từng mã làm đơn vị; nếu danh sách theo dõi có nhiều mã thì lấy mã đầu
         stock = context.watchlist[0]
 
         from src.platform.marketdata.marketdata_client import _quote_to_row
@@ -169,7 +169,7 @@ class TradingAgentsAgent(BaseAgent):
                     progress_handler.emit("data_collection", "source_end", source=name)
                 return value
             except Exception as e:
-                # 429、网络超时和单源解析错误都只影响该源，不阻塞整个分析。
+                # Lỗi 429, quá hạn mạng và lỗi bóc dữ liệu của một nguồn chỉ ảnh hưởng nguồn đó, không chặn cả lượt phân tích.
                 logger.warning(f"[TA] 数据源 {name} 失败,使用空结果: {e}")
                 progress_handler.emit(
                     "data_collection",
@@ -187,8 +187,8 @@ class TradingAgentsAgent(BaseAgent):
             with kline_source(f"tradingagents:{trace_id}"):
                 quotes, klines_list, cf, events_list = await asyncio.gather(
                     _source("quote", lambda: md.quotes([sym], market=mkt), []),
-                    # 一次准备足够验证快照和 200 日均线使用的历史，后续 analyst
-                    # 直接复用这份缓存，不再重复请求 750 日 K 线。
+                    # Chuẩn bị một lần đủ lịch sử cho ảnh chụp kiểm chứng và đường trung bình 200 phiên, các chuyên viên phân tích sau
+                    # dùng lại luôn bộ đệm này, không gọi lại 750 phiên nến nữa.
                     _source("klines", lambda: md.klines(sym, market=mkt, days=750), []),
                     _source("capital_flow", lambda: md.capital_flow(sym, market=mkt), None),
                     _source("events", lambda: md.events([sym], market=mkt, since_days=30), []),
@@ -203,7 +203,7 @@ class TradingAgentsAgent(BaseAgent):
             quote_dict = {}
         capital_list = [cf] if cf else []
 
-        # A 股 fetch 真实财报(akshare),非 A 股留空
+        # Cổ phiếu A thì lấy báo cáo tài chính thật (akshare), ngoài cổ phiếu A thì để trống
         financial: dict | None = None
         if stock.market.value == "CN" and stock.symbol.isdigit() and len(stock.symbol) == 6:
             try:
@@ -216,7 +216,7 @@ class TradingAgentsAgent(BaseAgent):
             except Exception as e:
                 logger.debug(f"[TA] 财报模块不可用,跳过: {e}")
 
-        # 预算技术指标(MA/MACD/RSI/KDJ/BOLL),给 get_indicators 工具用
+        # Tính sẵn các chỉ báo kỹ thuật (MA/MACD/RSI/KDJ/BOLL) cho công cụ get_indicators dùng
         technical = None
         try:
             from src.platform.marketdata.collectors.kline_collector import KlineCollector
@@ -244,23 +244,23 @@ class TradingAgentsAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        # BaseAgent 抽象要求,但本 agent 不走单次 prompt
+        # BaseAgent bắt buộc có, nhưng agent này không đi theo đường một prompt duy nhất
         return "", ""
 
     async def run_single(self, context: AgentContext, symbol: str) -> AnalysisResult:
-        """单只股票模式入口 — 供 AgentScheduler 调度时按股票迭代调用。
+        """Lối vào chế độ từng mã — cho AgentScheduler gọi lặp theo từng mã khi lập lịch.
 
-        典型场景:盘前自动跑用户绑定到 tradingagents 的核心仓位股票。
-        实现:过滤 watchlist 到指定 symbol,然后走标准 run() 流程。
+        Tình huống điển hình: trước phiên tự chạy các mã vị thế cốt lõi mà người dùng gắn vào tradingagents.
+        Cách làm: lọc watchlist về đúng symbol chỉ định, rồi đi theo luồng run() chuẩn.
         """
-        # 找到目标 stock
+        # Tìm mã đích
         targets = [s for s in context.watchlist if s.symbol == symbol]
         if not targets:
             raise ValueError(
                 f"run_single: symbol={symbol} 不在 watchlist 中,跳过"
             )
 
-        # 浅克隆 context.config 让 watchlist 只剩目标股票,其他字段不变
+        # Sao chép nông context.config để danh sách theo dõi chỉ còn mã đích, các trường khác giữ nguyên
         from copy import copy
         from src.platform.runtime.config import AppConfig
 
@@ -272,7 +272,7 @@ class TradingAgentsAgent(BaseAgent):
         narrow_context.config = narrow_config
         return await self.run(narrow_context)
 
-    # ---- 重写 analyze:走 TradingAgents 多 Agent 流 ----
+    # ---- Viết đè analyze: đi theo luồng đa Agent của TradingAgents ----
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
         if not self._available:
@@ -282,7 +282,7 @@ class TradingAgentsAgent(BaseAgent):
         trace_id = getattr(context, "_trace_id", "") or self._make_trace_id(stock.symbol)
         force_refresh = bool(getattr(context, "_force_refresh", False))
 
-        # 0) 同日缓存命中(force_refresh=True 时跳过)
+        # 0) Khớp bộ đệm trong ngày (bỏ qua khi force_refresh=True)
         if not force_refresh:
             cached = self._try_cache_hit(stock)
             if cached is not None:
@@ -292,7 +292,7 @@ class TradingAgentsAgent(BaseAgent):
                 cached.raw_data["from_cache"] = True
                 return cached
 
-        # 1) 预算检查
+        # 1) Kiểm tra ngân sách
         budget = check_budget(self.monthly_budget_usd, self.name)
         if budget["exceeded"]:
             if self.over_budget_action == "reject":
@@ -307,7 +307,7 @@ class TradingAgentsAgent(BaseAgent):
                     f"(${budget['used']:.2f} / ${self.monthly_budget_usd:.2f})"
                 )
 
-        # 2) 构造 TradingAgents config (支持 deep / quick 双模型)
+        # 2) Dựng config cho TradingAgents (hỗ trợ hai mô hình deep / quick)
         from src.platform.persistence.database import DB_PATH
         ta_runtime_dir = Path(DB_PATH).resolve().parent / "tradingagents"
         ta_config = build_ta_llm_config(
@@ -326,14 +326,14 @@ class TradingAgentsAgent(BaseAgent):
             llm_max_tokens=self.llm_max_tokens,
         )
 
-        # 3) 进度回调
+        # 3) Callback tiến độ
         progress_handler = getattr(context, "_progress_handler", None)
         if not isinstance(progress_handler, PanWatchProgressHandler):
             progress_handler = PanWatchProgressHandler(trace_id, self.name)
         cancel_event = threading.Event()
         progress_handler.cancel_event = cancel_event
 
-        # 4) 标的元信息走 instrument_context；用户持仓走 TradingAgents 0.5.0 原生 portfolio。
+        # 4) Siêu dữ liệu của mã đi qua instrument_context; vị thế của người dùng đi qua portfolio gốc của TradingAgents 0.5.0.
         current_price = (data.get("quote") or {}).get("current_price")
         cur_price_num = current_price if isinstance(current_price, (int, float)) else None
         quote_data = data.get("quote") or {}
@@ -345,7 +345,7 @@ class TradingAgentsAgent(BaseAgent):
             current_price=cur_price_num,
             industry=quote_data.get("industry", "") if isinstance(quote_data, dict) else "",
         )
-        # 5) 同步阻塞,丢到线程池;加硬超时防卡死
+        # 5) Là lời gọi đồng bộ gây chặn nên đẩy sang threadpool; thêm thời gian chờ cứng để khỏi treo
         try:
             ta_result = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -364,7 +364,7 @@ class TradingAgentsAgent(BaseAgent):
             )
         except asyncio.TimeoutError:
             cancel_event.set()
-            # 超时:尝试落库部分进度供后续查看
+            # Quá hạn: cố lưu lại phần tiến độ đã có để xem lại sau
             partial_cost = getattr(progress_handler, "_total_cost", 0.0)
             partial_stages = list(getattr(progress_handler, "_completed_stages", set()))
             logger.warning(
@@ -385,21 +385,21 @@ class TradingAgentsAgent(BaseAgent):
             cancel_event.set()
             raise
 
-        # 5) 映射成 AnalysisResult
+        # 5) Ánh xạ thành AnalysisResult
         result = map_state_to_result(
             stock=stock,
             ta_result=ta_result,
             model_label=context.model_label,
         )
 
-        # 存分析时实时价 → 历史决策表"分析价"立即显示(不必等当日 K线收盘回填)
+        # Lưu giá thời gian thực lúc phân tích → cột "giá phân tích" ở bảng quyết định lịch sử hiện ngay (khỏi chờ nến đóng cửa trong ngày điền ngược)
         _quote = data.get("quote") or {}
         _cp = _quote.get("current_price")
         if isinstance(_cp, (int, float)):
             result.raw_data["price_at_analysis"] = float(_cp)
 
-        # 5b) 把本次 trace_id 的 toolkit 诊断聚合,持久化进 raw_data,
-        # 让历史报告 DoneView 也能展示数据注入情况。
+        # 5b) Gộp phần chẩn đoán toolkit theo trace_id của lần này rồi lưu bền vào raw_data,
+        # để DoneView của báo cáo lịch sử cũng hiện được tình hình nạp dữ liệu.
         try:
             tid = getattr(progress_handler, "trace_id", "") if progress_handler else ""
             if tid:
@@ -407,8 +407,8 @@ class TradingAgentsAgent(BaseAgent):
         except Exception as e:
             logger.warning(f"[TA] 收集 toolkit 诊断失败,忽略: {e}")
 
-        # 6) 落库到 AnalysisHistory:供 UI 查最近一次结果 (DeepAnalysisModal 弹窗) +
-        # 月度成本预算聚合。同标的同日复跑会覆盖 (analysis_history.save_analysis 语义)。
+        # 6) Lưu vào AnalysisHistory: để giao diện tra kết quả gần nhất (hộp thoại DeepAnalysisModal) +
+        # gộp ngân sách chi phí theo tháng. Chạy lại cùng mã trong cùng ngày sẽ ghi đè (theo ngữ nghĩa của analysis_history.save_analysis).
         try:
             save_analysis(
                 agent_name=self.name,
@@ -420,8 +420,8 @@ class TradingAgentsAgent(BaseAgent):
         except Exception as e:
             logger.warning(f"[TA] save_analysis 失败,不影响主流程: {e}")
 
-        # 6b) 落库到 StockSuggestion(建议池) — 让持仓页/关注列表上的建议徽章
-        # 显示 TradingAgents 的 BUY/HOLD/SELL 决策(跟「盘前分析」「收盘复盘」并列)。
+        # 6b) Lưu vào StockSuggestion (kho khuyến nghị) — để huy hiệu khuyến nghị trên trang vị thế / danh sách theo dõi
+        # hiện được quyết định MUA/NẮM GIỮ/BÁN của TradingAgents (xếp ngang hàng với «Phân tích trước phiên» và «Tổng kết sau phiên»).
         try:
             from src.modules.automation.suggestion_pool import save_suggestion
 
@@ -445,7 +445,7 @@ class TradingAgentsAgent(BaseAgent):
                 agent_label="TradingAgents 深度",
                 signal=signal_text,
                 reason=reason_text,
-                expires_hours=24,  # 深度分析结果 24 小时内有效
+                expires_hours=24,  # Kết quả phân tích chuyên sâu có hiệu lực trong 24 giờ
                 ai_response=result.content[:2000],
                 meta={
                     "cost_usd": result.raw_data.get("cost_usd", 0),
@@ -456,7 +456,7 @@ class TradingAgentsAgent(BaseAgent):
         except Exception as e:
             logger.warning(f"[TA] save_suggestion 失败,不影响主流程: {e}")
 
-        # 7) 可选:把 BUY/SELL 决策写入 StrategySignalRun 驱动模拟盘
+        # 7) Tùy chọn: ghi quyết định MUA/BÁN vào StrategySignalRun để dẫn động mô phỏng
         if self.emit_paper_trading_signal:
             try:
                 from src.modules.automation.tradingagents.decision import (
@@ -481,10 +481,10 @@ class TradingAgentsAgent(BaseAgent):
 
         return result
 
-    # ---- 私有方法 ----
+    # ---- Phương thức nội bộ ----
 
     def _check_availability(self) -> tuple[bool, str]:
-        """检测 tradingagents 是否可用。"""
+        """Dò xem tradingagents có dùng được không."""
         try:
             import tradingagents  # noqa: F401
             from tradingagents.graph.trading_graph import TradingAgentsGraph  # noqa: F401
@@ -503,7 +503,7 @@ class TradingAgentsAgent(BaseAgent):
         return f"ta-{symbol}-{int(datetime.now().timestamp())}"
 
     def _try_cache_hit(self, stock) -> AnalysisResult | None:
-        """同标的同日是否已分析过 → 返回缓存的 AnalysisResult。"""
+        """Cùng mã cùng ngày đã phân tích chưa → trả về AnalysisResult đã đệm."""
         if self.cache_ttl_hours <= 0:
             return None
         try:
@@ -536,23 +536,23 @@ class TradingAgentsAgent(BaseAgent):
         portfolio: Any | None = None,
         cancel_event: threading.Event | None = None,
     ) -> dict[str, Any]:
-        """在 worker 线程跑同步 TradingAgents 流程。
+        """Chạy luồng TradingAgents đồng bộ trong luồng worker.
 
-        步骤:
-        1. inject_api_key_env 注入 API key 到环境变量
-        2. patch_route_to_vendor 让 A 股请求路由到 PanWatch 数据
-        3. TradingAgentsGraph.propagate 跑 3-5 分钟
-        4. 返回 decision + final_state + cost_usd
+        Các bước:
+        1. inject_api_key_env tiêm API key vào biến môi trường
+        2. patch_route_to_vendor để yêu cầu cổ phiếu A định tuyến về dữ liệu PanWatch
+        3. TradingAgentsGraph.propagate chạy 3-5 phút
+        4. Trả về decision + final_state + cost_usd
         """
-        # 关键依赖延迟 import,确保 _check_availability 失败时这里不被调用
+        # Phụ thuộc then chốt import trễ, bảo đảm khi _check_availability thất bại thì chỗ này không bị gọi
         from tradingagents.graph.trading_graph import TradingAgentsGraph
 
-        # 应用 LangChain 兼容性补丁:让小模型 (Qwen 7B 等) 返回的
-        # tool_calls.args 字符串被自动转 dict。
+        # Áp bản vá tương thích LangChain: để chuỗi tool_calls.args mà các mô hình nhỏ
+        # (Qwen 7B...) trả về được tự động chuyển thành dict.
         apply_compat_patches()
         inject_api_key_env(ai_client)
 
-        # patch + 数据上下文,确保 TradingAgents 调 route_to_vendor 时拿到 PanWatch 数据
+        # patch + ngữ cảnh dữ liệu, bảo đảm khi TradingAgents gọi route_to_vendor thì nhận được dữ liệu của PanWatch
         trace_id_for_ctx = getattr(progress_handler, "trace_id", "") if progress_handler else ""
         with patch_route_to_vendor(), panwatch_data_context(
             panwatch_data,
@@ -563,16 +563,16 @@ class TradingAgentsAgent(BaseAgent):
                 selected_analysts=ta_config["selected_analysts"],
                 debug=False,
                 config=ta_config,
-                # callbacks 接受 langchain BaseCallbackHandler 列表;LLM 级别用
+                # callbacks nhận danh sách BaseCallbackHandler của langchain; dùng ở cấp LLM
                 callbacks=[progress_handler] if progress_handler else None,
             )
 
-            # 注入 LangGraph 节点级 callbacks(propagator.get_graph_args 默认 callbacks=None,
-            # 不会触发 on_chain_start/end → 进度条永远卡 pending)
+            # Tiêm callbacks ở cấp nút LangGraph (propagator.get_graph_args mặc định callbacks=None,
+            # nên không kích hoạt on_chain_start/end → thanh tiến độ kẹt mãi ở pending)
             if progress_handler is not None:
                 self._inject_graph_callbacks(graph, progress_handler)
 
-            # 0.5.0 原生提供 instrument_context；标的元数据不应污染 past_context。
+            # 0.5.0 cung cấp sẵn instrument_context; siêu dữ liệu của mã không được làm nhiễu past_context.
             if stock_metadata_context:
                 patch_instrument_context(graph, stock_metadata_context)
 
@@ -583,7 +583,7 @@ class TradingAgentsAgent(BaseAgent):
                 portfolio=to_tradingagents_portfolio(portfolio),
             )
 
-        # 成本提取(TradingAgents 内部 token 统计;若上游未暴露,fallback 用 estimate)
+        # Bóc chi phí (thống kê token nội bộ của TradingAgents; thượng nguồn không phơi ra thì lùi về ước tính)
         cost_usd = self._extract_cost_from_graph(graph) or self._fallback_cost_estimate(
             ta_config
         )
@@ -596,9 +596,9 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _inject_graph_callbacks(graph, handler):
-        """Monkey-patch graph.propagator.get_graph_args 让 LangGraph 节点级 callbacks 也注入。
+        """Monkey-patch graph.propagator.get_graph_args để callbacks ở cấp nút LangGraph cũng được tiêm vào.
 
-        否则只有 on_llm_start/end 会触发,on_chain_start/end (节点切换) 不会,进度条卡死。
+        Nếu không, chỉ on_llm_start/end kích hoạt, còn on_chain_start/end (chuyển nút) thì không, làm thanh tiến độ đứng im.
         """
         try:
             propagator = getattr(graph, "propagator", None)
@@ -618,7 +618,7 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _collect_toolkit_diagnostic(trace_id: str) -> dict:
-        """查同 trace_id 的 ta_toolkit 日志,聚合成 {summary, recent}。"""
+        """Tra nhật ký ta_toolkit cùng trace_id, gộp thành {summary, recent}."""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import LogEntry
 
@@ -653,7 +653,7 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _extract_cost_from_graph(graph) -> float:
-        """尝试从 TradingAgentsGraph 实例提取累计成本。上游未必暴露字段,容错。"""
+        """Thử rút chi phí lũy kế từ thực thể TradingAgentsGraph. Thượng nguồn chưa chắc phơi trường đó, nên chịu lỗi."""
         for attr in ("total_cost", "total_cost_usd", "_total_cost"):
             v = getattr(graph, attr, None)
             if v is not None:
@@ -664,7 +664,7 @@ class TradingAgentsAgent(BaseAgent):
         return 0.0
 
     def _fallback_cost_estimate(self, ta_config: dict) -> float:
-        """fallback 用 estimate 平均值。"""
+        """Lùi về dùng giá trị bình quân của estimate."""
         est = estimate_cost(
             debate_rounds=ta_config.get("max_debate_rounds", 1),
             selected_analysts=ta_config.get("selected_analysts", []),

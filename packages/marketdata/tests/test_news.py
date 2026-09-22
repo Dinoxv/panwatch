@@ -23,7 +23,7 @@ def _jsonp(payload: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# xueqiu(雪球个股新闻)
+# xueqiu (tin từng mã của Xueqiu)
 # ---------------------------------------------------------------------------
 
 def test_xueqiu_parses_item_and_importance(monkeypatch):
@@ -46,11 +46,11 @@ def test_xueqiu_parses_item_and_importance(monkeypatch):
     assert isinstance(a, NewsArticle)
     assert a.source == "xueqiu"
     assert a.external_id == "5001"
-    assert a.title == "重磅:公司获得新订单"  # HTML 标签被清理
+    assert a.title == "重磅:公司获得新订单"  # Thẻ HTML đã được dọn
     assert a.content == "详细描述内容"
     assert a.publish_time == datetime.fromtimestamp(1752652800, tz=timezone.utc)
     assert a.symbols == ["600519"]
-    assert a.importance == 2  # 命中"重磅"
+    assert a.importance == 2  # Khớp từ khóa "重磅"
     assert a.url == "https://xueqiu.com/1234/5001"
 
 
@@ -71,11 +71,11 @@ def test_xueqiu_symbol_id_prefix_rules(monkeypatch):
     assert captured["symbol_id"] == "SZ000001"
 
     news_mod.XueqiuNewsVendor().fetch([Symbol.parse("920001")], {})
-    assert captured["symbol_id"] == "920001"  # BJ 原值透传
+    assert captured["symbol_id"] == "920001"  # BJ giữ nguyên giá trị gốc
 
 
 def test_xueqiu_no_a_share_symbols_returns_empty():
-    # 港股/美股代码不是 6 位数字 -> 直接返回 [],不发请求
+    # Mã Hồng Kông / Mỹ không phải 6 chữ số -> trả [] luôn, không gửi request
     assert news_mod.XueqiuNewsVendor().fetch([Symbol.parse("00700"), Symbol.parse("AAPL")], {}) == []
 
 
@@ -108,7 +108,7 @@ def test_xueqiu_market_get_failure_returns_empty(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# eastmoney_news(东财个股新闻搜索)
+# eastmoney_news (tìm tin theo từng mã của EastMoney)
 # ---------------------------------------------------------------------------
 
 def _em_news_payload(code="202607170001", title="赛力斯发布新车型<em>亮点</em>"):
@@ -138,13 +138,13 @@ def test_eastmoney_news_parses_and_uses_names(monkeypatch):
     a = out[0]
     assert a.source == "eastmoney_news"
     assert a.external_id == "202607170001"
-    assert a.title == "赛力斯发布新车型亮点"  # 高亮标签被清理
+    assert a.title == "赛力斯发布新车型亮点"  # Thẻ đánh dấu highlight đã được dọn
     assert a.content == "详细内容"
     assert a.publish_time == datetime(2026, 7, 17, 9, 30, 0, tzinfo=timezone.utc)
     assert a.symbols == ["601127"]
     assert a.url == "https://finance.eastmoney.com/a/202607170001.html"
 
-    # names 生效:搜索关键词应为股票名称而非代码
+    # names có hiệu lực: từ khóa tìm phải là tên cổ phiếu chứ không phải mã
     assert len(calls) == 1
     sent = json.loads(calls[0]["param"])
     assert sent["keyword"] == "赛力斯"
@@ -161,7 +161,7 @@ def test_eastmoney_news_falls_back_to_code_without_names(monkeypatch):
 
     news_mod.EastmoneyStockNewsVendor().fetch([Symbol.parse("601127")], {})
     sent = json.loads(calls[0]["param"])
-    assert sent["keyword"] == "601127"  # 缺名 fallback 用代码搜索
+    assert sent["keyword"] == "601127"  # Thiếu tên thì dự phòng tìm theo mã
 
 
 def test_eastmoney_news_dedup_across_symbols(monkeypatch):
@@ -172,7 +172,7 @@ def test_eastmoney_news_dedup_across_symbols(monkeypatch):
         [Symbol.parse("601127"), Symbol.parse("600519")],
         {"symbol_names": {"601127": "赛力斯", "600519": "贵州茅台"}},
     )
-    assert len(out) == 1  # 两次搜索都命中同一条 DUP1,去重后只剩 1 条
+    assert len(out) == 1  # Cả hai lần tìm đều khớp cùng bản ghi DUP1, khử trùng lặp xong chỉ còn 1
 
 
 def test_eastmoney_news_code_not_zero_returns_empty(monkeypatch):
@@ -202,14 +202,14 @@ def test_eastmoney_news_fetch_by_keyword(monkeypatch):
     out = news_mod.EastmoneyStockNewsVendor.fetch_by_keyword("新能源汽车")
     assert len(out) == 1
     assert out[0].title == "新能源汽车行业周报"
-    assert out[0].symbols == ["新能源汽车"]  # keyword 本身作为 symbol 标记(照搬原逻辑)
+    assert out[0].symbols == ["新能源汽车"]  # Dùng chính keyword làm dấu symbol (giữ nguyên logic cũ)
 
     sent = json.loads(calls[0]["param"])
     assert sent["keyword"] == "新能源汽车"
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财公告)
+# eastmoney (công bố thông tin của EastMoney)
 # ---------------------------------------------------------------------------
 
 def _ann_payload():
@@ -238,10 +238,10 @@ def test_eastmoney_ann_parses(monkeypatch):
     assert a.source == "eastmoney"
     assert a.external_id == "AN202607170001"
     assert a.title == "贵州茅台关于分红派息的公告"
-    assert a.content == ""  # 公告只有标题
+    assert a.content == ""  # Công bố thông tin chỉ có tiêu đề
     assert a.publish_time == datetime(2026, 7, 17, 8, 0, 0, tzinfo=timezone.utc)
     assert a.symbols == ["600519"]
-    assert a.importance == 2  # 命中"分红"
+    assert a.importance == 2  # Khớp từ khóa "分红"
     assert a.url == "https://data.eastmoney.com/notices/detail/600519/AN202607170001.html"
 
 
@@ -258,7 +258,7 @@ def test_eastmoney_ann_failure_response_returns_empty(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# MarketData.news() —— 聚合(非失败转移):合并多源 + 去重 + 排序 + since 过滤
+# MarketData.news() — ngữ nghĩa tổng hợp (không phải hạ cấp khi lỗi): gộp nhiều nguồn + khử trùng lặp + sắp xếp + lọc since
 # ---------------------------------------------------------------------------
 
 def _fake_agg_market_get(url, *, host_key, params=None, **kwargs):
@@ -292,7 +292,7 @@ def _fake_agg_market_get(url, *, host_key, params=None, **kwargs):
                         "codes": [{"stock_code": "600519"}],
                     },
                     {
-                        # 36.5 小时前:超出 2h 常规窗口,但在 72h 公告窗口内 —— 验证宽窗口生效
+                        # 36,5 giờ trước: vượt cửa sổ thường 2h nhưng vẫn trong cửa sổ 72h của công bố thông tin — kiểm chứng cửa sổ rộng có hiệu lực
                         "art_code": "AN2",
                         "title": "季报点评",
                         "notice_date": "2026-07-16 00:00:00",
@@ -324,7 +324,7 @@ def test_news_merges_multiple_sources_and_sorts_desc(monkeypatch):
     md = _agg_md()
     out = md.news(["600519"], since_hours=2, names={"600519": "贵州茅台"})
 
-    # 按时间倒序:AN1(07-17 12:00) > A1(07-17 10:00) > AN2(07-16 00:00)
+    # Sắp theo thời gian giảm dần: AN1 (07-17 12:00) > A1 (07-17 10:00) > AN2 (07-16 00:00)
     assert [a.external_id for a in out] == ["AN1", "A1", "AN2"]
 
 
@@ -378,7 +378,7 @@ def test_news_dedup_keeps_first_seen_across_vendors(monkeypatch):
                             "id": "DUP1",
                             "title": "来自雪球的标题",
                             "description": "雪球内容",
-                            "created_at": 1752739200000,  # 2026-07-17 12:00:00 UTC(更新,但优先级更低)
+                            "created_at": 1752739200000,  # 2026-07-17 12:00:00 UTC (mới hơn nhưng độ ưu tiên thấp hơn)
                             "target": "https://xueqiu.com/x/DUP1",
                         }
                     ]
@@ -400,7 +400,7 @@ def test_news_dedup_keeps_first_seen_across_vendors(monkeypatch):
     )
     out = md.news(["600519"])
     assert len(out) == 1
-    assert out[0].source == "eastmoney_news"  # 先处理的优先级更高的源被保留
+    assert out[0].source == "eastmoney_news"  # Nguồn có độ ưu tiên cao hơn được xử lý trước nên được giữ lại
     assert out[0].title == "来自东财的标题"
 
 

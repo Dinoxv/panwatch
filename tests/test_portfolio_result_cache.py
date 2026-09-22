@@ -97,9 +97,9 @@ def test_benchmark_cache_invalidates_on_holdings_change(db, monkeypatch):
     monkeypatch.setattr(accounts_api, "_gather_holdings", lambda d: list(_HOLDINGS))
     monkeypatch.setattr(pb, "build_portfolio_benchmark", fake_build)
 
-    accounts_api.portfolio_benchmark(db=db)  # 计算 1,写缓存
-    _add_position(db, "000001", 50)  # 持仓变化 → 指纹变
-    accounts_api.portfolio_benchmark(db=db)  # 应重算
+    accounts_api.portfolio_benchmark(db=db)  # Tính lần 1, ghi bộ đệm
+    _add_position(db, "000001", 50)  # Vị thế thay đổi → vân tay thay đổi
+    accounts_api.portfolio_benchmark(db=db)  # Phải tính lại
     assert calls["n"] == 2, "持仓变化后缓存应失效"
 
 

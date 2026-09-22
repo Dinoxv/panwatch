@@ -1,10 +1,13 @@
-"""详情报告导出 PDF —— HTML 保真排版。
+"""Xuất báo cáo chi tiết ra PDF — giữ nguyên bố cục như HTML.
 
-markdown → HTML(python-markdown)→ PDF。
-- 主引擎 **WeasyPrint**:真 CSS 排版引擎,自动换行/分页/页码,中文走系统字体,排版接近网页。
-- WeasyPrint 不可用(缺系统库 pango 等)时回退 **xhtml2pdf**(纯库、排版朴素但保底,
-  中文用 reportlab 内置 STSong-Light CID 字体)。
-(Chromium/page.pdf 可作为将来更高保真的备选,但需安装浏览器,这里不默认依赖。)
+markdown → HTML (python-markdown) → PDF.
+- Engine chính **WeasyPrint**: engine dàn trang CSS thật, tự xuống dòng / ngắt trang /
+  đánh số trang, chữ Hán dùng phông hệ thống, bố cục gần với trang web.
+- WeasyPrint không dùng được (thiếu thư viện hệ thống như pango) thì lùi về **xhtml2pdf**
+  (thuần thư viện, bố cục mộc nhưng đủ dùng làm phương án cuối; chữ Hán dùng phông CID
+  STSong-Light có sẵn trong reportlab).
+(Chromium/page.pdf có thể là phương án trung thực hơn trong tương lai, nhưng phải cài
+trình duyệt nên ở đây không đưa vào phụ thuộc mặc định.)
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ import markdown as _markdown
 logger = logging.getLogger(__name__)
 
 
-# ---- WeasyPrint(主)----
+# ---- WeasyPrint (engine chính) ----
 
 _REPORT_CSS = """
 @page {
@@ -67,7 +70,7 @@ def _render_weasyprint(title: str, body_html: str) -> bytes:
     return HTML(string=doc).write_pdf()
 
 
-# ---- xhtml2pdf(回退,纯库无系统依赖)----
+# ---- xhtml2pdf (dự phòng, thuần thư viện, không cần thư viện hệ thống) ----
 
 _FALLBACK_CSS = """
 @page { size: A4; margin: 1.6cm 1.5cm; }
@@ -111,10 +114,12 @@ _ANALYST_SECTIONS = [
 
 
 def assemble_report_markdown(raw_data: dict) -> str:
-    """从 raw_data 拼出与详情页(buildAnalysisSections)同款分节的完整报告 markdown。
+    """Dựng markdown báo cáo đầy đủ từ raw_data, chia mục giống hệt trang chi tiết (buildAnalysisSections).
 
-    顺序对齐详情页:决策摘要 → PM 决策书(+交易员)→ 4 分析师全文 → 看多看空辩论全文(+研究主管裁决)
-    → 风控辩论全文(+风控裁决)。比 `content` 字段更全(content 省略了 4 分析师与辩论全文)。
+    Thứ tự khớp trang chi tiết: tóm tắt quyết định → bản quyết định của PM (+ trader) →
+    toàn văn 4 chuyên viên phân tích → toàn văn tranh luận mua bán (+ phán quyết của trưởng
+    bộ phận nghiên cứu) → toàn văn tranh luận quản trị rủi ro (+ phán quyết rủi ro).
+    Đầy đủ hơn trường `content` (content lược bỏ toàn văn của 4 chuyên viên và phần tranh luận).
     """
     rd = raw_data or {}
     sug = rd.get("suggestion") or {}
@@ -166,10 +171,10 @@ def assemble_report_markdown(raw_data: dict) -> str:
 
 
 def render_analysis_pdf(title: str, markdown_text: str) -> bytes:
-    """分析报告 markdown → PDF 字节(中文矢量、可复制)。WeasyPrint 优先,失败回退 xhtml2pdf。"""
+    """Markdown báo cáo phân tích → byte PDF (chữ Hán dạng vector, sao chép được). Ưu tiên WeasyPrint, lỗi thì lùi về xhtml2pdf."""
     body_html = _md_to_html(markdown_text)
     try:
         return _render_weasyprint(title, body_html)
-    except Exception as e:  # WeasyPrint 缺系统库/渲染异常 → 保底
+    except Exception as e:  # WeasyPrint thiếu thư viện hệ thống / lỗi kết xuất → dùng phương án dự phòng
         logger.warning("[PDF导出] WeasyPrint 不可用,回退 xhtml2pdf: %s", e)
         return _render_xhtml2pdf(title, body_html)

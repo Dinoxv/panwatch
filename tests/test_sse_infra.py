@@ -32,12 +32,12 @@ def test_stream_replay_and_resume():
         await stream.publish("done", {})
         await stream.finish()
 
-        # 从头订阅：3 条全收到
+        # Đăng ký từ đầu: nhận đủ cả 3 bản ghi
         all_events = [ev async for ev in stream.subscribe(after_seq=0)]
         assert len(all_events) == 3
         assert "id: 1\n" in all_events[0]
 
-        # 断线重连：Last-Event-ID=2 → 只收到第 3 条
+        # Kết nối lại sau khi đứt: Last-Event-ID=2 → chỉ nhận bản ghi thứ 3
         resumed = [ev async for ev in stream.subscribe(after_seq=2)]
         assert len(resumed) == 1
         assert "id: 3\n" in resumed[0]
@@ -71,9 +71,9 @@ def test_stream_live_subscribe():
 
 def test_hub_create_get_prune():
     """Hub：create/get 正常，超 TTL 的流被清理"""
-    hub = SSEHub(ttl_sec=0.0)  # TTL=0 → 下次 prune 即清理
+    hub = SSEHub(ttl_sec=0.0)  # TTL=0 → lần prune kế tiếp là dọn luôn
     stream = hub.create()
-    # TTL 为 0，get 时触发 prune 已经清掉
+    # TTL bằng 0, gọi get là kích hoạt prune và đã dọn sạch
     assert hub.get(stream.stream_id) is None
 
     hub2 = SSEHub(ttl_sec=60)
@@ -98,7 +98,7 @@ def test_middleware_sse_passthrough():
                 "headers": [(b"content-type", b"text/event-stream; charset=utf-8")],
             })
             await send({"type": "http.response.body", "body": b"id: 1\n\n", "more_body": True})
-            # 记录此刻下游已收到多少条消息——直通模式下应该已实时转发
+            # Ghi lại lúc này phía dưới đã nhận bao nhiêu thông điệp — ở chế độ chuyển thẳng thì lẽ ra đã chuyển tiếp theo thời gian thực
             sent_during_app.append(len(sent_messages))
             await send({"type": "http.response.body", "body": b"id: 2\n\n", "more_body": False})
 
@@ -110,7 +110,7 @@ def test_middleware_sse_passthrough():
         mw = ResponseWrapperMiddleware(app)
         await mw(_make_scope(), None, send)
 
-        # app 发送第二块前，start + 第一块已经转发到下游（证明未缓冲）
+        # Trước khi app gửi khối thứ hai thì start + khối đầu đã được chuyển xuống phía dưới (chứng minh là không đệm)
         assert sent_during_app == [2]
         assert len(sent_messages) == 3
         assert sent_messages[1]["body"] == b"id: 1\n\n"

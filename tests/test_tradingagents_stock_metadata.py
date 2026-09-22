@@ -29,7 +29,7 @@ def test_metadata_context_has_company_name():
     assert "601127" in ctx
     assert "A 股" in ctx
     assert "83.26" in ctx
-    assert "DO NOT guess" in ctx  # 强制约束
+    assert "DO NOT guess" in ctx  # Ràng buộc bắt buộc
 
 
 def test_metadata_context_includes_industry():
@@ -112,7 +112,7 @@ def test_serve_get_cashflow_distinct_from_balance_sheet():
         bs = _serve_from_panwatch("get_balance_sheet", "601127", {})
         cf = _serve_from_panwatch("get_cashflow", "601127", {})
     assert "Cash flow" in cf
-    assert bs != cf  # 不能完全一样
+    assert bs != cf  # Không được giống hệt nhau
 
 
 def test_serve_get_stock_data_hits():
@@ -121,17 +121,17 @@ def test_serve_get_stock_data_hits():
     klines = [type("K", (), {"date": "2026-05-15", "open": 80, "high": 85, "low": 79, "close": 83, "volume": 1000})()]
     with panwatch_data_context({"stock": stock, "klines": klines, "quote": {}}):
         result = _serve_from_panwatch("get_stock_data", "601127", {})
-    assert "2026-05-15" in result  # CSV 命中
+    assert "2026-05-15" in result  # Khớp CSV
 
 
 def test_serve_get_indicators_without_args_fallback_to_kline_csv():
     """get_indicators 没传 indicator 参数时(罕见),fallback 到 K 线 CSV"""
     stock = _FakeStock("赛力斯", "601127", "CN")
     klines = [type("K", (), {"date": "2026-05-15", "open": 80, "high": 85, "low": 79, "close": 83, "volume": 1000})()]
-    # args 为空 → 不命中单指标分支,落到 stockstats/yfin 分支返回完整 CSV
+    # args rỗng → không rơi vào nhánh một chỉ báo, rơi xuống nhánh stockstats/yfin và trả CSV đầy đủ
     with panwatch_data_context({"stock": stock, "klines": klines, "quote": {}}):
         result = _serve_from_panwatch("get_indicators", "601127", {}, args=())
-    # 因为没匹配到单指标,降级走 stockstats 分支 → 返回完整 K 线 CSV
+    # Vì không khớp chỉ báo đơn lẻ nên hạ cấp sang nhánh stockstats → trả CSV nến đầy đủ
     assert "2026-05-15" in result
 
 
@@ -147,8 +147,8 @@ def test_serve_fundamentals_uses_real_quote_data():
     with panwatch_data_context({"stock": stock, "quote": quote}):
         result = _serve_from_panwatch("get_fundamentals", "601127", {})
     assert "25.5" in result  # PE
-    assert "125000000000" in result or "1.25e" in result.lower()  # 市值
-    assert "3.2" in result  # 换手率
+    assert "125000000000" in result or "1.25e" in result.lower()  # Vốn hóa
+    assert "3.2" in result  # Tỷ lệ vòng quay
     assert "Lightweight Fundamentals" in result
 
 
@@ -169,7 +169,7 @@ def test_patch_route_to_vendor_handles_positional_args():
     from unittest.mock import MagicMock
     from src.modules.automation.tradingagents.toolkit_adapter import patch_route_to_vendor
 
-    # 构造一个假的 tradingagents.dataflows.interface 模块用于测试
+    # Dựng một module tradingagents.dataflows.interface giả để kiểm thử
     fake_ti = MagicMock()
     captured_calls = []
 
@@ -181,7 +181,7 @@ def test_patch_route_to_vendor_handles_positional_args():
     fake_module = type(sys)("tradingagents.dataflows.interface")
     fake_module.route_to_vendor = original_func
 
-    # patch sys.modules 让 toolkit_adapter import 拿到我们的假模块
+    # patch sys.modules để toolkit_adapter khi import sẽ nhận được module giả của ta
     sys.modules["tradingagents"] = type(sys)("tradingagents")
     sys.modules["tradingagents.dataflows"] = type(sys)("tradingagents.dataflows")
     sys.modules["tradingagents.dataflows"].interface = fake_module
@@ -191,13 +191,13 @@ def test_patch_route_to_vendor_handles_positional_args():
         stock = _FakeStock("赛力斯", "601127", "CN")
         with panwatch_data_context({"stock": stock, "klines": [], "quote": {}}):
             with patch_route_to_vendor():
-                # 模拟上游 positional 调用:route_to_vendor("get_fundamentals", "601127", "2026-05-17")
+                # Mô phỏng lời gọi bằng tham số vị trí của thượng nguồn: route_to_vendor("get_fundamentals", "601127", "2026-05-17")
                 result = fake_module.route_to_vendor("get_fundamentals", "601127", "2026-05-17")
 
-        # 我们的 patch 必须能识别 positional ticker,不能 TypeError
+        # Bản patch của ta phải nhận ra mã ở tham số vị trí, không được TypeError
         assert "赛力斯" in result
         assert "601127" in result
-        # 不应该放行到 original(那会触发 captured_calls 增加)
+        # Không được cho đi tiếp tới hàm gốc (làm vậy sẽ khiến captured_calls tăng)
         assert len(captured_calls) == 0
     finally:
         for k in ["tradingagents.dataflows.interface", "tradingagents.dataflows", "tradingagents"]:
@@ -224,7 +224,7 @@ def test_patch_route_to_vendor_intercepts_global_news_with_cache():
         stock = _FakeStock("赛力斯", "601127", "CN")
         with panwatch_data_context({"stock": stock, "events": [], "quote": {}}):
             with patch_route_to_vendor():
-                # get_global_news 第一个参数是日期,不是 ticker
+                # Tham số đầu của get_global_news là ngày, không phải mã cổ phiếu
                 result = fake_module.route_to_vendor(
                     "get_global_news", "2026-05-17", 7, 20
                 )

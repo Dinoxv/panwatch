@@ -30,7 +30,7 @@ def _mk_bars(n: int) -> list[kline_collector.KlineData]:
 
 
 class _FakeMarketData:
-    """假的 marketdata.MarketData,只实现 klines(),记录调用次数。"""
+    """marketdata.MarketData giả, chỉ cài đặt klines() và đếm số lần được gọi."""
 
     def __init__(self, bars):
         self.bars = bars
@@ -59,8 +59,8 @@ def test_cache_serves_shorter_request_from_longer_entry(monkeypatch):
     monkeypatch.setattr(kline_collector, "get_market_data", lambda: fake)
 
     c = kline_collector.KlineCollector(MarketCode.CN)
-    c.get_klines("600519", days=120)          # 取并缓存 130 根
-    out = c.get_klines("600519", days=30)     # 应从缓存切 30 根
+    c.get_klines("600519", days=120)          # Lấy và đệm 130 cây nến
+    out = c.get_klines("600519", days=30)     # Phải cắt 30 cây từ bộ đệm
 
     assert fake.calls == 1, f"更短请求应命中缓存,实际联网 {fake.calls} 次"
     assert len(out) == 30
@@ -77,7 +77,7 @@ def test_empty_result_negative_cached_then_retries(monkeypatch):
     assert c.get_klines("600519", days=120) == []
     assert fake.calls == 1, "冷却窗口内不应重复联网(防突发打爆数据源)"
 
-    # 模拟冷却到期:应重新联网重试,证明瞬时故障未被永久固化为空
+    # Mô phỏng hết thời gian chờ: phải gọi mạng thử lại, chứng minh sự cố nhất thời không bị đóng băng vĩnh viễn thành rỗng
     kline_collector._FAIL_UNTIL.clear()
     assert c.get_klines("600519", days=120) == []
     assert fake.calls == 2, "冷却过后应重新联网重试"

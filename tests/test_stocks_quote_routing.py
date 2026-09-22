@@ -11,5 +11,5 @@ def test_get_quotes_uses_md_quote_rows(monkeypatch):
                                    "change_pct": 1.0, "change_amount": 0.03, "prev_close": 2.97}])[1],
     )
     assert hasattr(stocks_api, "md_quote_rows")
-    # 语义:传入原始 symbol(非腾讯格式),按市场分组调用
+    # Ngữ nghĩa: truyền vào symbol gốc (không phải định dạng Tencent), gọi theo nhóm thị trường
     assert callable(stocks_api.md_quote_rows)

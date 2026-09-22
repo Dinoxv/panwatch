@@ -23,7 +23,7 @@ from src.platform.marketdata.models import MarketCode, IndexData
 
 logger = logging.getLogger(__name__)
 
-# 盘后建议类型映射
+# Ánh xạ loại khuyến nghị sau phiên
 DAILY_ACTION_MAP = {
     "继续持有": {"action": "hold", "label": "继续持有"},
     "考虑加仓": {"action": "add", "label": "考虑加仓"},
@@ -35,29 +35,29 @@ DAILY_ACTION_MAP = {
 
 PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "daily_report.txt"
 
-# A 股大盘指数的显式腾讯符号（与 akshare_collector.CN_INDICES 口径一致）
+# Mã Tencent tường minh cho chỉ số chung của cổ phiếu A (thống nhất khẩu độ với akshare_collector.CN_INDICES)
 _CN_INDEX_TENCENT_SYMBOLS = ["sh000001", "sz399001", "sz399006"]
 
 
 def get_market_data():
-    """惰性 import,避免包未装/循环 import 影响本模块加载。"""
+    """Import lười, tránh việc gói chưa cài / import vòng làm hỏng quá trình nạp module này."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()
 
 
 class DailyReportAgent(BaseAgent):
-    """盘后日报 Agent"""
+    """Agent nhật báo sau phiên"""
 
     name = "daily_report"
     display_name = "收盘复盘"
     description = "每日收盘后生成自选股日报，包含大盘概览、个股分析和明日关注"
 
     async def _fetch_index_for_market(self, market_code: MarketCode) -> list[IndexData]:
-        """按 market 取大盘指数。
+        """Lấy chỉ số chung theo market.
 
-        直接走 marketdata 新包(index_quotes)。
-        与旧 _get_cn_index 口径一致：仅 CN 出数，其余市场返回空 list。
+        Đi thẳng vào gói marketdata mới (index_quotes).
+        Cùng khẩu độ với _get_cn_index cũ: chỉ CN ra số, các thị trường khác trả list rỗng.
         """
         if market_code != MarketCode.CN:
             return []
@@ -78,7 +78,7 @@ class DailyReportAgent(BaseAgent):
         ]
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集大盘指数 + 自选股结构化数据包（行情/技术/资金/新闻/持仓）"""
+        """Thu thập gói dữ liệu có cấu trúc của chỉ số chung + mã theo dõi (bảng giá/kỹ thuật/dòng tiền/tin tức/vị thế)"""
 
         all_indices: list[IndexData] = []
         markets = []
@@ -132,14 +132,14 @@ class DailyReportAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建日报 Prompt"""
+        """Dựng Prompt nhật báo"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
-        # 构建用户输入：结构化的市场数据
+        # Dựng đầu vào người dùng: dữ liệu thị trường có cấu trúc
         lines = []
         lines.append(f"## 日期：{datetime.now().strftime('%Y-%m-%d')}\n")
         symbol_contexts = data.get("symbol_contexts", {}) or {}
@@ -155,7 +155,7 @@ class DailyReportAgent(BaseAgent):
                 lines.append(f"- 历史新闻主题：{global_topic.get('summary')}")
             lines.append("")
 
-        # 大盘指数
+        # Chỉ số chung
         lines.append("## 大盘指数")
         for idx in data["indices"]:
             change_pct = safe_num(idx.change_pct)
@@ -166,7 +166,7 @@ class DailyReportAgent(BaseAgent):
                 f"成交额:{safe_num(idx.turnover) / 1e8:.0f}亿"
             )
 
-        # 自选股详情
+        # Chi tiết cổ phiếu theo dõi
         lines.append("\n## 自选股详情")
         packs = data.get("signal_packs", {}) or {}
 
@@ -182,7 +182,7 @@ class DailyReportAgent(BaseAgent):
                     f"- 数据质量：{stock_quality.get('score', 0)}（实时新闻 {stock_quality.get('realtime_news_count', 0)} 条，扩展新闻 {stock_quality.get('extended_news_count', 0)} 条，历史新闻 {stock_quality.get('history_news_count', 0)} 条）"
                 )
 
-            # 基本行情
+            # Giá cơ bản
             if quote:
                 change_pct = safe_num(quote.change_pct)
                 direction = "↑" if change_pct > 0 else "↓" if change_pct < 0 else "→"
@@ -190,7 +190,7 @@ class DailyReportAgent(BaseAgent):
                 current_price = safe_num(quote.current_price)
                 high_price = safe_num(quote.high_price)
                 low_price = safe_num(quote.low_price)
-                prev_close = safe_num(quote.prev_close, 1)  # 避免除零
+                prev_close = safe_num(quote.prev_close, 1)  # Tránh chia cho 0
                 turnover = safe_num(quote.turnover)
 
                 lines.append(
@@ -207,7 +207,7 @@ class DailyReportAgent(BaseAgent):
                 current_price = 0
                 lines.append("- 今日：行情数据缺失")
 
-            # 技术指标
+            # Chỉ báo kỹ thuật
             tech = (pack.technical if pack else None) or {"error": "无技术指标数据"}
             if not tech.get("error"):
                 ma5 = safe_num(tech.get("ma5"))
@@ -275,7 +275,7 @@ class DailyReportAgent(BaseAgent):
                             f"- 支撑压力：支撑{support:.2f} 压力{resistance:.2f}"
                         )
 
-            # 资金流向（仅A股）
+            # Dòng tiền (chỉ cổ phiếu A)
             flow = (pack.capital_flow if pack else None) or {}
             if not flow.get("error") and flow.get("status"):
                 inflow = safe_num(flow.get("main_net_inflow"))
@@ -291,7 +291,7 @@ class DailyReportAgent(BaseAgent):
                 if flow.get("trend_5d") and flow.get("trend_5d") != "无数据":
                     lines.append(f"- 5日资金：{flow['trend_5d']}")
 
-            # 相关新闻/公告
+            # Tin tức / công bố thông tin liên quan
             stock_news = (
                 (stock_ctx.get("news") or {}).get("realtime")
                 or (stock_ctx.get("news") or {}).get("extended")
@@ -318,7 +318,7 @@ class DailyReportAgent(BaseAgent):
             if history_topic.get("summary"):
                 lines.append(f"- 历史新闻记忆(近30天)：{history_topic.get('summary')}")
 
-            # 事件快照（近 N 天，来自公告结构化）
+            # Ảnh chụp sự kiện (N ngày gần nhất, bóc từ công bố thông tin)
             events = pack.events.items if (pack and pack.events) else []
             important_events = [e for e in events if (e.get("importance") or 0) >= 2]
             if important_events:
@@ -332,7 +332,7 @@ class DailyReportAgent(BaseAgent):
                         f"  - [{time_str}] ({et}) {title}{(' ' + link) if link else ''}"
                     )
 
-            # 持仓信息
+            # Thông tin vị thế
             position = None
             if pack and pack.position and pack.position.aggregated:
                 position = pack.position.aggregated
@@ -380,7 +380,7 @@ class DailyReportAgent(BaseAgent):
                 if memory.get("latest_history_topic"):
                     lines.append(f"- 历史记忆主题：{memory.get('latest_history_topic')}")
 
-        # 账户资金概况
+        # Tổng quan vốn tài khoản
         if context.portfolio.accounts:
             lines.append("\n## 账户概况")
             for acc in context.portfolio.accounts:
@@ -401,8 +401,8 @@ class DailyReportAgent(BaseAgent):
 
     def _parse_suggestions(self, content: str, watchlist: list) -> dict[str, dict]:
         """
-        从 AI 响应中解析个股建议
-        返回: {symbol: {action, action_label, reason, should_alert}}
+        Bóc khuyến nghị từng mã từ phản hồi của AI.
+        Trả về: {symbol: {action, action_label, reason, should_alert}}
         """
         suggestions: dict[str, dict] = {}
         if not content or not watchlist:
@@ -419,7 +419,7 @@ class DailyReportAgent(BaseAgent):
             symbol_map[sym.upper()] = sym
             if getattr(s, "market", None) == MarketCode.HK and sym.isdigit():
                 try:
-                    symbol_map[str(int(sym))] = sym  # 兼容去掉前导 0（如 00700 -> 700）
+                    symbol_map[str(int(sym))] = sym  # Tương thích trường hợp mất số 0 đứng đầu (ví dụ 00700 -> 700)
                 except ValueError:
                     pass
                 symbol_map[f"HK{sym}"] = sym
@@ -440,33 +440,33 @@ class DailyReportAgent(BaseAgent):
             line = raw_line.strip()
             if not line:
                 continue
-            # 快速过滤：必须包含某个建议类型
+            # Lọc nhanh: bắt buộc phải chứa một loại khuyến nghị nào đó
             action_text = next((t for t in action_texts if t in line), None)
             if not action_text:
                 continue
 
-            # 1) 优先匹配「...」/【...】里的代码
+            # 1) Ưu tiên khớp mã nằm trong 「...」/【...】
             m = re.search(r"[「【\[]\s*(?P<sym>[A-Za-z]{1,5}|\d{3,6})\s*[」】\]]", line)
             sym_raw = m.group("sym") if m else ""
 
-            # 2) 再匹配括号里的代码（如 腾讯控股(00700)）
+            # 2) Kế đến khớp mã trong ngoặc đơn (ví dụ 腾讯控股(00700))
             if not sym_raw:
                 m = re.search(r"\(\s*(?P<sym>[A-Za-z]{1,5}|\d{3,6})\s*\)", line)
                 sym_raw = m.group("sym") if m else ""
 
-            # 3) 再匹配行首代码（如 600519 继续持有：...）
+            # 3) Kế đến khớp mã ở đầu dòng (ví dụ 600519 继续持有：...)
             if not sym_raw:
                 m = re.match(r"^(?P<sym>[A-Za-z]{1,5}|\d{3,6})\b", line)
                 sym_raw = m.group("sym") if m else ""
 
-            # 4) 最后用“包含”方式兜底（避免 AI 输出了带前后缀的代码）
+            # 4) Cuối cùng dự phòng bằng cách khớp “có chứa” (phòng khi AI xuất mã kèm tiền tố / hậu tố)
             if not sym_raw:
                 for k in sorted(symbol_map.keys(), key=len, reverse=True):
                     if k and k in line.upper():
                         sym_raw = k
                         break
 
-            # 5) 名称兜底
+            # 5) Dự phòng cuối: khớp theo tên
             if not sym_raw:
                 for name, sym in name_map.items():
                     if name and name in line:
@@ -479,12 +479,12 @@ class DailyReportAgent(BaseAgent):
             sym_key = sym_raw.strip()
             canonical = symbol_map.get(sym_key.upper()) or symbol_map.get(sym_key)
             if not canonical and sym_key.isdigit():
-                canonical = symbol_map.get(sym_key)  # HK 去 0 的情况
+                canonical = symbol_map.get(sym_key)  # Trường hợp mã Hồng Kông bị mất số 0 đứng đầu
 
             if not canonical or canonical not in symbol_set:
                 continue
 
-            # 提取理由：从“建议类型”后截取
+            # Bóc lý do: cắt phần đứng sau “loại khuyến nghị”
             reason = ""
             m_reason = re.search(
                 rf"{re.escape(action_text)}\s*[：:：\-—]?\s*(?P<r>.+)$", line
@@ -566,7 +566,7 @@ class DailyReportAgent(BaseAgent):
         return suggestions
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """调用 AI 分析并保存到历史/建议池"""
+        """Gọi AI phân tích rồi lưu vào lịch sử và kho khuyến nghị."""
         system_prompt, user_content = self.build_prompt(data, context)
         content = await context.ai_client.chat(system_prompt, user_content)
 
@@ -601,13 +601,13 @@ class DailyReportAgent(BaseAgent):
             raw_data={**data, "structured": structured} if structured else data,
         )
 
-        # 解析个股建议
+        # Bóc khuyến nghị cho từng mã
         suggestions = self._parse_suggestions_json(structured, context.watchlist)
         if not suggestions:
             suggestions = self._parse_suggestions(result.content, context.watchlist)
         result.raw_data["suggestions"] = suggestions
 
-        # 保存各股票建议到建议池
+        # Lưu khuyến nghị từng mã vào kho khuyến nghị
         stock_map = {s.symbol: s for s in context.watchlist}
         packs = data.get("signal_packs", {}) or {}
         symbol_contexts = data.get("symbol_contexts", {}) or {}
@@ -637,7 +637,7 @@ class DailyReportAgent(BaseAgent):
                     reason=sug.get("reason", ""),
                     agent_name=self.name,
                     agent_label=self.display_name,
-                    expires_hours=16,  # 盘后建议隔夜有效
+                    expires_hours=16,  # Khuyến nghị sau phiên có hiệu lực qua đêm
                     prompt_context=user_content,
                     ai_response=result.content,
                     stock_market=stock.market.value,
@@ -682,8 +682,8 @@ class DailyReportAgent(BaseAgent):
                         },
                     )
 
-        # 保存到历史记录（使用 "*" 表示全局分析）
-        # 简化 raw_data，只保存关键信息
+        # Lưu vào lịch sử (dùng "*" để đánh dấu phân tích toàn cục)
+        # Rút gọn raw_data, chỉ giữ thông tin then chốt
         symbols = [s.symbol for s in context.watchlist]
         compact_context = {}
         context_payload = {}

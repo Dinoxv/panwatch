@@ -40,34 +40,34 @@ const TIME_RANGES = [
   { label: '1h', value: 1 },
   { label: '6h', value: 6 },
   { label: '24h', value: 24 },
-  { label: '全部', value: 0 },
+  { label: 'Tất cả', value: 0 },
 ]
 const DOMAIN_OPTIONS: Array<{ label: string, value: 'business' | 'all' | 'infra' }> = [
-  { label: '业务优先', value: 'business' },
-  { label: '全部', value: 'all' },
-  { label: '基础设施', value: 'infra' },
+  { label: 'Ưu tiên nghiệp vụ', value: 'business' },
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Hạ tầng', value: 'infra' },
 ]
 const FLOW_PRESETS: Array<{ key: string, label: string, loggers: string[] }> = [
-  { key: '', label: '全部链路', loggers: [] },
+  { key: '', label: 'Mọi chuỗi', loggers: [] },
   {
     key: 'premarket_outlook',
-    label: '盘前分析',
+    label: 'Phân tích trước phiên',
     loggers: ['src.agents.premarket_outlook', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'daily_report',
-    label: '收盘复盘',
+    label: 'Ôn lại sau phiên',
     loggers: ['src.agents.daily_report', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'intraday_monitor',
-    label: '盘中监测',
+    label: 'Theo dõi trong phiên',
     loggers: ['src.agents.intraday_monitor', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'tradingagents',
-    label: '深度分析',
-    // 'tradingagents' 子串同时匹配 PanWatch 适配层 (src.agents.tradingagents.*) 和上游 (tradingagents.*)
+    label: 'Phân tích chuyên sâu',
+    // Chuỗi con 'tradingagents' khớp cả tầng khớp nối của PanWatch (src.agents.tradingagents.*) lẫn thượng nguồn (tradingagents.*)
     loggers: ['tradingagents', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
 ]
@@ -152,15 +152,15 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
     void load({ append: false, cursor: 0 })
   }, [load])
 
-  // 初次打开或筛选变更时刷新（关键词搜索走防抖）
+  // Làm mới lúc mở lần đầu hoặc khi đổi bộ lọc (tìm theo từ khóa thì đi qua chống dội)
   useEffect(() => {
     if (!open) return
     loadLatest()
-    // query 由 handleSearchInput 防抖触发，避免每次键入都立即请求。
+    // query do handleSearchInput kích hoạt qua chống dội, tránh gõ phím nào cũng gọi ngay.
   }, [open, selectedLevels, selectedLoggers, selectedFlow, domain, timeRange])
 
-  // 自动刷新：优先 SSE tail（服务端推增量，事件 id 即日志 id，断线自动续推），
-  // SSE 不可用/关流时降级为原 3s 轮询（轮询代码保留兜底）
+  // Tự làm mới: ưu tiên SSE tail (server đẩy phần tăng thêm, id sự kiện chính là id nhật ký, đứt là tự đẩy tiếp),
+  // SSE không dùng được/đóng luồng thì hạ xuống lối hỏi vòng 3s như cũ (mã hỏi vòng vẫn giữ để hứng)
   useEffect(() => {
     if (!(open && autoRefresh)) {
       return () => { if (refreshTimer.current) clearInterval(refreshTimer.current) }
@@ -188,14 +188,14 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
           const incoming = ev.data.items as LogEntry[]
           setLogs(prev => {
             const seen = new Set(prev.map(x => x.id))
-            // 服务端按 id 升序推，列表按最新在前展示 → 反转后插到最前
+            // Server đẩy theo id tăng dần, danh sách hiện mới nhất trước → đảo lại rồi chèn lên đầu
             const fresh = incoming.filter(x => !seen.has(x.id)).reverse()
             return fresh.length > 0 ? [...fresh, ...prev] : prev
           })
           setTotal(t => t + incoming.length)
         }
       },
-      // 服务端流超时正常关闭 / 连接重试用尽 → 降级轮询
+      // Luồng server hết giờ đóng bình thường / thử lại kết nối đã cạn → hạ xuống hỏi vòng
       onClosed: () => startPolling(),
       onFailed: () => startPolling(),
     })
@@ -236,7 +236,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
   }
 
   const handleClear = async () => {
-    if (!confirm('确定清空所有日志？')) return
+    if (!confirm('Chắc chắn xóa sạch mọi nhật ký?')) return
     await fetchAPI('/logs', { method: 'DELETE' })
     setLogs([])
     setTotal(0)
@@ -252,16 +252,16 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
 
   const filterSummary = useMemo(() => {
     const parts: string[] = []
-    if (query) parts.push(`关键词:${query}`)
-    if (selectedLevels.length) parts.push(`级别:${selectedLevels.join(',')}`)
-    if (timeRange > 0) parts.push(`时间:${timeRange}h`)
-    if (domain !== 'all') parts.push(`范围:${domain === 'business' ? '业务优先' : '基础设施'}`)
+    if (query) parts.push(`Từ khóa:${query}`)
+    if (selectedLevels.length) parts.push(`Mức:${selectedLevels.join(',')}`)
+    if (timeRange > 0) parts.push(`Thời gian:${timeRange}h`)
+    if (domain !== 'all') parts.push(`Phạm vi:${domain === 'business' ? 'Ưu tiên nghiệp vụ' : 'Hạ tầng'}`)
     if (selectedFlow) {
       const flow = FLOW_PRESETS.find(x => x.key === selectedFlow)
-      if (flow) parts.push(`链路:${flow.label}`)
+      if (flow) parts.push(`Chuỗi:${flow.label}`)
     }
-    if (selectedLoggers.length) parts.push(`自选Logger:${selectedLoggers.length}`)
-    return parts.length > 0 ? parts.join(' | ') : '当前无额外过滤'
+    if (selectedLoggers.length) parts.push(`Logger tự chọn:${selectedLoggers.length}`)
+    return parts.length > 0 ? parts.join(' | ') : 'Hiện không lọc thêm gì'
   }, [query, selectedLevels, timeRange, domain, selectedFlow, selectedLoggers])
 
   const loggerFilterOptions = loggerOptions()
@@ -271,16 +271,16 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
       <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span>日志</span>
+            <span>Nhật ký</span>
             <Button variant={autoRefresh ? 'default' : 'secondary'} size="sm" className="h-7" onClick={() => setAutoRefresh(v => !v)}>
               <RefreshCw className={`w-3.5 h-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
-              自动刷新
+              Tự làm mới
             </Button>
             <Button variant="outline" size="sm" className="h-7" onClick={loadLatest}>
-              刷新
+              Làm mới
             </Button>
             <Button variant="ghost" size="sm" className="h-7 hover:text-destructive hover:bg-destructive/8 ml-auto" onClick={handleClear}>
-              <Trash2 className="w-3.5 h-3.5" /> 清空
+              <Trash2 className="w-3.5 h-3.5" /> Xóa sạch
             </Button>
           </DialogTitle>
         </DialogHeader>
@@ -288,7 +288,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
         <div className="card p-3 md:p-4 mb-3 space-y-3">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-            <Input value={query} onChange={e => handleSearchInput(e.target.value)} placeholder="搜索日志内容 / trace_id / logger..." className="pl-10" />
+            <Input value={query} onChange={e => handleSearchInput(e.target.value)} placeholder="Tìm nội dung nhật ký / trace_id / logger..." className="pl-10" />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -311,7 +311,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                 {range.label}
               </button>
             ))}
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">{total} 条记录</span>
+            <span className="ml-auto text-[11px] text-muted-foreground font-medium">{total} bản ghi</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -344,10 +344,10 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               onClick={() => setShowAllLoggerFilters(v => !v)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-accent text-muted-foreground hover:text-foreground"
             >
-              Logger过滤
+              Lọc Logger
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllLoggerFilters ? 'rotate-180' : ''}`} />
             </button>
-            <div className="text-[11px] text-muted-foreground">默认链路会自动包含 `src.agents.base` 决策日志</div>
+            <div className="text-[11px] text-muted-foreground">Chuỗi mặc định luôn gồm nhật ký quyết định `src.agents.base`</div>
           </div>
           {showAllLoggerFilters && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -366,9 +366,9 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
 
           <div className="flex items-center gap-2 text-[11px]">
             <div className="flex-1 rounded-md border border-border/50 px-2.5 py-1.5 text-muted-foreground bg-background/40">
-              过滤器：{filterSummary}
+              Bộ lọc: {filterSummary}
             </div>
-            <Button variant="ghost" size="sm" className="h-7" onClick={clearFilters}>清空过滤</Button>
+            <Button variant="ghost" size="sm" className="h-7" onClick={clearFilters}>Xóa bộ lọc</Button>
           </div>
         </div>
 
@@ -382,8 +382,8 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                 <ScrollText className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[15px] font-semibold text-foreground">暂无日志</p>
-              <p className="text-[13px] text-muted-foreground mt-1.5">后台运行后日志会自动出现在这里</p>
+              <p className="text-[15px] font-semibold text-foreground">Chưa có nhật ký nào</p>
+              <p className="text-[13px] text-muted-foreground mt-1.5">Chạy nền xong nhật ký sẽ tự hiện ở đây</p>
             </div>
           ) : (
             <div className="card overflow-hidden h-full flex flex-col">
@@ -391,11 +391,11 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                 <table className="w-full text-[12px] font-mono">
                   <thead className="sticky top-0 bg-card z-10 border-b border-border/50">
                     <tr>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-32">时间</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-20">级别</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-32">Thời gian</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-20">Mức</th>
                       <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-36">Logger</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-44">链路</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">消息</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-44">Chuỗi</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Thông điệp</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -426,14 +426,14 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               </div>
 
               <div className="flex items-center justify-between px-5 py-3 border-t border-border/30">
-                <span className="text-[12px] text-muted-foreground">已加载 {logs.length} / {total}</span>
+                <span className="text-[12px] text-muted-foreground">Đã nạp {logs.length} / {total}</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   disabled={!hasMore || loadingMore}
                   onClick={() => load({ append: true, cursor: beforeId })}
                 >
-                  {loadingMore ? '加载中...' : hasMore ? '加载更多' : '没有更多了'}
+                  {loadingMore ? 'Đang tải...' : hasMore ? 'Tải thêm' : 'Hết rồi'}
                 </Button>
               </div>
             </div>

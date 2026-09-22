@@ -12,19 +12,19 @@ from src.modules.administration.update_checker import check_update
 
 router = APIRouter()
 
-# 模块 router 已不在仓库根的浅层目录；版本文件必须从本文件的绝对位置推导，
-# 不能依赖服务进程的当前工作目录。
+# Router của module không còn nằm ở thư mục nông sát gốc repo; tệp phiên bản phải suy ra từ vị trí tuyệt đối của chính tệp này,
+# không được dựa vào thư mục làm việc hiện tại của tiến trình dịch vụ.
 VERSION_FILE = Path(__file__).resolve().parents[4] / "VERSION"
 
 
 def get_app_version() -> str:
-    """获取应用版本号"""
-    # 优先从环境变量读取
+    """Lấy số phiên bản ứng dụng."""
+    # Ưu tiên đọc từ biến môi trường
     version = os.getenv("APP_VERSION")
     if version:
         return version
 
-    # 从 VERSION 文件读取（支持多个位置）
+    # Đọc từ tệp VERSION (hỗ trợ nhiều vị trí)
     possible_paths = [Path("VERSION"), VERSION_FILE]
     for path in possible_paths:
         try:
@@ -47,7 +47,7 @@ class SettingResponse(BaseModel):
         from_attributes = True
 
 
-# 配置项描述
+# Mô tả mục cấu hình
 SETTING_DESCRIPTIONS = {
     "http_proxy": "HTTP 代理地址(配置后所有对外请求含行情/新闻/AI/通知统一走此代理)",
     "notify_quiet_hours": "通知静默时间段（HH:MM-HH:MM，空为关闭）",
@@ -62,7 +62,7 @@ SETTING_KEYS = list(SETTING_DESCRIPTIONS.keys())
 
 
 def _get_env_defaults() -> dict[str, str]:
-    """从 .env / 环境变量读取当前值作为默认"""
+    """Đọc giá trị hiện tại từ .env / biến môi trường để làm mặc định."""
     s = Settings()
     return {
         "http_proxy": s.http_proxy,
@@ -101,7 +101,7 @@ def list_settings(db: Session = Depends(get_db)):
     return result
 
 
-AVATAR_KEY = "ui_avatar"  # DB 仅存文件名;图片本体落在 data/avatars/
+AVATAR_KEY = "ui_avatar"  # Cơ sở dữ liệu chỉ lưu tên tệp; ảnh thật nằm ở data/avatars/
 
 
 def _avatar_dir() -> str:
@@ -112,9 +112,9 @@ def _avatar_dir() -> str:
 
 @router.get("/avatar")
 def get_avatar(db: Session = Depends(get_db)):
-    """读取用户头像:DB 存文件名,图片本体在 data/avatars/,读取后以 data URL 返回。
+    """Đọc ảnh đại diện người dùng: cơ sở dữ liệu lưu tên tệp, ảnh thật nằm ở data/avatars/, đọc xong trả về dạng data URL.
 
-    GET /avatar 无同名 GET /{key},不存在路由抢匹配问题。
+    GET /avatar không trùng tên với GET /{key} nào nên không có chuyện hai route tranh nhau khớp.
     """
     row = db.query(AppSettings).filter(AppSettings.key == AVATAR_KEY).first()
     fname = (row.value if row and row.value else "").strip()
@@ -134,9 +134,9 @@ def get_avatar(db: Session = Depends(get_db)):
 
 @router.put("/avatar")
 def set_avatar(update: SettingUpdate, db: Session = Depends(get_db)):
-    """保存/清空用户头像:把 data URL 落成 data/avatars/avatar.* 文件,DB 仅记文件名。
+    """Lưu / xóa ảnh đại diện người dùng: ghi data URL thành tệp data/avatars/avatar.*, cơ sở dữ liệu chỉ ghi tên tệp.
 
-    需在 /{key} 之前注册以优先匹配。传空字符串即清空(删文件 + 清记录)。
+    Phải đăng ký trước /{key} để được khớp ưu tiên. Truyền chuỗi rỗng là xóa (xóa tệp + xóa bản ghi).
     """
     row = db.query(AppSettings).filter(AppSettings.key == AVATAR_KEY).first()
     old = (row.value if row else "") or ""
@@ -165,7 +165,7 @@ def set_avatar(update: SettingUpdate, db: Session = Depends(get_db)):
     fname = f"avatar.{ext}"
     with open(os.path.join(_avatar_dir(), fname), "wb") as f:
         f.write(raw)
-    if old and old != fname:  # 扩展名变化时清掉旧文件
+    if old and old != fname:  # Xóa tệp cũ khi phần mở rộng thay đổi
         try:
             os.remove(os.path.join(_avatar_dir(), old))
         except OSError:
@@ -192,7 +192,7 @@ def update_setting(key: str, update: SettingUpdate, db: Session = Depends(get_db
     db.commit()
     db.refresh(setting)
 
-    # http_proxy 改动立刻反映到进程 env,所有 httpx(trust_env=True)免重启即走新代理
+    # Đổi http_proxy phản ánh ngay vào env của tiến trình, mọi httpx (trust_env=True) dùng proxy mới mà không cần khởi động lại
     if key == "http_proxy":
         try:
             from server import apply_proxy_env
@@ -205,13 +205,13 @@ def update_setting(key: str, update: SettingUpdate, db: Session = Depends(get_db
 
 @router.get("/version")
 def get_version():
-    """获取应用版本号"""
+    """Lấy số phiên bản ứng dụng."""
     return {"version": get_app_version()}
 
 
 @router.get("/update-check")
 def get_update_check(db: Session = Depends(get_db)):
-    """检查是否有可用新版本（带服务端缓存）。"""
+    """Kiểm tra xem có bản mới dùng được không (có đệm phía server)."""
     current = get_app_version()
     app_proxy = (
         db.query(AppSettings)

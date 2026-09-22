@@ -1,7 +1,7 @@
-"""将结构化日志缓冲写入 SQLite 的可观测性适配器。
+"""Adapter quan sát ghi vùng đệm nhật ký có cấu trúc xuống SQLite.
 
-它维护写入节流与保留策略，但不理解日志关联的产品业务含义，因此归属
-``platform.observability`` 而非 HTTP 路由层。
+Nó giữ phần tiết lưu ghi và chính sách lưu giữ, nhưng không hiểu ý nghĩa nghiệp vụ sản
+phẩm gắn với nhật ký, nên thuộc về ``platform.observability`` chứ không phải tầng route HTTP.
 """
 
 import logging

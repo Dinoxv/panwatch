@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 def _format_datetime(dt) -> str:
-    """格式化时间为当前时区的 ISO 格式（naive datetime 视为 UTC）。"""
+    """Định dạng thời gian sang ISO theo múi giờ hiện tại (datetime naive coi là UTC)."""
     if not dt:
         return ""
     tz_name = Settings().app_timezone or "UTC"
@@ -159,7 +159,7 @@ def delete_alert_rule(rule_id: int, db: Session = Depends(get_db)):
 
 @router.get("/hits/today")
 def list_today_hits(limit: int = 50, db: Session = Depends(get_db)):
-    """今日(本地时区)全部命中,跨规则聚合 —— 供首页"今日要紧事"。"""
+    """Toàn bộ lượt chạm hôm nay (múi giờ địa phương), gộp qua mọi quy tắc — cho phần "việc cần kíp hôm nay" ở trang chủ."""
     tz_name = Settings().app_timezone or "UTC"
     try:
         tzinfo = ZoneInfo(tz_name)
@@ -236,7 +236,7 @@ async def scan_alert_rules(dry_run: bool = False, bypass_market_hours: bool = Tr
         from server import price_alert_scheduler
 
         if price_alert_scheduler:
-            # 手动扫描默认绕过交易时段门禁，便于即时验证规则
+            # Quét thủ công mặc định bỏ qua cổng giờ giao dịch, để kiểm chứng quy tắc ngay lập tức
             if bypass_market_hours:
                 return await price_alert_scheduler.trigger_once(dry_run=dry_run)
             return await ENGINE.scan_once(dry_run=dry_run, bypass_market_hours=False)
