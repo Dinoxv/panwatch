@@ -179,7 +179,7 @@ describe('ChatWidget layout', () => {
       callbacks.onRunStarted?.({ taskId: 43 })
       callbacks.onDone?.({
         message_id: 44,
-        content: '| 标的 | 涨跌幅 |\n| --- | ---: |\n| 贵州茅台 | +1.2% |',
+        content: '| Mã | Biên độ |\n| --- | ---: |\n| 贵州茅台 | +1.2% |',
         created_at: '2026-09-12T00:00:00Z',
       })
     })
@@ -189,7 +189,7 @@ describe('ChatWidget layout', () => {
 
     const table = await screen.findByRole('table')
     expect(table).toBeTruthy()
-    expect(screen.getByRole('columnheader', { name: '标的' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'Mã' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: '贵州茅台' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: '+1.2%' })).toBeTruthy()
   })

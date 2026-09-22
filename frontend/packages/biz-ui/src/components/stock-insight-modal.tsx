@@ -1717,13 +1717,13 @@ export default function StockInsightModal(props: {
                         ) : null}
                         {activeReport.news_debug ? (
                           <div className="mt-2">
-                            <div className="text-[11px] text-muted-foreground mb-1">新闻注入明细</div>
+                            <div className="text-[11px] text-muted-foreground mb-1">Chi tiết tin tức đã nạp vào</div>
                             <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words overflow-x-auto">{JSON.stringify(activeReport.news_debug, null, 2)}</pre>
                           </div>
                         ) : null}
                         {activeReport.context_payload ? (
                           <div className="mt-2">
-                            <div className="text-[11px] text-muted-foreground mb-1">上下文快照</div>
+                            <div className="text-[11px] text-muted-foreground mb-1">Ảnh chụp ngữ cảnh</div>
                             <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words overflow-x-auto max-h-[220px] overflow-y-auto">{JSON.stringify(activeReport.context_payload, null, 2)}</pre>
                           </div>
                         ) : null}
@@ -2114,7 +2114,7 @@ function DeepHistoryComparison({
               <th className="text-right px-1 py-1 font-normal">1日</th>
               <th className="text-right px-1 py-1 font-normal">5日</th>
               <th className="text-right px-1 py-1 font-normal">20日</th>
-              <th className="text-center px-1 py-1 font-normal">命中</th>
+              <th className="text-center px-1 py-1 font-normal">Trúng</th>
             </tr>
           </thead>
           <tbody>

@@ -124,7 +124,7 @@ export default function AnalysisDetailPage() {
     try {
       await tradingAgentsApi.downloadAnalysisPdf(symbol, date)
     } catch (e) {
-      alert(e instanceof Error ? e.message : '导出失败')
+      alert(e instanceof Error ? e.message : 'Xuất thất bại')
     } finally {
       setPdfBusy(false)
     }
@@ -399,7 +399,7 @@ export default function AnalysisDetailPage() {
                       <th className="text-right py-2 px-2">1日</th>
                       <th className="text-right py-2 px-2">5日</th>
                       <th className="text-right py-2 px-2">20日</th>
-                      <th className="text-right py-2 pl-2">命中</th>
+                      <th className="text-right py-2 pl-2">Trúng</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -40,7 +40,7 @@ const sourceAgentLabelMap: Record<string, string> = {
   intraday_monitor: 'Theo dõi trong phiên',
   daily_report: 'Ôn lại sau phiên',
   news_digest: 'Tin nhanh',
-  market_scan: '市场扫描',
+  market_scan: 'Quét thị trường',
 }
 
 const sourceAgentLabel = (agent?: string) => {
@@ -149,9 +149,9 @@ const shouldReplacePrimary = (next: StrategySignalItem, current: StrategySignalI
 
 const toSignalFromCandidate = (row: EntryCandidateItem): StrategySignalItem => {
   const source = row.candidate_source || 'watchlist'
-  const sourceLabel = row.candidate_source_label || (source === 'market_scan' ? '市场池' : source === 'mixed' ? '市场+关注' : '关注池')
+  const sourceLabel = row.candidate_source_label || (source === 'market_scan' ? 'Kho thị trường' : source === 'mixed' ? 'Thị trường + theo dõi' : 'Kho theo dõi')
   const riskLevel: 'low' | 'medium' | 'high' = Number(row.score || 0) >= 85 ? 'high' : Number(row.score || 0) >= 70 ? 'medium' : 'low'
-  const riskLabel = riskLevel === 'high' ? '高风险' : riskLevel === 'low' ? '低风险' : '中风险'
+  const riskLabel = riskLevel === 'high' ? 'Rủi ro cao' : riskLevel === 'low' ? 'Rủi ro thấp' : 'Rủi ro vừa'
   return {
     id: Number(row.id || 0),
     snapshot_date: row.snapshot_date || '',
@@ -159,7 +159,7 @@ const toSignalFromCandidate = (row: EntryCandidateItem): StrategySignalItem => {
     stock_market: row.stock_market || 'CN',
     stock_name: row.stock_name || row.stock_symbol,
     strategy_code: (row.strategy_tags && row.strategy_tags[0]) || 'watchlist_agent',
-    strategy_name: (row.strategy_labels && row.strategy_labels[0]) || '候选建议',
+    strategy_name: (row.strategy_labels && row.strategy_labels[0]) || 'Khuyến nghị ứng viên',
     strategy_version: 'v1',
     risk_level: riskLevel,
     risk_level_label: riskLabel,
@@ -211,8 +211,8 @@ const formatEntryDisplay = (action: string | undefined, entryLow: number | null,
     return `${formatPlanPrice(entryLow)} ~ ${formatPlanPrice(entryHigh)}`
   }
   const key = (action || '').toLowerCase()
-  if (key === 'buy' || key === 'add') return '待补充入场位'
-  return '当前不建议开仓'
+  if (key === 'buy' || key === 'add') return 'Chờ bổ sung điểm vào lệnh'
+  return 'Hiện chưa nên mở vị thế'
 }
 
 const regimeToneClass = (regime?: string) => {
@@ -244,7 +244,7 @@ export default function OpportunitiesPage() {
   const [insightName, setInsightName] = useState<string | undefined>(undefined)
   const [insightHasPosition, setInsightHasPosition] = useState(false)
 
-  // 个股 AI 评分分享卡:当前分享的信号
+  // Thẻ chia sẻ điểm AI của một mã: tín hiệu đang chia sẻ
   const [shareSignal, setShareSignal] = useState<StrategySignalItem | null>(null)
 
   const openInsight = useCallback((item: StrategySignalItem) => {
@@ -331,7 +331,7 @@ export default function OpportunitiesPage() {
             count: fallback.count || 0,
             items: (fallback.items || []).map(toSignalFromCandidate),
           }
-          setError('策略层请求超时，已降级展示候选快照')
+          setError('Tầng chiến lược yêu cầu quá giờ, đã hạ cấp xuống hiện ảnh chụp ứng viên')
         }
       }
       if ((!data.items || data.items.length === 0) && market !== 'ALL') {
@@ -348,7 +348,7 @@ export default function OpportunitiesPage() {
       setItems(data.items || [])
       setSnapshotDate(data.snapshot_date || '')
       if (!data.snapshot_date) {
-        setError('暂无机会快照，请点击“刷新”生成一次')
+        setError('Chưa có ảnh chụp cơ hội, xin bấm "Làm mới" để dựng một lần')
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tải thất bại')
@@ -385,7 +385,7 @@ export default function OpportunitiesPage() {
       await sleep(3000)
     }
     await Promise.all([load(), loadStats()])
-    setError((prev) => prev || '刷新任务仍在后台执行，请稍后重试')
+    setError((prev) => prev || 'Tác vụ làm mới vẫn đang chạy nền, xin thử lại sau')
   }, [load, loadStats])
 
   const handleRefresh = async () => {
@@ -401,7 +401,7 @@ export default function OpportunitiesPage() {
         wait: false,
       })
       if (resp.queued) {
-        setError(resp.accepted ? '已提交后台刷新任务，完成后自动更新' : '刷新任务已在执行中，完成后自动更新')
+        setError(resp.accepted ? 'Đã đưa tác vụ làm mới vào chạy nền, xong sẽ tự cập nhật' : 'Tác vụ làm mới đang chạy rồi, xong sẽ tự cập nhật')
         void pollRefreshCompletion()
         return
       }
@@ -409,7 +409,7 @@ export default function OpportunitiesPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Làm mới thất bại'
       if (msg.includes('超时')) {
-        setError('刷新任务耗时较长，已在后台继续执行，请稍后再点刷新')
+        setError('Tác vụ làm mới hơi lâu, vẫn đang chạy tiếp ở nền, xin bấm làm mới lại sau')
         await load()
       } else {
         setError(msg)
@@ -503,7 +503,7 @@ export default function OpportunitiesPage() {
   const regimeSummary = useMemo(() => {
     return (stats?.regimes || []).map((r) => ({
       market: r.market,
-      label: r.regime_label || r.regime || '震荡',
+      label: r.regime_label || r.regime || 'Giằng co',
       regime: r.regime || 'neutral',
       confidence: Number(r.confidence || 0),
       score: Number(r.regime_score || 0),
@@ -629,7 +629,7 @@ export default function OpportunitiesPage() {
           <Select value={market} onValueChange={(v) => setMarket(v as 'ALL' | 'CN' | 'HK' | 'US')}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">全部市场</SelectItem>
+              <SelectItem value="ALL">Mọi thị trường</SelectItem>
               <SelectItem value="CN">Cổ phiếu A</SelectItem>
               <SelectItem value="HK">Cổ phiếu HK</SelectItem>
               <SelectItem value="US">Cổ phiếu Mỹ</SelectItem>
@@ -639,9 +639,9 @@ export default function OpportunitiesPage() {
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部来源</SelectItem>
-              <SelectItem value="market_scan">市场池</SelectItem>
+              <SelectItem value="market_scan">Kho thị trường</SelectItem>
               <SelectItem value="mixed">融合池</SelectItem>
-              <SelectItem value="watchlist">关注池</SelectItem>
+              <SelectItem value="watchlist">Kho theo dõi</SelectItem>
             </SelectContent>
           </Select>
           <Select value={holding} onValueChange={(v) => setHolding(v as HoldingFilter)}>
@@ -665,9 +665,9 @@ export default function OpportunitiesPage() {
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部风险等级</SelectItem>
-              <SelectItem value="low">低风险</SelectItem>
-              <SelectItem value="medium">中风险</SelectItem>
-              <SelectItem value="high">高风险</SelectItem>
+              <SelectItem value="low">Rủi ro thấp</SelectItem>
+              <SelectItem value="medium">Rủi ro vừa</SelectItem>
+              <SelectItem value="high">Rủi ro cao</SelectItem>
             </SelectContent>
           </Select>
           <Select value={minScore} onValueChange={setMinScore}>
@@ -722,10 +722,10 @@ export default function OpportunitiesPage() {
           const sourceFlags: string[] = []
           if (group.hasMarketScan) sourceFlags.push('市场候选')
           if (inWatchlist) sourceFlags.push('已关注标的')
-          if (sourceFlags.length <= 0) sourceFlags.push('关注池')
+          if (sourceFlags.length <= 0) sourceFlags.push('Kho theo dõi')
           const sourcePoolLabel = group.hasMarketScan
-            ? (group.members.some((x) => x.source_pool === 'mixed') ? '市场+关注' : '市场池')
-            : (item.source_pool_label || '关注池')
+            ? (group.members.some((x) => x.source_pool === 'mixed') ? 'Thị trường + theo dõi' : 'Kho thị trường')
+            : (item.source_pool_label || 'Kho theo dõi')
           return (
             <div key={stateKey} className={`card p-4 transition-colors ${toneClass(item)}`}>
               <button className="w-full text-left" onClick={() => openInsight(item)}>

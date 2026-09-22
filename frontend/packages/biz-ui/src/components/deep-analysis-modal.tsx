@@ -715,7 +715,7 @@ function DoneView({
     reason: '',
     should_alert: false,
     agent_name: 'tradingagents',
-    agent_label: 'TradingAgents 深度',
+    agent_label: 'TradingAgents chuyên sâu',
     confidence: 5.0,
   }
   const fromCache = rawData.from_cache
