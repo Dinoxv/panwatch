@@ -28,7 +28,7 @@ from src.platform.marketdata.models import MarketCode
 
 logger = logging.getLogger(__name__)
 
-# 盘前建议类型映射
+# Ánh xạ loại khuyến nghị trước phiên
 PREMARKET_ACTION_MAP = {
     "准备建仓": {"action": "buy", "label": "准备建仓"},
     "准备加仓": {"action": "add", "label": "准备加仓"},
@@ -62,7 +62,7 @@ class PremarketOutlookAgent(BaseAgent):
             ",".join(symbols[:12]),
         )
 
-        # 1. 获取昨日盘后分析
+        # 1. Lấy phân tích sau phiên của hôm trước
         yesterday_analysis = get_latest_analysis(
             agent_name="daily_report",
             stock_symbol="*",
@@ -75,7 +75,7 @@ class PremarketOutlookAgent(BaseAgent):
             len((yesterday_analysis.content if yesterday_analysis else "") or ""),
         )
 
-        # 2. 获取美股指数（隔夜表现）
+        # 2. Lấy chỉ số Mỹ (diễn biến qua đêm)
         us_indices = []
         try:
             from src.platform.marketdata.marketdata_client import get_market_data
@@ -93,7 +93,7 @@ class PremarketOutlookAgent(BaseAgent):
             logger.warning("[%s] 获取美股指数失败: %s", trace_id, e)
         logger.info("[%s] 隔夜指数采集完成: count=%s", trace_id, len(us_indices))
 
-        # 3/4. SignalPack（技术面+持仓+新闻）
+        # 3/4. SignalPack (kỹ thuật + vị thế + tin tức)
         builder = SignalPackBuilder()
         sym_list = [(s.symbol, s.market, s.name) for s in context.watchlist]
         packs = await builder.build_for_symbols(
@@ -157,7 +157,7 @@ class PremarketOutlookAgent(BaseAgent):
             ",".join(low_quality[:8]) if low_quality else "-",
         )
 
-        # Flatten news for headline section (优先实时，其次扩展，再次历史记忆)
+        # Flatten news for headline section (ưu tiên tin thời gian thực, kế đến tin mở rộng, sau cùng là ký ức lịch sử)
         news_items = []
         try:
             seen = set()
@@ -244,17 +244,17 @@ class PremarketOutlookAgent(BaseAgent):
                 lines.append(f"- 历史新闻主题：{global_topic.get('summary')}")
             lines.append("")
 
-        # 昨日分析回顾
+        # Nhìn lại phân tích hôm trước
         if data.get("yesterday_analysis"):
             lines.append("## 昨日盘后分析回顾")
-            # 截取前 500 字，避免过长
+            # Cắt lấy 500 chữ đầu, tránh quá dài
             content = data["yesterday_analysis"]
             if len(content) > 500:
                 content = content[:500] + "..."
             lines.append(content)
             lines.append("")
 
-        # 隔夜美股表现
+        # Diễn biến cổ phiếu Mỹ qua đêm
         if data.get("us_indices"):
             lines.append("## 隔夜美股表现")
             for idx in data["us_indices"]:
@@ -272,7 +272,7 @@ class PremarketOutlookAgent(BaseAgent):
                 )
             lines.append("")
 
-        # 相关新闻
+        # Tin liên quan
         if data.get("news"):
             lines.append("## 相关新闻资讯")
             for news in data["news"]:
@@ -293,7 +293,7 @@ class PremarketOutlookAgent(BaseAgent):
                     lines.append(f"  > {news['content'][:100]}...")
             lines.append("")
 
-        # 自选股技术状态（来自 SignalPack）
+        # Trạng thái kỹ thuật của cổ phiếu theo dõi (lấy từ SignalPack)
         lines.append("## 自选股技术状态")
         packs = data.get("signal_packs", {}) or {}
         news_items = data.get("news", []) or []
@@ -323,7 +323,7 @@ class PremarketOutlookAgent(BaseAgent):
                 lines.append(f"- 均线趋势：{tech['trend']}")
             if tech.get("macd_status"):
                 lines.append(f"- MACD 状态：{tech['macd_status']}")
-            # RSI / KDJ / 布林 / 量能 / 形态
+            # RSI / KDJ / Bollinger / sức khối lượng / mẫu hình
             if tech.get("rsi6") is not None and tech.get("rsi_status"):
                 lines.append(
                     f"- RSI：{tech.get('rsi6'):.1f}（{tech.get('rsi_status')}）"
@@ -379,7 +379,7 @@ class PremarketOutlookAgent(BaseAgent):
                 except Exception:
                     pass
 
-            # 个股相关新闻（分层：实时 > 扩展 > 历史）
+            # Tin liên quan tới từng mã (phân tầng: thời gian thực > mở rộng > lịch sử)
             stock_news = (
                 (stock_ctx.get("news") or {}).get("realtime")
                 or (stock_ctx.get("news") or {}).get("extended")
@@ -425,7 +425,7 @@ class PremarketOutlookAgent(BaseAgent):
                         f"  - [{time_str}] ({et}) {title}{(' ' + link) if link else ''}"
                     )
 
-            # 多级支撑压力（优先中期）
+            # Hỗ trợ / kháng cự nhiều tầng (ưu tiên khung trung hạn)
             support_m = tech.get("support_m")
             resistance_m = tech.get("resistance_m")
             if support_m is not None and resistance_m is not None:
@@ -744,7 +744,7 @@ class PremarketOutlookAgent(BaseAgent):
                     reason=sug.get("reason", ""),
                     agent_name=self.name,
                     agent_label=self.display_name,
-                    expires_hours=12,  # 盘前建议当日有效
+                    expires_hours=12,  # Khuyến nghị trước phiên có hiệu lực trong ngày
                     prompt_context=user_content,
                     ai_response=result.content,
                     stock_market=stock.market.value,
@@ -890,7 +890,7 @@ class PremarketOutlookAgent(BaseAgent):
             len(compact_context),
         )
 
-        # 保存到历史记录
+        # Lưu vào lịch sử
         history_saved = save_analysis(
             agent_name=self.name,
             stock_symbol="*",

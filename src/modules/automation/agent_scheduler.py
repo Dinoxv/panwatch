@@ -23,7 +23,7 @@ class AgentScheduler:
         self.agents: dict[str, BaseAgent] = {}
         self.execution_modes: dict[str, str] = {}
         self.timezone = timezone
-        # 改为存储 context 构建函数，而非固定 context
+        # Đổi sang lưu hàm dựng ngữ cảnh, thay vì lưu ngữ cảnh cố định
         self.context_builder: Callable[[str], AgentContext] | None = None
 
     def set_context_builder(self, builder: Callable[[str], AgentContext]):
@@ -44,9 +44,9 @@ class AgentScheduler:
         self.agents[agent.name] = agent
         self.execution_modes[agent.name] = execution_mode or "batch"
 
-        # 解析调度表达式
-        # cron 使用 5 段: "分 时 日 月 周"
-        # 其中 day_of_week 的数字按 POSIX cron 语义(1-5=周一到周五)，会在内部做一次归一化。
+        # Bóc biểu thức lập lịch
+        # cron dùng 5 trường: "phút giờ ngày tháng thứ"
+        # trong đó day_of_week hiểu theo ngữ nghĩa POSIX cron (1-5 = thứ Hai đến thứ Sáu), sẽ được chuẩn hóa một lần bên trong.
         trigger = parse_schedule(schedule, timezone=self.timezone)
 
         self.scheduler.add_job(
@@ -60,7 +60,7 @@ class AgentScheduler:
 
         logger.info(f"注册 Agent: {agent.display_name} (schedule: {schedule})")
 
-    # NOTE: cron/interval 解析逻辑统一放在 src/core/schedule_parser.py
+    # NOTE: logic bóc cron/interval gom hết về src/core/schedule_parser.py
 
     async def _run_agent(self, agent_name: str):
         """执行指定 Agent（动态构建 context）"""
@@ -76,7 +76,7 @@ class AgentScheduler:
         start = time.monotonic()
         trace_id = f"sch-{agent_name}-{int(time.time() * 1000)}"
         try:
-            # OTel root span(默认关闭时 no-op);与自建 trace 共用同一 trace_id 关联。
+            # Root span OTel (no-op khi tắt mặc định); dùng chung trace_id với hệ trace tự dựng để liên kết được với nhau.
             with otel.agent_run_span(
                 agent_name, trace_id=trace_id, trigger_source="schedule"
             ), log_context(
@@ -86,7 +86,7 @@ class AgentScheduler:
                 event="agent_run",
                 tags={"trigger_source": "schedule"},
             ):
-                # 每次执行时动态构建 context（获取最新配置）
+                # Dựng ngữ cảnh động ở mỗi lần chạy (để lấy cấu hình mới nhất)
                 context = self.context_builder(agent_name)
                 logger.info(f"[调度] 开始执行 Agent: {agent.display_name}")
                 mode = self.execution_modes.get(agent_name, "batch")
@@ -186,7 +186,7 @@ class AgentScheduler:
         register("agent", self.scheduler)
         logger.info(f"调度器已启动，已注册 {len(self.agents)} 个 Agent")
 
-        # 打印所有已注册的任务
+        # In toàn bộ tác vụ đã đăng ký
         jobs = self.scheduler.get_jobs()
         for job in jobs:
             logger.info(f"  - {job.name}: 下次执行 {job.next_run_time}")

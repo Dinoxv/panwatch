@@ -31,15 +31,15 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-# 缓存:在 patch 上下文里把 PanWatch 拉好的数据塞这里,patch 命中时直接返回。
-# 用 ContextVar 而非模块级 dict:深度分析跑在 asyncio.to_thread worker 线程,
-# to_thread 会 copy_context(),每个并发任务拿到独立副本 —— 避免两只标的并发
-# 分析时互相覆盖数据(广汽 601238 的报告混入赛力斯 601127 的 K线/新闻)。
+# Bộ đệm: trong ngữ cảnh patch thì nhét dữ liệu PanWatch đã lấy sẵn vào đây, khi patch khớp thì trả ngay.
+# Dùng ContextVar thay vì dict cấp module: phân tích chuyên sâu chạy trong luồng worker của asyncio.to_thread,
+# to_thread gọi copy_context() nên mỗi tác vụ song song nhận một bản sao riêng — tránh việc hai mã chạy song song
+# ghi đè dữ liệu của nhau (báo cáo của 广汽 601238 lẫn nến / tin của 赛力斯 601127).
 _PANWATCH_DATA: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
     "_TA_PANWATCH_DATA", default={}
 )
 
-# 跟随当前请求的 trace_id;toolkit hit/miss 日志归属到这次分析
+# Bám theo trace_id của request hiện tại; nhật ký hit/miss của toolkit thuộc về đúng lần phân tích này
 _CURRENT_TRACE_ID: contextvars.ContextVar[str] = contextvars.ContextVar(
     "_TA_TRACE_ID", default=""
 )
@@ -47,7 +47,7 @@ _CANCEL_EVENT: contextvars.ContextVar[threading.Event | None] = contextvars.Cont
     "_TA_CANCEL_EVENT", default=None
 )
 
-# 所有上游 monkeypatch 和 PanWatch 数据注入都集中在本文件；其它模块只依赖这些入口。
+# Mọi monkeypatch lên thượng nguồn và mọi phép nạp dữ liệu PanWatch đều gom về tệp này; các module khác chỉ phụ thuộc vào các cửa vào đó.
 __all__ = [
     "TradingAgentsCancelled",
     "hk_symbol_to_yfinance",
@@ -106,7 +106,7 @@ def _emit_toolkit_log(level: str, action: str, method_name: str, symbol: str, **
 
     trace_id = _CURRENT_TRACE_ID.get()
     if not trace_id:
-        # 没 trace_id 也打普通日志(可在日志中心按 logger 过滤)
+        # Không có trace_id thì vẫn ghi nhật ký thường (lọc được theo logger ở trung tâm nhật ký)
         getattr(logger, level)(f"[TA toolkit] {action} method={method_name} symbol={symbol} {extra}")
         return
     with log_context(
@@ -152,7 +152,7 @@ def hk_symbol_to_yfinance(symbol: str) -> str:
     """
     if not is_hk_share(symbol):
         return symbol
-    # 去掉首位 0(00241 → 0241),保留 4 位
+    # Bỏ số 0 đứng đầu (00241 → 0241), giữ lại 4 chữ số
     s = symbol.lstrip("0")
     if len(s) > 4:
         s = s[-4:]
@@ -183,10 +183,10 @@ def _yfinance_response_has_data(text: str) -> bool:
     return True
 
 
-# 上游 tool 文件用 `from tradingagents.dataflows.interface import route_to_vendor`,
-# 这是 import-time binding,每个模块持有 **原函数引用**。
-# 只 patch 源头模块属性不够 —— 必须把每个 import site 的 module-level
-# 名字都替换掉,所有调用才会走我们的拦截。
+# Tệp tool của thượng nguồn dùng `from tradingagents.dataflows.interface import route_to_vendor`,
+# đây là ràng buộc lúc import, nên mỗi module giữ **tham chiếu tới hàm gốc**.
+# Chỉ patch thuộc tính ở module nguồn là không đủ — phải thay cả tên cấp module tại từng
+# nơi đã import, thì mọi lời gọi mới đi qua bộ chặn của ta.
 _ROUTE_TO_VENDOR_IMPORT_SITES = (
     "tradingagents.agents.utils.fundamental_data_tools",
     "tradingagents.agents.utils.news_data_tools",
@@ -195,14 +195,14 @@ _ROUTE_TO_VENDOR_IMPORT_SITES = (
 )
 
 
-# patch 引用计数:多个并发深度分析共享同一次安装,第一个进入者保存真
-# route_to_vendor 并装到所有 import site,最后一个退出才恢复。数据隔离靠
-# _PANWATCH_DATA(ContextVar),patch 本身只需进程级安装一次 —— 消除原先
-# "A 退出时把全局恢复成 B 的 _patched"的嵌套竞态。
+# Đếm tham chiếu của patch: nhiều lượt phân tích chuyên sâu song song dùng chung một lần cài; người vào đầu tiên lưu lại
+# route_to_vendor thật rồi cài vào mọi nơi đã import, người ra sau cùng mới khôi phục. Cách ly dữ liệu dựa vào
+# _PANWATCH_DATA (ContextVar), còn bản thân patch chỉ cần cài một lần ở cấp tiến trình — triệt tiêu tình trạng tranh chấp lồng nhau trước đây
+# kiểu "A thoát ra lại khôi phục biến toàn cục thành _patched của B".
 _patch_lock = threading.Lock()
 _patch_refcount = 0
 _patch_saved_sites: list[tuple[Any, str, Any]] = []  # (module, attr_name, original_value)
-_real_route_to_vendor = None  # 真 route_to_vendor(走上游 vendor 时用)
+_real_route_to_vendor = None  # route_to_vendor thật (dùng khi đi qua vendor của thượng nguồn)
 
 
 _DATE_ARGUMENT = re.compile(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}$")
@@ -244,18 +244,18 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
     所以多个并发任务共享同一个 _patched 也不会串台。
     """
     _raise_if_cancelled()
-    # 不过滤纯数字：A/HK ticker 合法地由数字组成；仅跳过明确的日期参数。
+    # Không lọc bỏ chuỗi toàn số: mã cổ phiếu A / Hồng Kông vốn hợp lệ khi toàn số; chỉ bỏ qua tham số rõ ràng là ngày tháng.
     symbol = _extract_requested_symbol(args, kwargs)
 
-    # 没拿到 symbol 时(如 get_global_news),用 cache 里的标的兜底,
-    # 拦截"全局新闻"类调用避免拉到无关 Yahoo 鞋类/汽油新闻。
+    # Khi không lấy được symbol (ví dụ get_global_news) thì dự phòng bằng mã trong bộ đệm,
+    # chặn các lời gọi kiểu "tin toàn cục" để khỏi kéo về tin giày dép / xăng dầu vô quan của Yahoo.
     if not symbol:
         cached_symbol = _cached_symbol()
         if is_panwatch_routable(cached_symbol):
             symbol = cached_symbol
 
-    # 工具请求了另一个 A/HK 标的时，禁止拿当前任务的快照冒充它。
-    # 这条边界比“尽量返回数据”更重要：错误标的数据会让后续 LLM 生成看似完整但完全错误的报告。
+    # Khi công cụ hỏi một mã A / Hồng Kông khác, cấm lấy ảnh chụp của tác vụ hiện tại đem mạo danh.
+    # Ranh giới này quan trọng hơn việc “cố trả về dữ liệu bằng được”: dữ liệu sai mã sẽ khiến LLM sinh ra báo cáo trông đầy đủ nhưng sai hoàn toàn.
     cached_symbol = _cached_symbol()
     snapshot_symbol_mismatch = bool(
         symbol
@@ -280,7 +280,7 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
         )
         return message
 
-    # A 股:yfinance/finnhub 拉不到,直接走 PanWatch
+    # Cổ phiếu A: yfinance/finnhub không lấy được, đi thẳng qua PanWatch
     if is_a_share(symbol) and _cache():
         try:
             result = _serve_from_panwatch(method_name, symbol, kwargs, args=args)
@@ -301,12 +301,12 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
             _emit_toolkit_log("warning", "ERROR", method_name, symbol, error=str(e)[:200])
             return f"[PanWatch error: {e}]"
 
-    # 港股:先把 ticker 转成 yfinance 格式(00241 → 0241.HK)试上游,
-    # yfinance 返回有数据就用,无数据(No data found / 极短返回)fallback 到 PanWatch。
+    # Cổ phiếu Hồng Kông: đổi mã sang định dạng yfinance trước (00241 → 0241.HK) rồi thử thượng nguồn,
+    # yfinance trả về có dữ liệu thì dùng, không có (No data found / trả về quá ngắn) thì lùi về PanWatch.
     if is_hk_share(symbol):
         yf_symbol = hk_symbol_to_yfinance(symbol)
         new_args = list(args)
-        # 替换第一个 positional ticker(如果它就是当前 symbol)
+        # Thay mã ở vị trí đầu tiên (nếu đúng là symbol hiện tại)
         for i, a in enumerate(new_args):
             if isinstance(a, str) and a == symbol:
                 new_args[i] = yf_symbol
@@ -321,7 +321,7 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
         upstream_str = str(upstream_result) if upstream_result is not None else ""
 
         if _yfinance_response_has_data(upstream_str):
-            # 走上游 vendor 拿到数据 = PASSTHROUGH,只是 source 标记转格式
+            # Lấy được dữ liệu qua vendor thượng nguồn = PASSTHROUGH, chỉ đánh dấu source là đã đổi định dạng
             _emit_toolkit_log(
                 "info", "PASSTHROUGH", method_name, symbol,
                 chars=len(upstream_str),
@@ -331,7 +331,7 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
             )
             return upstream_result
 
-        # yfinance 没数据 → fallback 到 PanWatch = HIT(PanWatch 兜底提供数据)
+        # yfinance không có dữ liệu → lùi về PanWatch = HIT (PanWatch cấp dữ liệu dự phòng)
         if _cache() and not snapshot_symbol_mismatch:
             try:
                 result = _serve_from_panwatch(method_name, symbol, kwargs, args=args)
@@ -348,7 +348,7 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
             except Exception as e:
                 _emit_toolkit_log("warning", "ERROR", method_name, symbol, error=str(e)[:200])
                 return f"[PanWatch error: {e}]"
-        # 港股两边都没 = ERROR
+        # Cổ phiếu Hồng Kông cả hai bên đều không có = ERROR
         _emit_toolkit_log(
             "warning", "ERROR", method_name, symbol,
             chars=len(upstream_str), snippet=upstream_str[:4000],
@@ -357,8 +357,8 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
         )
         return upstream_result
 
-    # 行业/主题新闻:get_news 的 query 不是 ticker(中文行业词等) → 实时搜中文新闻(东方财富),
-    # 替代拉不到中文数据的上游 vendor。
+    # Tin theo ngành / chủ đề: query của get_news không phải mã cổ phiếu (là từ khóa ngành tiếng Trung...) → tìm tin tiếng Trung theo thời gian thực (EastMoney),
+    # thay cho vendor thượng nguồn vốn không lấy được dữ liệu tiếng Trung.
     if symbol and "news" in method_name.lower() and not is_panwatch_routable(symbol) and _looks_like_cn_keyword(symbol):
         try:
             result = _serve_keyword_news(symbol)
@@ -372,9 +372,9 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
             _emit_toolkit_log("warning", "ERROR", method_name, symbol, error=str(e)[:200])
             return f"[关键词新闻搜索失败「{symbol}」: {e}]"
 
-    # 美股 / 其他:直接走上游 vendor。
-    # 降级兜底:上游某些工具依赖外部 key/服务(FRED 无 key、polymarket SSL、未配置 vendor 等),
-    # 失败会抛异常拖垮整个深度分析。这里捕获并返回空 —— 单个工具缺数据 ≠ 整轮失败。
+    # Cổ phiếu Mỹ / các trường hợp khác: đi thẳng qua vendor thượng nguồn.
+    # Hạ cấp dự phòng: vài công cụ của thượng nguồn phụ thuộc khóa / dịch vụ bên ngoài (FRED thiếu khóa, SSL của polymarket, vendor chưa cấu hình...),
+    # lỗi sẽ ném ngoại lệ kéo sập cả lượt phân tích chuyên sâu. Ở đây bắt lại và trả rỗng — một công cụ thiếu dữ liệu KHÔNG đồng nghĩa cả lượt thất bại.
     try:
         upstream_result = _real_route_to_vendor(method_name, *args, **kwargs)
     except Exception as e:
@@ -428,16 +428,16 @@ def patch_route_to_vendor():
         yield
         return
 
-    # 同时接管 load_ohlcv:新上游 get_verified_market_snapshot 绕过 route_to_vendor。
+    # Đồng thời tiếp quản load_ohlcv: get_verified_market_snapshot của thượng nguồn bản mới đi vòng qua route_to_vendor.
     _ensure_load_ohlcv_patched()
     _ensure_market_snapshot_patched()
 
     import importlib
     with _patch_lock:
         if _patch_refcount == 0:
-            # 第一个进入者:保存真函数并装到源头 + 所有 import sites
-            # (`from ... import route_to_vendor` 是 import-time binding,只 patch
-            # 源头不够 — 工具模块持有的原引用不变)
+            # Người vào đầu tiên: lưu hàm thật rồi cài vào module nguồn + mọi nơi đã import
+            # (`from ... import route_to_vendor` là ràng buộc lúc import, chỉ patch
+            # module nguồn là không đủ — tham chiếu gốc mà module công cụ đang giữ vẫn nguyên)
             _real_route_to_vendor = ta_interface.route_to_vendor
             _patch_saved_sites.clear()
             ta_interface.route_to_vendor = _patched_route_to_vendor
@@ -466,9 +466,9 @@ def patch_route_to_vendor():
 
 
 # ---------------------------------------------------------------------------
-# load_ohlcv 接管
-# 新上游 get_verified_market_snapshot → market_data_validator.load_ohlcv 直连 yfinance,
-# 不经 route_to_vendor。A股(无 .SS)/港股(无 .HK)yfinance 拉不到 → NoMarketDataError,
+# Tiếp quản load_ohlcv
+# get_verified_market_snapshot của thượng nguồn bản mới → market_data_validator.load_ohlcv nối thẳng yfinance,
+# không đi qua route_to_vendor. Cổ phiếu A (không có .SS) / Hồng Kông (không có .HK) thì yfinance không lấy được → NoMarketDataError,
 # 整个 TradingAgents 分析失败。这里把 A股/港股的 load_ohlcv 改走 PanWatch K线;
 # 非 PanWatch 标的(美股)透传原生 yfinance,故进程级永久安装安全、无需卸载。
 # ---------------------------------------------------------------------------

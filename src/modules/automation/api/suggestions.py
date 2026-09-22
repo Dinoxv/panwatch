@@ -37,7 +37,7 @@ def get_stock_suggestions(
 
 
 @router.get("/", name="get_suggestions")
-@router.get("", include_in_schema=False)  # 同时处理无斜杠的情况
+@router.get("", include_in_schema=False)  # Xử lý luôn trường hợp không có dấu gạch chéo
 def get_all_latest_suggestions(
     symbols: str = Query(None, description="股票代码列表，逗号分隔"),
     stock_keys: str = Query(

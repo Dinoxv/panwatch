@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "news_digest.txt"
 
-# 新闻速递建议类型映射（偏“消息面”）
+# Ánh xạ loại khuyến nghị của bản tin nhanh (thiên về mặt tin tức)
 NEWS_ACTION_MAP = {
     "设置预警": {"action": "alert", "label": "设置预警"},
     "关注": {"action": "watch", "label": "关注"},
@@ -82,7 +82,7 @@ class NewsDigestAgent(BaseAgent):
 
                 new_items.append(it)
                 if it.external_id:
-                    # 写入缓存表（内容适度截断，避免膨胀）
+                    # Ghi vào bảng đệm (cắt bớt nội dung vừa phải, tránh phình to)
                     try:
                         db.add(
                             NewsCache(
@@ -96,7 +96,7 @@ class NewsDigestAgent(BaseAgent):
                             )
                         )
                     except Exception:
-                        # 单条写入失败不影响本次返回
+                        # Ghi hỏng một bản ghi không ảnh hưởng kết quả trả về của lần chạy này
                         pass
 
             db.commit()
@@ -136,16 +136,16 @@ class NewsDigestAgent(BaseAgent):
                 since_hours=self.fallback_since_hours,
             )
 
-        # 跨次去重：只保留“新新闻”，避免 agent 看起来一直在重复同样内容
+        # Khử trùng lặp giữa các lần chạy: chỉ giữ “tin mới”, tránh để agent trông như lặp đi lặp lại cùng một nội dung
         news_list = self._dedupe_with_db(news_list)
 
-        # 分类：自选股相关 + 重要市场新闻
+        # Phân loại: tin liên quan cổ phiếu theo dõi + tin thị trường quan trọng
         related_news = self._filter_related_news(news_list, symbols)
         important_news = [
             n for n in news_list if n.importance >= 2 and n not in related_news
         ]
 
-        # 结构化信号：补充行情/技术/资金/持仓，提高“建议摘要”稳定性
+        # Tín hiệu có cấu trúc: bổ sung giá / kỹ thuật / dòng tiền / vị thế để “tóm tắt khuyến nghị” ổn định hơn
         packs = {}
         try:
             builder = SignalPackBuilder()
@@ -164,8 +164,8 @@ class NewsDigestAgent(BaseAgent):
             logger.warning(f"SignalPack 获取失败（news_digest 继续执行）：{e}")
 
         return {
-            "news": news_list,  # 全部新闻
-            "related_news": related_news,  # 自选股相关
+            "news": news_list,  # Toàn bộ tin tức
+            "related_news": related_news,  # Liên quan cổ phiếu theo dõi
             "important_news": important_news,  # Tin thị trường quan trọng
             "watchlist": context.watchlist,
             "signal_packs": packs,
@@ -179,11 +179,11 @@ class NewsDigestAgent(BaseAgent):
         """过滤与自选股相关的新闻"""
         related = []
         for news in news_list:
-            # 新闻已标注股票
+            # Tin đã được gắn mã cổ phiếu
             if news.symbols and any(s in symbols for s in news.symbols):
                 related.append(news)
                 continue
-            # 检查标题/内容是否包含股票代码
+            # Kiểm tra tiêu đề / nội dung có chứa mã cổ phiếu không
             text = news.title + news.content
             if any(s in text for s in symbols):
                 related.append(news)
@@ -199,7 +199,7 @@ class NewsDigestAgent(BaseAgent):
         lines.append(f"## 时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append(f"## 时间窗：近 {since_hours_used} 小时\n")
 
-        # 自选股列表（标记持仓）
+        # Danh sách cổ phiếu theo dõi (có đánh dấu mã đang nắm giữ)
         lines.append("## 自选股")
         watchlist_map = {s.symbol: s for s in context.watchlist}
         packs = data.get("signal_packs", {}) or {}
@@ -233,7 +233,7 @@ class NewsDigestAgent(BaseAgent):
             else:
                 lines.append(f"- {stock.name}({stock.symbol}){extra}")
 
-        # 自选股相关新闻
+        # Tin liên quan tới cổ phiếu theo dõi
         related_news: list[NewsItem] = data.get("related_news", [])
         lines.append(f"\n## 自选股相关新闻 ({len(related_news)} 条)")
         if related_news:
@@ -264,7 +264,7 @@ class NewsDigestAgent(BaseAgent):
             news.source, news.source
         )
 
-        # 关联股票名称
+        # Tên cổ phiếu được gắn kèm
         stock_names = []
         for symbol in news.symbols:
             if symbol in watchlist_map:
@@ -344,12 +344,12 @@ class NewsDigestAgent(BaseAgent):
                 )
                 sym_raw = m.group("sym") if m else ""
 
-            # 3) 再匹配行首代码
+            # 3) Kế đến khớp mã ở đầu dòng
             if not sym_raw:
                 m = re.match(r"^(?P<sym>[A-Za-z][A-Za-z0-9\.\-]{0,9}|\d{3,6})\b", line)
                 sym_raw = m.group("sym") if m else ""
 
-            # 4) 包含方式兜底
+            # 4) Dự phòng bằng cách khớp “có chứa”
             if not sym_raw:
                 for k in sorted(symbol_map.keys(), key=len, reverse=True):
                     if k and k in line.upper():
@@ -455,10 +455,10 @@ class NewsDigestAgent(BaseAgent):
         related_news = result.raw_data.get("related_news", [])
         important_news = result.raw_data.get("important_news", [])
 
-        # 有自选股相关新闻
+        # Có tin liên quan cổ phiếu theo dõi
         if related_news:
             return True
-        # 有重要市场新闻
+        # Có tin thị trường quan trọng
         if important_news:
             return True
         return False
@@ -498,7 +498,7 @@ class NewsDigestAgent(BaseAgent):
             raw_data={**data, "structured": structured} if structured else data,
         )
 
-        # 解析个股建议并写入建议池
+        # Bóc khuyến nghị từng mã rồi ghi vào kho khuyến nghị
         suggestions = self._parse_suggestions_json(structured, context.watchlist)
         if not suggestions:
             suggestions = self._parse_suggestions(result.content, context.watchlist)
@@ -542,7 +542,7 @@ class NewsDigestAgent(BaseAgent):
                 },
             )
 
-        # 保存到历史记录（使用 "*" 表示全局）
+        # Lưu vào lịch sử (dùng "*" để đánh dấu phạm vi toàn cục)
         related_news: list[NewsItem] = data.get("related_news", []) or []
         important_news: list[NewsItem] = data.get("important_news", []) or []
         payload_news = []

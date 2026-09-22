@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-# 上游 5 档评级 → PanWatch 显示标签
+# Thang 5 bậc của thượng nguồn → nhãn hiển thị của PanWatch
 RATING_LABEL_MAP = {
     "buy": "买入",
     "overweight": "增持",
@@ -36,7 +36,7 @@ RATING_LABEL_MAP = {
     "sell": "卖出",
 }
 
-# 5 档 → 3 档(给 action 字段;前端 'buy' | 'hold' | 'sell')
+# 5 bậc → 3 bậc (cho trường action; giao diện dùng 'buy' | 'hold' | 'sell')
 RATING_ACTION_MAP = {
     "buy": "buy",
     "overweight": "buy",
@@ -45,12 +45,12 @@ RATING_ACTION_MAP = {
     "sell": "sell",
 }
 
-# 0.4.0 起,上游无法解析 PM 评级时返回 REVIEW。它不是可交易的 Hold:
-# 在不扩展前端 3 档 action API 的前提下,以 hold 阻止自动交易,并保留原始状态供展示/提醒。
+# Từ 0.4.0, thượng nguồn trả REVIEW khi không bóc được xếp hạng của PM. Đây KHÔNG phải lệnh Nắm giữ có thể giao dịch:
+# Không mở rộng API action 3 bậc của giao diện, dùng hold để chặn giao dịch tự động, đồng thời giữ trạng thái gốc để hiển thị / cảnh báo.
 REVIEW_RATING = "review"
 REVIEW_LABEL = "待人工复核"
 
-# 旧字段名兼容:某些下游代码可能 import DECISION_LABEL_MAP
+# Tương thích tên trường cũ: một số mã hạ nguồn có thể import DECISION_LABEL_MAP
 DECISION_LABEL_MAP = RATING_LABEL_MAP
 
 
@@ -70,14 +70,14 @@ def map_state_to_result(
     state = ta_result.get("final_state") or {}
     cost_usd = float(ta_result.get("cost_usd", 0.0) or 0.0)
 
-    # 评级以 PM 正文(final_trade_decision,用户实际看到的最终决策书)为权威来源:
-    # 上游 propagate() 第二个返回的 decision 是对正文的二次提炼,会失真(正文写"卖出"
-    # 却返回 "HOLD"),所以优先解析正文里的显式评级标签。
-    # 优先级:正文显式标签 > 上游 decision > 正文模糊扫描兜底。
+    # Xếp hạng lấy phần thân của PM (final_trade_decision, tức bản quyết định cuối mà người dùng thực sự đọc) làm nguồn có thẩm quyền:
+    # Giá trị decision thứ hai mà propagate() của thượng nguồn trả về là bản chắt lọc lần hai từ phần thân nên bị méo (thân ghi "卖出"
+    # mà lại trả "HOLD"), nên ưu tiên bóc nhãn xếp hạng tường minh nằm trong phần thân.
+    # Thứ tự ưu tiên: nhãn tường minh trong thân > decision của thượng nguồn > quét mờ trong thân làm dự phòng.
     final_text = state.get("final_trade_decision") or ""
     upstream_rating = (ta_result.get("decision") or "").strip().lower()
     if upstream_rating == REVIEW_RATING:
-        # REVIEW 是上游对整份 PM 输出的不可解析判定,不能被正文里的评级词覆盖。
+        # REVIEW là phán định của thượng nguồn rằng cả bản PM không bóc được, không được để từ xếp hạng trong thân ghi đè lên nó.
         rating_raw = REVIEW_RATING
     else:
         rating_raw = _parse_rating_label(final_text)
@@ -96,7 +96,7 @@ def map_state_to_result(
     suggestion = {
         "action": action,
         "action_label": action_label,
-        "rating_raw": rating_raw or "hold",  # 保留原始 5 档,前端/历史可查
+        "rating_raw": rating_raw or "hold",  # Giữ nguyên thang 5 bậc gốc để giao diện / lịch sử tra lại được
         "review_required": review_required,
         "upstream_decision": upstream_rating,
         "signal": _truncate(state.get("trader_investment_plan", ""), 200),
@@ -108,14 +108,14 @@ def map_state_to_result(
     }
 
     content = _render_markdown(state, suggestion, model_label, cost_usd)
-    # 详情页可点击链接(配了 panwatch_base_url 才出现)
+    # Liên kết bấm được tới trang chi tiết (chỉ hiện khi đã cấu hình panwatch_base_url)
     from datetime import date as _date
     from src.modules.research.analysis_link import analysis_detail_markdown
     _link = analysis_detail_markdown(stock.symbol, _date.today().isoformat())
     if _link:
         content = content.rstrip() + f"\n\n---\n{_link}"
-    # 通知体只放「最终决策」(决策摘要 + PM 决策书) + 详情链接;
-    # 交易员/研究主管/风控辩论/四分析师等完整内容都在详情页,避免通知过长被截断。
+    # Thân thông báo chỉ chứa «quyết định cuối» (tóm tắt quyết định + bản quyết định của PM) + liên kết chi tiết;
+    # toàn văn của trader / trưởng bộ phận nghiên cứu / tranh luận quản trị rủi ro / bốn chuyên viên đều nằm ở trang chi tiết, tránh thông báo quá dài bị cắt.
     notify_content = _render_notify(state, suggestion, cost_usd, _link)
 
     return AnalysisResult(
@@ -127,8 +127,8 @@ def map_state_to_result(
             "suggestion": suggestion,
             "cost_usd": cost_usd,
             "should_alert": suggestion["should_alert"],
-            "decision": action,           # 兼容旧字段(3 档)
-            "rating": rating_raw or "hold",  # 新字段(5 档原始)
+            "decision": action,           # Tương thích trường cũ (3 bậc)
+            "rating": rating_raw or "hold",  # Trường mới (5 bậc nguyên bản)
             "upstream_decision": upstream_rating,
             "confidence": confidence,
             "debate_history": _extract_debate(state),
@@ -136,7 +136,7 @@ def map_state_to_result(
             "risk_debate": _extract_risk_debate(state),
             "analyst_reports": {
                 "market": state.get("market_report") or "",
-                # 上游情绪分析师字段是 sentiment_report;兼容旧 social_report
+                # Trường của chuyên viên phân tích tâm lý ở thượng nguồn là sentiment_report; vẫn tương thích social_report cũ
                 "social": state.get("sentiment_report") or state.get("social_report") or "",
                 "news": state.get("news_report") or "",
                 "fundamentals": state.get("fundamentals_report") or "",
@@ -150,8 +150,8 @@ def map_state_to_result(
 # ---- helpers ----
 
 
-# 分隔符字符类同时覆盖半角(: -)与全角(： －)标点 —— 真实中文 PM 正文用全角冒号"：",
-# 早期只认半角":"导致"最终交易决策：Buy"匹配不到、回退到上游失真的 decision。
+# Lớp ký tự phân tách phủ cả dấu nửa chiều rộng (: -) lẫn toàn chiều rộng (： －) — bản PM tiếng Trung thật dùng dấu hai chấm toàn chiều rộng "：",
+# bản đầu chỉ nhận ":" nửa chiều rộng nên "最终交易决策：Buy" không khớp được, phải lùi về decision đã méo của thượng nguồn.
 _RATING_TEXT_RE = re.compile(
     r"(?:Rating|评级|最终交易决策|Final\s+(?:Trade\s+)?Decision|FINAL\s+TRANSACTION\s+PROPOSAL)"
     r"[\s\*:：\-—－]+(\*\*)?\s*(Buy|Overweight|Hold|Underweight|Sell|买入|增持|持有|减持|卖出)",
@@ -188,7 +188,7 @@ def _parse_rating_from_text(text: str) -> str:
     label = _parse_rating_label(text)
     if label:
         return label
-    # 兜底:扫描整段文本里第一个出现的 5 档英文/中文词
+    # Dự phòng: quét cả đoạn tìm từ thuộc thang 5 bậc xuất hiện đầu tiên, tiếng Anh hoặc tiếng Trung
     text_low = text.lower()
     for word in ("overweight", "underweight", "buy", "sell", "hold"):
         if word in text_low:
@@ -199,16 +199,16 @@ def _parse_rating_from_text(text: str) -> str:
     return ""
 
 
-# 置信度正则:冒号同时认半角(:)与全角(：)——PM 中文输出常用全角,
-# 早先只认半角导致永远抓不到、一律回退默认值。覆盖 "置信度: 8"、"置信度：8/10"、"信心 7"。
+# Regex độ tin cậy: dấu hai chấm nhận cả nửa (:) lẫn toàn chiều rộng (：) — đầu ra tiếng Trung của PM hay dùng toàn chiều rộng,
+# bản đầu chỉ nhận nửa chiều rộng nên không bao giờ bắt được, luôn lùi về giá trị mặc định. Phủ "置信度: 8", "置信度：8/10", "信心 7".
 _CONFIDENCE_PATTERNS = [
     re.compile(r"confidence[:：\s]+(\d+(?:\.\d+)?)\s*(?:/\s*10)?", re.I),
     re.compile(r"置信度[:：\s]+(\d+(?:\.\d+)?)\s*(?:/\s*10)?", re.I),
     re.compile(r"信心(?:度)?[:：\s]+(\d+(?:\.\d+)?)\s*(?:/\s*10)?", re.I),
 ]
 
-# 抓不到显式数字时按 5 档评级推导基础置信度(B 方案),而非死的 5.0:
-# 强方向(买入/卖出)信心更高,中性(持有)居中。
+# Không bắt được con số tường minh thì suy độ tin cậy cơ sở từ thang 5 bậc (phương án B), thay vì gán cứng 5.0:
+# hướng dứt khoát (买入 / 卖出) thì tin cậy cao hơn, trung tính (持有) nằm giữa.
 _RATING_CONFIDENCE_FALLBACK = {
     "buy": 7.0,
     "sell": 7.0,
@@ -234,12 +234,12 @@ def _extract_confidence(state: dict, rating_raw: str = "") -> float:
             if m:
                 try:
                     v = float(m.group(1))
-                    if v > 10:  # 百分制转 0-10
+                    if v > 10:  # Quy thang 100 về thang 0-10
                         v = v / 10
                     return max(0.0, min(10.0, v))
                 except (ValueError, IndexError):
                     continue
-    # B 兜底:按评级推导(无可识别评级才回退 5.0)
+    # Dự phòng B: suy từ xếp hạng (chỉ khi không nhận ra xếp hạng nào mới lùi về 5.0)
     return _RATING_CONFIDENCE_FALLBACK.get(rating_raw, 5.0)
 
 
@@ -290,7 +290,7 @@ def _risk_judgment(state: dict) -> str:
         jd = (rds.get("judge_decision") or "").strip()
         if jd:
             return jd
-    return (state.get("risk_judge_decision") or "").strip()  # 兼容兜底
+    return (state.get("risk_judge_decision") or "").strip()  # Dự phòng tương thích
 
 
 def _extract_risk_debate(state: dict) -> dict:
@@ -348,14 +348,14 @@ def _render_markdown(
         f"**{suggestion['action_label']}** {rating_note} · 置信度 {suggestion['confidence']:.1f}/10\n"
     )
 
-    # 9 个 Agent 链路:PM(决策书) → Trader → 研究主管 → 风控 → 4 位分析师摘要
+    # Chuỗi 9 Agent: PM (bản quyết định) → Trader → trưởng bộ phận nghiên cứu → quản trị rủi ro → tóm tắt của 4 chuyên viên phân tích
     if state.get("final_trade_decision"):
         parts.append(f"### 🎯 PM 最终决策书\n\n{state['final_trade_decision']}\n")
 
     if state.get("trader_investment_plan"):
         parts.append(f"### 💼 交易员执行计划\n\n{state['trader_investment_plan']}\n")
 
-    # 研究主管裁决 — 看多/看空辩论后的结论,之前只在折叠的辩论 section 末尾
+    # Phán quyết của trưởng bộ phận nghiên cứu — kết luận sau tranh luận mua / bán, trước đây chỉ nằm ở cuối mục tranh luận bị thu gọn
     debate = state.get("investment_debate_state") or {}
     judge_decision = ""
     if isinstance(debate, dict):
@@ -367,8 +367,8 @@ def _render_markdown(
     if risk_jd:
         parts.append(f"### 🛡️ 风控辩论裁决\n\n{risk_jd}\n")
 
-    # 4 位分析师完整报告不再塞进主体 markdown(早先截 300 字会把财务表格截在表头)。
-    # 完整内容在 raw_data.analyst_reports,由前端 tab 完整渲染(含 GFM 表格)。
+    # Báo cáo đầy đủ của 4 chuyên viên không nhét vào markdown thân nữa (bản trước cắt 300 chữ khiến bảng tài chính bị cắt ngay ở dòng tiêu đề).
+    # Nội dung đầy đủ nằm ở raw_data.analyst_reports, giao diện dựng đủ trong tab (kể cả bảng GFM).
 
     parts.append(
         "\n---\n"
@@ -430,7 +430,7 @@ def maybe_emit_paper_trading_signal(
 
     db = SessionLocal()
     try:
-        # 同标的当日重复触发 → upsert(source_candidate_id 是 Integer,用 0 当 TA 专用 sentinel)
+        # Cùng mã kích hoạt lại trong ngày → upsert (source_candidate_id kiểu Integer, dùng 0 làm giá trị canh riêng cho TA)
         source_id = 0
         existing = (
             db.query(StrategySignalRun)
@@ -466,7 +466,7 @@ def maybe_emit_paper_trading_signal(
                 risk_level="medium",
                 source_pool="watchlist",
                 score=float(confidence or 5.0),
-                rank_score=float(confidence or 5.0) * 10,  # 给个偏向中等的分数
+                rank_score=float(confidence or 5.0) * 10,  # Gán một mức điểm thiên về trung bình
                 confidence=float(confidence or 5.0) / 10,
                 status="active",
                 action=action,
@@ -474,7 +474,7 @@ def maybe_emit_paper_trading_signal(
                 signal=signal_text[:500],
                 reason=reason[:1000],
                 evidence=[],
-                holding_days=10,  # TA 给的 time_horizon 是中长期
+                holding_days=10,  # time_horizon mà TA đưa ra là trung - dài hạn
                 entry_low=entry_low,
                 entry_high=entry_high,
                 stop_loss=stop_loss,

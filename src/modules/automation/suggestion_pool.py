@@ -28,15 +28,15 @@ def _dedupe_window_minutes(agent_name: str) -> int:
     return 180
 
 
-# Agent 有效期配置（小时）
+# Cấu hình thời hạn hiệu lực của Agent (giờ)
 AGENT_EXPIRY_HOURS = {
-    "premarket_outlook": 12,  # 盘前建议当日有效（约12小时）
-    "intraday_monitor": 6,  # 盘中建议6小时有效
-    "daily_report": 16,  # 盘后建议隔夜有效（到次日开盘，约16小时）
-    "news_digest": 12,  # 新闻速递建议半天有效
+    "premarket_outlook": 12,  # Khuyến nghị trước phiên có hiệu lực trong ngày (khoảng 12 giờ)
+    "intraday_monitor": 6,  # Khuyến nghị trong phiên có hiệu lực 6 giờ
+    "daily_report": 16,  # Khuyến nghị sau phiên có hiệu lực qua đêm (tới lúc mở cửa phiên sau, khoảng 16 giờ)
+    "news_digest": 12,  # Khuyến nghị từ bản tin nhanh có hiệu lực nửa ngày
 }
 
-# Agent 中文名称映射
+# Ánh xạ tên hiển thị của Agent
 AGENT_LABELS = {
     "premarket_outlook": "盘前分析",
     "intraday_monitor": "盘中监测",
@@ -82,19 +82,19 @@ def save_suggestion(
     try:
         market = (stock_market or "CN").strip().upper() or "CN"
 
-        # 计算过期时间（使用 UTC）
+        # Tính thời điểm hết hạn (theo UTC)
         if expires_hours is None:
             expires_hours = AGENT_EXPIRY_HOURS.get(agent_name, 8)
 
         now = utc_now()
         expires_at = now + timedelta(hours=expires_hours)
 
-        # Agent 标签
+        # Nhãn Agent
         if not agent_label:
             agent_label = AGENT_LABELS.get(agent_name, agent_name)
 
         # Dedupe: if the latest suggestion from the same agent is essentially the same,
-        # do not create a new row. This prevents "AI 建议反复" in the UI.
+        # do not create a new row. This prevents "khuyến nghị AI nhảy qua nhảy lại" in the UI.
         try:
             latest = (
                 db.query(StockSuggestion)
@@ -165,7 +165,7 @@ def save_suggestion(
             # Best-effort only; never block saving.
             db.rollback()
 
-        # 创建新建议
+        # Tạo khuyến nghị mới
         suggestion = StockSuggestion(
             stock_symbol=stock_symbol,
             stock_market=market,
@@ -323,7 +323,7 @@ def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dic
 
     is_expired = False
     if suggestion.expires_at:
-        # 确保比较时都使用 UTC
+        # Bảo đảm mọi phép so sánh đều theo UTC
         expires_utc = suggestion.expires_at
         if expires_utc.tzinfo is None:
             from src.platform.scheduling.timezone import timezone
@@ -331,7 +331,7 @@ def _to_dict(suggestion: StockSuggestion, now: Optional[datetime] = None) -> dic
             expires_utc = expires_utc.replace(tzinfo=timezone.utc)
         is_expired = expires_utc < now
 
-    # 转换时间为带时区的 ISO 格式
+    # Chuyển thời gian sang định dạng ISO có múi giờ
     created_at_str = None
     if suggestion.created_at:
         created_at = suggestion.created_at

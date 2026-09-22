@@ -279,7 +279,7 @@ def update_agent(
     for key, value in update.model_dump(exclude_unset=True).items():
         setattr(agent, key, value)
 
-    # capability 仅支持手动调用，不参与调度。
+    # capability chỉ gọi thủ công, không tham gia lập lịch.
     kind = (agent.kind or "").strip() or infer_agent_kind(agent.name)
     if kind == AGENT_KIND_CAPABILITY:
         agent.enabled = False
@@ -340,7 +340,7 @@ def delete_agent(agent_name: str, db: Session = Depends(get_db)):
     if not agent:
         raise HTTPException(404, f"Agent {agent_name} 不存在")
 
-    # 删除关联的 stock_agents 记录
+    # Xóa các bản ghi stock_agents liên quan
     from src.platform.persistence.models import StockAgent
 
     db.query(StockAgent).filter(StockAgent.agent_name == agent_name).delete()
@@ -412,7 +412,7 @@ def find_running_for_stock(
     Returns:
         {"trace_id": str|None, "status": "running"|"success"|"failed"|"none"}
     """
-    # 先读持久化生命周期记录：采集阶段没有 ta_progress 时也能恢复。
+    # Đọc bản ghi vòng đời đã lưu trước: khôi phục được cả khi giai đoạn thu thập chưa có ta_progress.
     from src.modules.automation.agent_runs import find_active_tradingagents_trace
 
     active_trace = find_active_tradingagents_trace(db, stock_symbol)
@@ -442,7 +442,7 @@ def find_running_for_stock(
 
     trace_id = latest_log.trace_id
 
-    # 检查该 trace 是否已有完成记录
+    # Kiểm tra trace này đã có bản ghi hoàn tất chưa
     run = (
         db.query(AgentRun)
         .filter(AgentRun.trace_id == trace_id)
@@ -450,8 +450,8 @@ def find_running_for_stock(
         .first()
     )
 
-    # 没有 run 记录时,看最后日志距今 — 超过 STALE_THRESHOLD 视为僵尸 running
-    # (server 重启 / 工作线程死掉),前端可据此 reset 到 idle 允许重新分析
+    # Không có bản ghi run thì xét khoảng cách từ nhật ký cuối tới giờ — vượt STALE_THRESHOLD thì coi là running xác sống
+    # (máy chủ khởi động lại / luồng xử lý chết), giao diện dựa vào đó đưa về idle để cho phân tích lại
     status = run.status if run else "running"
     if status == "running":
         created_at = _as_utc(run.created_at) if run else None
@@ -462,7 +462,7 @@ def find_running_for_stock(
             last_ts = last_ts.replace(tzinfo=timezone.utc)
         if status == "running" and last_ts:
             idle_sec = (datetime.now(timezone.utc) - last_ts).total_seconds()
-            if idle_sec > 300:  # 5 分钟无新进度 → stale
+            if idle_sec > 300:  # 5 phút không có tiến độ mới → coi là cũ
                 status = "stale"
 
     return {
@@ -579,7 +579,7 @@ def export_tradingagents_analysis_pdf(
     if not record:
         raise HTTPException(status_code=404, detail="未找到该深度分析记录")
 
-    # 用 raw_data 拼详情页同款完整分节(含 4 分析师全文 + 辩论全文);raw_data 缺失时回退 content
+    # Dùng raw_data dựng đủ các mục như trang chi tiết (toàn văn 4 chuyên viên + toàn văn tranh luận); thiếu raw_data thì lùi về content
     report_md = assemble_report_markdown(record.raw_data or {}) or (record.content or "")
     pdf_bytes = render_analysis_pdf(record.title or "深度分析", report_md)
     base = (record.title or f"{stock_symbol} 深度分析").replace("/", "-").replace("\\", "-").strip()
@@ -622,12 +622,12 @@ def get_tradingagents_budget(db: Session = Depends(get_db)):
     cfg = agent.config or {}
     monthly_budget = float(cfg.get("monthly_budget_usd", 10.0))
 
-    # 复用 cost_tracker 的 SQL 聚合
+    # Tái dùng phép gộp SQL của cost_tracker
     from src.modules.automation.tradingagents.observability import check_budget, estimate_cost
 
     budget = check_budget(monthly_budget, "tradingagents")
 
-    # 单次估算(给前端确认弹窗显示)
+    # Ước tính cho một lần chạy (để hiện trong hộp thoại xác nhận ở giao diện)
     est = estimate_cost(
         debate_rounds=int(cfg.get("debate_rounds", 1)),
         selected_analysts=list(
@@ -698,9 +698,9 @@ def get_run_progress(trace_id: str, db: Session = Depends(get_db)):
     progress_logs = [d for d in log_dicts if d.get("event") == "ta_progress"]
     progress = aggregate_progress(progress_logs)
 
-    # 工具调用诊断:汇总 5 类 action 次数 + 最近 50 条详情
-    # 港股转格式/兜底等场景归到对应基础类(HIT/PASSTHROUGH/ERROR),
-    # source 字段区分具体来源(yfinance/panwatch HK fallback/...)
+    # Chẩn đoán lời gọi công cụ: gộp số lần theo 5 loại action + 50 bản ghi chi tiết gần nhất
+    # Các tình huống đổi định dạng / dự phòng của cổ phiếu Hồng Kông quy về đúng loại cơ sở (HIT/PASSTHROUGH/ERROR),
+    # trường source phân biệt nguồn cụ thể (yfinance / panwatch HK fallback / ...)
     toolkit_logs = [d for d in log_dicts if d.get("event") == "ta_toolkit"]
     toolkit_summary = {"hit": 0, "miss": 0, "passthrough": 0, "fallthrough": 0, "error": 0}
     toolkit_recent = []
@@ -751,10 +751,10 @@ def get_run_progress(trace_id: str, db: Session = Depends(get_db)):
                 if progress["elapsed_sec"] > ACTIVE_RUN_TTL_SEC:
                     status = "stale"
     elif log_dicts:
-        # 检测"僵尸 running":server 重启 / 工作线程死掉时,日志还在但任务已不在跑。
-        # 最后一条进度日志距今 > STALE_THRESHOLD 视为中断,前端可据此 reset 回 idle。
-        STALE_THRESHOLD_SEC = 300  # 5 分钟
-        last_log = logs[-1]  # logs 已 order_by id.asc(),末尾是最新
+        # Phát hiện "running xác sống": khi máy chủ khởi động lại / luồng xử lý chết, nhật ký vẫn còn nhưng tác vụ đã không chạy nữa.
+        # Nhật ký tiến độ cuối cách hiện tại > STALE_THRESHOLD thì coi là đứt, giao diện dựa vào đó đưa về idle.
+        STALE_THRESHOLD_SEC = 300  # 5 phút
+        last_log = logs[-1]  # logs đã order_by id.asc(), phần tử cuối là mới nhất
         last_ts = last_log.timestamp
         if last_ts is not None:
             if last_ts.tzinfo is None:
@@ -771,10 +771,10 @@ def get_run_progress(trace_id: str, db: Session = Depends(get_db)):
     return progress
 
 
-# 进度 SSE 轮询/推送节奏与终态判定
+# Nhịp thăm dò / đẩy của luồng SSE tiến độ và cách xác định trạng thái cuối
 PROGRESS_SSE_POLL_SEC = 1.0
 PROGRESS_SSE_MAX_DURATION_SEC = 30 * 60
-PROGRESS_SSE_NOT_FOUND_GRACE_SEC = 60  # trigger 刚发出时日志可能尚未写入
+PROGRESS_SSE_NOT_FOUND_GRACE_SEC = 60  # Ngay sau khi phát trigger, nhật ký có thể chưa kịp ghi
 PROGRESS_TERMINAL_STATUSES = ("success", "failed", "stale")
 
 
@@ -827,7 +827,7 @@ async def stream_run_progress(trace_id: str):
             else:
                 ticks_since_push += 1
                 if ticks_since_push >= 15:
-                    # 无变化时发心跳注释，防止代理断开空闲连接
+                    # Không có thay đổi thì gửi chú thích nhịp tim, tránh proxy ngắt kết nối nhàn rỗi
                     ticks_since_push = 0
                     yield format_sse_comment()
 
@@ -843,7 +843,7 @@ async def stream_run_progress(trace_id: str):
 
             await asyncio.sleep(PROGRESS_SSE_POLL_SEC)
 
-        # 超时兜底：关流，前端可重连或降级轮询
+        # Dự phòng khi quá hạn: đóng luồng, giao diện có thể kết nối lại hoặc hạ cấp sang thăm dò
         seq += 1
         yield format_sse_event(seq, "done", {"status": "timeout"})
 
@@ -917,7 +917,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
     agent_cfg = db.query(AgentConfig).filter(AgentConfig.name == agent_name).first()
     agent_kwargs = agent_cfg.config if agent_cfg and agent_cfg.config else {}
 
-    # 只获取关联了盘中监测 Agent 的股票
+    # Chỉ lấy các mã có gắn Agent giám sát trong phiên
     watchlist = load_watchlist_for_agent(agent_name)
 
     if not watchlist:
@@ -928,7 +928,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
             "has_watchlist": False,
         }
 
-    # 按股票所属市场过滤：只扫描当前开市市场的股票（避免全局门禁误判）
+    # Lọc theo thị trường của từng mã: chỉ quét mã thuộc thị trường đang mở cửa (tránh cổng chặn toàn cục phán sai)
     active_watchlist = [
         s for s in watchlist if MARKETS.get(s.market) and MARKETS[s.market].is_trading_time()
     ]
@@ -951,7 +951,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
     # Lấy thông tin vị thế
     portfolio = load_portfolio_for_agent(agent_name)
 
-    # 按市场分组采集行情
+    # Gom nhóm theo thị trường để thu thập giá
     market_symbols: dict[MarketCode, list] = {}
     stock_market_map: dict[str, MarketCode] = {}
     for stock in active_watchlist:
@@ -974,11 +974,11 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
     all_quotes = [q for batch in quote_batches for q in (batch or [])]
     quote_by_symbol = {q.symbol: q for q in all_quotes}
 
-    # 解析 Agent 阈值配置（用于异动标记与提示 AI）
+    # Bóc cấu hình ngưỡng của Agent (dùng để đánh dấu biến động bất thường và nhắc AI)
     try:
         monitor_agent = IntradayMonitorAgent(bypass_throttle=True, **agent_kwargs)
     except TypeError:
-        # 兼容旧配置（字段不匹配时回退）
+        # Tương thích cấu hình cũ (trường không khớp thì lùi về mặc định)
         monitor_agent = IntradayMonitorAgent(bypass_throttle=True)
 
     daily_analysis = None
@@ -988,7 +988,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
     quality_overview: dict = {}
     signal_packs: dict = {}
     if analyze:
-        # 获取历史分析（给 AI 作为上下文）
+        # Lấy phân tích lịch sử (làm ngữ cảnh cho AI)
         try:
             daily_analysis = get_latest_analysis(
                 agent_name="daily_report",
@@ -1038,7 +1038,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
             except Exception:
                 pass
 
-    # 构建返回数据
+    # Dựng dữ liệu trả về
     kline_sem = asyncio.Semaphore(6)
 
     async def _load_kline_summary(symbol: str, market: MarketCode):
@@ -1064,10 +1064,10 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
         if cost_price and quote.current_price:
             pnl_pct = (quote.current_price - cost_price) / cost_price * 100
 
-        # 获取技术分析（并发）
+        # Lấy phân tích kỹ thuật (chạy song song)
         kline_summary = await _load_kline_summary(quote.symbol, market)
 
-        # 判断异动类型
+        # Xác định loại biến động bất thường
         alert_type = None
         if abs(change_pct) >= getattr(monitor_agent, "price_alert_threshold", 3.0):
             alert_type = "急涨" if change_pct > 0 else "急跌"
@@ -1091,7 +1091,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
             "pnl_pct": pnl_pct,
             "trading_style": trading_style,
             "kline": kline_summary,
-            "suggestion": None,  # AI 建议
+            "suggestion": None,  # Khuyến nghị AI
             "context_quality": (
                 (symbol_contexts.get(quote.symbol, {}) or {}).get("data_quality")
                 if analyze
@@ -1101,7 +1101,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
 
     results = await asyncio.gather(*[_build_result_item(quote) for quote in all_quotes])
 
-    # AI 分析
+    # Phân tích AI
     if analyze and results:
         try:
             context = scan_context or build_context(agent_name)
@@ -1135,8 +1135,8 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
                             else None,
                         }
 
-                        # 事件门禁仅保留为上下文信息，不阻断 AI 分析。
-                        # 产品策略：建议持续更新，通知层再做去重与降噪。
+                        # Cổng sự kiện chỉ giữ lại làm thông tin ngữ cảnh, không chặn AI phân tích.
+                        # Định hướng sản phẩm: khuyến nghị cứ cập nhật liên tục, tầng thông báo mới khử trùng lặp và lọc nhiễu.
                         try:
                             if getattr(agent, "event_only", False):
                                 from src.modules.strategy.intraday_event_gate import check_and_update
@@ -1167,12 +1167,12 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
                             system_prompt, user_content
                         )
 
-                        # 解析结构化建议
+                        # Bóc khuyến nghị có cấu trúc
                         suggestion = agent._parse_suggestion(response)
                         suggestion["raw"] = response.strip()[:200]
 
                         item["suggestion"] = suggestion
-                        # 写入建议池（用于持仓页展示），盘中建议固定 6 小时有效
+                        # Ghi vào kho khuyến nghị (để hiện ở trang vị thế), khuyến nghị trong phiên cố định hiệu lực 6 giờ
                         expires_hours = 6
                         save_suggestion(
                             stock_symbol=item["symbol"],

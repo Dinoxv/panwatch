@@ -153,8 +153,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
             "llm_max_tokens": 4096,       # Giới hạn đầu ra của mô hình, tránh gateway hết hạn vì nhàn rỗi
             "emit_paper_trading_signal": False,  # Có ghi quyết định MUA vào StrategySignalRun hay không
                                                   # Dẫn động mô phỏng tự mở vị thế (mặc định tắt, người dùng phải chủ động bật)
-            "enable_sec_edgar": False,  # 仅美股：优先使用有 filing-date 语义的 SEC EDGAR 财报
-            "holding_period_days": 5,   # 上游决策质量回测使用的默认持仓期限
+            "enable_sec_edgar": False,  # Chỉ cổ phiếu Mỹ: ưu tiên báo cáo tài chính SEC EDGAR vì có ngữ nghĩa ngày nộp hồ sơ
+            "holding_period_days": 5,   # Kỳ nắm giữ mặc định mà thượng nguồn dùng khi kiểm thử chất lượng quyết định
         },
     ),
 )
