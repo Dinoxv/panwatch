@@ -28,7 +28,7 @@ describe('assistant task stream', () => {
       options.onEvent({
         id: 4,
         event: 'done',
-        data: { message_id: 7, content: '完成', created_at: '' },
+        data: { message_id: 7, content: 'Xong', created_at: '' },
       })
       return { lastEventId: 4 }
     })
@@ -48,7 +48,7 @@ describe('assistant task stream', () => {
     ])
     expect(onDone).toHaveBeenCalledWith({
       message_id: 7,
-      content: '完成',
+      content: 'Xong',
       created_at: '',
     })
   })

@@ -126,7 +126,7 @@ function formatKlineMeta(meta?: Record<string, any>): string {
   const asof = meta?.kline_meta?.asof
   const parts: string[] = []
   if (asof) parts.push(`Nến tính tới ${asof}`)
-  if (computedAt) parts.push(`计算 ${formatSuggestionTime(computedAt)}`)
+  if (computedAt) parts.push(`Tính lúc ${formatSuggestionTime(computedAt)}`)
   return parts.join(' · ')
 }
 
@@ -226,7 +226,7 @@ export function SuggestionBadge({
                 <div className="mt-1 text-[10px] text-muted-foreground/70">
                   来源: {suggestion.agent_label || (isAI ? 'AI' : 'Không rõ')}
                   {timeStr && ` · ${timeStr}`}
-                  {suggestion.is_expired && <span className="ml-1 text-amber-600">(已过期)</span>}
+                  {suggestion.is_expired && <span className="ml-1 text-amber-600">(đã hết hạn)</span>}
                 </div>
               )}
 
@@ -267,7 +267,7 @@ export function SuggestionBadge({
                 <div className="text-[11px] text-muted-foreground/70 mt-1">
                   来源: {suggestion.agent_label || 'Không rõ'}
                   {suggestion.created_at && ` · ${formatSuggestionDateTime(suggestion.created_at)}`}
-                  {suggestion.is_expired && <span className="ml-2 text-amber-500">(已过期)</span>}
+                  {suggestion.is_expired && <span className="ml-2 text-amber-500">(đã hết hạn)</span>}
                 </div>
               )}
             </DialogHeader>
@@ -276,7 +276,7 @@ export function SuggestionBadge({
               {/* Feedback */}
               {canFeedback && (
                 <div>
-                  <div className="text-[11px] text-muted-foreground mb-1">这条建议是否有用？</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Khuyến nghị này có ích không?</div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => submitFeedback(true)}
@@ -287,7 +287,7 @@ export function SuggestionBadge({
                           : 'bg-background/40 border-border/60 text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      有用
+                      Có ích
                     </button>
                     <button
                       onClick={() => submitFeedback(false)}
@@ -298,10 +298,10 @@ export function SuggestionBadge({
                           : 'bg-background/40 border-border/60 text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      没用
+                      Không ích
                     </button>
                     {feedback && (
-                      <span className="text-[11px] text-muted-foreground">已记录，感谢反馈</span>
+                      <span className="text-[11px] text-muted-foreground">Đã ghi nhận, cảm ơn phản hồi</span>
                     )}
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export function SuggestionBadge({
               {/* Tín hiệu */}
               {suggestion.signal && (
                 <div>
-                  <div className="text-[11px] text-muted-foreground mb-1">信号</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Tín hiệu</div>
                   <p className="text-[13px] font-medium text-foreground">{suggestion.signal}</p>
                 </div>
               )}
@@ -318,7 +318,7 @@ export function SuggestionBadge({
               {/* Lý do */}
               {(suggestion.reason || suggestion.raw) && (
                 <div>
-                  <div className="text-[11px] text-muted-foreground mb-1">理由</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Lý do</div>
                   <p className="text-[13px] text-foreground">
                     {suggestion.reason || suggestion.raw}
                   </p>
@@ -336,7 +336,7 @@ export function SuggestionBadge({
               {/* Phản hồi gốc của AI */}
               {suggestion.ai_response && (
                 <div>
-                  <div className="text-[11px] text-muted-foreground mb-1">AI 响应</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Phản hồi AI</div>
                   <div className="text-[12px] text-foreground whitespace-pre-wrap bg-accent/30 rounded p-2 max-h-32 overflow-y-auto scrollbar">
                     {suggestion.ai_response}
                   </div>
@@ -347,7 +347,7 @@ export function SuggestionBadge({
               {suggestion.prompt_context && (
                 <details className="group">
                   <summary className="text-[11px] text-muted-foreground cursor-pointer hover:text-foreground">
-                    Prompt 上下文 <span className="text-[10px]">(bấm để mở)</span>
+                    Ngữ cảnh Prompt <span className="text-[10px]">(bấm để mở)</span>
                   </summary>
                   <div className="mt-2 text-[11px] text-muted-foreground whitespace-pre-wrap bg-accent/20 rounded p-2 max-h-48 overflow-y-auto scrollbar">
                     {suggestion.prompt_context}
@@ -422,7 +422,7 @@ export function SuggestionBadge({
               if (suggestion.agent_label === 'Chỉ báo kỹ thuật') setKlineDialogOpen(true)
               else setDialogOpen(true)
             }}
-            title={sourceInfo ? `${sourceInfo} - 点击查看详情` : 'Bấm để xem chi tiết khuyến nghị'}
+            title={sourceInfo ? `${sourceInfo} - bấm để xem chi tiết` : 'Bấm để xem chi tiết khuyến nghị'}
           />
           {showTechnicalCompanion && suggestion.agent_label !== 'Chỉ báo kỹ thuật' && (
             (() => {
@@ -443,7 +443,7 @@ export function SuggestionBadge({
         {isAI && (
           <div className="mt-1 text-[10px] text-muted-foreground/70">
             来源: {suggestion.agent_label || 'AI'}{timeStr && ` · ${timeStr}`}
-            {suggestion.is_expired && <span className="ml-1 text-amber-600">(已过期)</span>}
+            {suggestion.is_expired && <span className="ml-1 text-amber-600">(đã hết hạn)</span>}
           </div>
         )}
       </div>
@@ -475,7 +475,7 @@ export function SuggestionBadge({
               <div className="text-[11px] text-muted-foreground/70 mt-1">
                 来源: {suggestion.agent_label || 'Không rõ'}
                 {suggestion.created_at && ` · ${formatSuggestionDateTime(suggestion.created_at)}`}
-                {suggestion.is_expired && <span className="ml-2 text-amber-500">(已过期)</span>}
+                {suggestion.is_expired && <span className="ml-2 text-amber-500">(đã hết hạn)</span>}
               </div>
             )}
           </DialogHeader>
@@ -484,7 +484,7 @@ export function SuggestionBadge({
             {/* Feedback */}
             {canFeedback && (
               <div>
-                <div className="text-[11px] text-muted-foreground mb-1">这条建议是否有用？</div>
+                <div className="text-[11px] text-muted-foreground mb-1">Khuyến nghị này có ích không?</div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => submitFeedback(true)}
@@ -495,7 +495,7 @@ export function SuggestionBadge({
                         : 'bg-background/40 border-border/60 text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    有用
+                    Có ích
                   </button>
                   <button
                     onClick={() => submitFeedback(false)}
@@ -506,10 +506,10 @@ export function SuggestionBadge({
                         : 'bg-background/40 border-border/60 text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    没用
+                    Không ích
                   </button>
                   {feedback && (
-                    <span className="text-[11px] text-muted-foreground">已记录，感谢反馈</span>
+                    <span className="text-[11px] text-muted-foreground">Đã ghi nhận, cảm ơn phản hồi</span>
                   )}
                 </div>
               </div>
@@ -518,7 +518,7 @@ export function SuggestionBadge({
             {/* Tín hiệu */}
             {suggestion.signal && (
               <div>
-                <div className="text-[11px] text-muted-foreground mb-1">信号</div>
+                <div className="text-[11px] text-muted-foreground mb-1">Tín hiệu</div>
                 <p className="text-[13px] font-medium text-foreground">{suggestion.signal}</p>
               </div>
             )}
@@ -526,7 +526,7 @@ export function SuggestionBadge({
             {/* Lý do */}
             {(suggestion.reason || suggestion.raw) && (
               <div>
-                <div className="text-[11px] text-muted-foreground mb-1">理由</div>
+                <div className="text-[11px] text-muted-foreground mb-1">Lý do</div>
                 <p className="text-[13px] text-foreground">
                   {suggestion.reason || suggestion.raw}
                 </p>
@@ -544,7 +544,7 @@ export function SuggestionBadge({
             {/* Phản hồi gốc của AI */}
             {suggestion.ai_response && (
               <div>
-                <div className="text-[11px] text-muted-foreground mb-1">AI 响应</div>
+                <div className="text-[11px] text-muted-foreground mb-1">Phản hồi AI</div>
                 <div className="text-[12px] text-foreground whitespace-pre-wrap bg-accent/30 rounded p-2 max-h-32 overflow-y-auto">
                   {suggestion.ai_response}
                 </div>
@@ -555,7 +555,7 @@ export function SuggestionBadge({
             {suggestion.prompt_context && (
               <details className="group">
                 <summary className="text-[11px] text-muted-foreground cursor-pointer hover:text-foreground">
-                  Prompt 上下文 <span className="text-[10px]">(bấm để mở)</span>
+                  Ngữ cảnh Prompt <span className="text-[10px]">(bấm để mở)</span>
                 </summary>
                 <div className="mt-2 text-[11px] text-muted-foreground whitespace-pre-wrap bg-accent/20 rounded p-2 max-h-48 overflow-y-auto">
                   {suggestion.prompt_context}

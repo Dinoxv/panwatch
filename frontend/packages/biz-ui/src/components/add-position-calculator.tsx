@@ -14,7 +14,7 @@ export interface AddPositionCalc {
   isAdd: boolean
 }
 
-/** 加仓后摊薄成本(正算)。无效输入返回 null。 */
+/** Giá vốn bình quân sau khi gia tăng tỷ trọng (tính xuôi). Nhập không hợp lệ thì trả null. */
 export function calcAddPosition(
   curQty: number,
   curCost: number,
@@ -31,7 +31,7 @@ export function calcAddPosition(
   return { newQty, newCost, diluteAbs, dilutePct, totalInvested: newQty * newCost, isAdd }
 }
 
-/** 反推:把成本降到 target 需要按 addPrice 加多少股。仅当 addPrice < target < curCost 可行。 */
+/** Tính ngược: muốn hạ giá vốn xuống target thì phải mua thêm bao nhiêu cổ ở giá addPrice. Chỉ khả thi khi addPrice < target < curCost. */
 export function calcSharesForTargetCost(
   curQty: number,
   curCost: number,
@@ -93,7 +93,7 @@ export default function AddPositionCalculator({
     return currentPrice && currentPrice > 0 ? currentPrice : 0
   }, [priceRaw, currentPrice])
 
-  // 输入(股数/金额)→ 加仓股数
+  // Nhập (số cổ/số tiền) → số cổ mua thêm
   const addQty = useMemo(() => {
     const v = parseFloat(addRaw)
     if (!isFinite(v) || v <= 0) return 0
@@ -114,7 +114,7 @@ export default function AddPositionCalculator({
 
   const runAi = async () => {
     if (!calc || addQty <= 0 || addPrice <= 0) {
-      toast('请先填写有效的加仓股数/金额与价格', 'error')
+      toast('Xin điền số cổ/số tiền mua thêm và giá hợp lệ trước', 'error')
       return
     }
     setAiLoading(true)
@@ -130,13 +130,13 @@ export default function AddPositionCalculator({
       })
       setAiResult(res)
     } catch (e: any) {
-      toast(e?.message || 'AI 评估失败', 'error')
+      toast(e?.message || 'Đánh giá AI thất bại', 'error')
     } finally {
       setAiLoading(false)
     }
   }
 
-  const pricePlaceholder = currentPrice && currentPrice > 0 ? String(currentPrice) : '加仓价'
+  const pricePlaceholder = currentPrice && currentPrice > 0 ? String(currentPrice) : 'Giá mua thêm'
   const hasHolding = currentQuantity > 0 && currentCost > 0
   const lotWarn = isCN && addQty > 0 && Math.round(addQty) % 100 !== 0
 
@@ -147,8 +147,8 @@ export default function AddPositionCalculator({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between text-[11px] text-muted-foreground"
       >
-        <span>加仓测算{hasHolding ? '' : '（当前空仓 · 建仓测算）'}</span>
-        <span>{open ? '收起 ▾' : '展开 ▸'}</span>
+        <span>加仓测算{hasHolding ? '' : '(hiện đang trống danh mục · tính cho lần mở vị thế)'}</span>
+        <span>{open ? 'Thu lại ▾' : 'Mở ra ▸'}</span>
       </button>
 
       {open && (
@@ -165,7 +165,7 @@ export default function AddPositionCalculator({
                     : 'border-border text-muted-foreground'
                 }`}
               >
-                {m === 'shares' ? '按股数' : '按金额'}
+                {m === 'shares' ? 'Theo số cổ' : 'Theo số tiền'}
               </button>
             ))}
           </div>
@@ -173,17 +173,17 @@ export default function AddPositionCalculator({
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1">
               <div className="text-[10px] text-muted-foreground">
-                {mode === 'shares' ? '加仓股数' : '加仓金额(元)'}
+                {mode === 'shares' ? 'Số cổ mua thêm' : 'Số tiền mua thêm (đồng)'}
               </div>
               <Input
                 value={addRaw}
                 onChange={(e) => setAddRaw(e.target.value)}
                 inputMode="decimal"
-                placeholder={mode === 'shares' ? '如 200' : '如 10000'}
+                placeholder={mode === 'shares' ? 'Ví dụ 200' : '如 10000'}
               />
             </label>
             <label className="space-y-1">
-              <div className="text-[10px] text-muted-foreground">加仓价</div>
+              <div className="text-[10px] text-muted-foreground">Giá mua thêm</div>
               <Input
                 value={priceRaw}
                 onChange={(e) => setPriceRaw(e.target.value)}

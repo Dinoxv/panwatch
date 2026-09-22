@@ -128,7 +128,7 @@ interface StockItem {
 }
 
 const AGENT_LABELS: Record<string, string> = {
-  daily_report: '盘后日报',
+  daily_report: 'Nhật báo sau phiên',
   premarket_outlook: 'Phân tích trước phiên',
   news_digest: 'Tin nhanh',
 }
@@ -143,8 +143,8 @@ function formatCompactNumber(value: number | null | undefined): string {
   const n = Number(value)
   if (!isFinite(n)) return '--'
   const abs = Math.abs(n)
-  if (abs >= 1e8) return `${(n / 1e8).toFixed(2)}亿`
-  if (abs >= 1e4) return `${(n / 1e4).toFixed(2)}万`
+  if (abs >= 1e8) return `${(n / 1e8).toFixed(2)} trăm triệu`
+  if (abs >= 1e4) return `${(n / 1e4).toFixed(2)} vạn`
   return n.toFixed(0)
 }
 
@@ -155,14 +155,14 @@ function formatMarketCap(value: number | null | undefined, market?: string): str
   const m = String(market || '').toUpperCase()
   const abs = Math.abs(n)
 
-  // 腾讯 A 股字段常见为“亿元”口径（如 808 表示 808 亿元）
+  // Trường cổ phiếu A của Tencent thường theo khẩu độ "trăm triệu đồng" (ví dụ 808 nghĩa là 808 trăm triệu đồng)
   if (m === 'CN' && abs > 0 && abs < 100000) {
-    return `${n.toFixed(2)}亿元`
+    return `${n.toFixed(2)} trăm triệu đồng`
   }
 
-  if (abs >= 1e8) return `${(n / 1e8).toFixed(2)}亿元`
-  if (abs >= 1e4) return `${(n / 1e4).toFixed(2)}万元`
-  return `${n.toFixed(0)}元`
+  if (abs >= 1e8) return `${(n / 1e8).toFixed(2)} trăm triệu đồng`
+  if (abs >= 1e4) return `${(n / 1e4).toFixed(2)} vạn đồng`
+  return `${n.toFixed(0)} đồng`
 }
 
 function formatTime(isoTime?: string): string {
@@ -277,11 +277,11 @@ function buildShareTechnicalRisks(kline: KlineSummary | null): string[] {
   const rsi = String(kline.rsi_status || '')
   const macd = `${kline.macd_cross || ''} ${kline.macd_status || ''}`
   const vol = String(kline.volume_trend || '')
-  if (rsi.includes('超买')) out.push('短线过热回撤风险')
-  if (rsi.includes('超卖')) out.push('弱势延续风险')
-  if (macd.includes('死叉')) out.push('趋势转弱风险')
-  if (macd.includes('顶背离')) out.push('动能背离风险')
-  if (vol.includes('放量')) out.push('波动放大风险')
+  if (rsi.includes('超买')) out.push('Rủi ro nóng quá trong ngắn hạn rồi điều chỉnh')
+  if (rsi.includes('超卖')) out.push('Rủi ro yếu thế kéo dài')
+  if (macd.includes('死叉')) out.push('Rủi ro xu thế chuyển yếu')
+  if (macd.includes('Phân kỳ đỉnh')) out.push('Rủi ro phân kỳ động lượng')
+  if (vol.includes('放量')) out.push('Rủi ro biến động phình to')
   return out.slice(0, 3)
 }
 
@@ -297,12 +297,12 @@ function TechnicalIndicatorStrip(props: {
 }) {
   const { klineSummary, technicalSuggestion, stockName, stockSymbol, market, hasPosition, score, evidence = [] } = props
   if (!klineSummary) {
-    return <div className="text-[12px] text-muted-foreground py-3">暂无技术指标</div>
+    return <div className="text-[12px] text-muted-foreground py-3">Chưa có chỉ báo kỹ thuật</div>
   }
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[12px] text-muted-foreground">技术指标建议</span>
+        <span className="text-[12px] text-muted-foreground">Khuyến nghị theo chỉ báo kỹ thuật</span>
         <SuggestionBadge
           suggestion={technicalSuggestion}
           stockName={stockName}
@@ -311,7 +311,7 @@ function TechnicalIndicatorStrip(props: {
           kline={klineSummary}
           hasPosition={hasPosition}
         />
-        <TechnicalBadge label={`评分 ${Number(score ?? 0).toFixed(1)}`} tone="neutral" size="xs" className="text-foreground" />
+        <TechnicalBadge label={`Điểm ${Number(score ?? 0).toFixed(1)}`} tone="neutral" size="xs" className="text-foreground" />
       </div>
       {evidence.length > 0 && (
         <div className="flex flex-wrap gap-1.5 text-[10px]">
@@ -486,7 +486,7 @@ export default function StockInsightModal(props: {
           return (n.symbols || []).map(x => String(x).toUpperCase()).includes(upperSymbol)
         })
       }
-      // 兜底：实时新闻为空时，回退到 news_digest 历史快照中的新闻列表
+      // Lưới hứng: khi tin thời gian thực rỗng thì lùi về danh sách tin trong ảnh chụp lịch sử news_digest
       if ((data || []).length === 0) {
         const bySymbol = await insightApi.history<HistoryRecord[]>({
           agent_name: 'news_digest',
@@ -619,7 +619,7 @@ export default function StockInsightModal(props: {
       let merged = bySymbolResults
         .flatMap(items => items || [])
         .filter(Boolean)
-      // 兼容全局记录（stock_symbol="*"）场景：从最近全局记录中筛选与当前股票相关的报告。
+      // Tương thích với bản ghi toàn cục (stock_symbol="*"): lọc từ các bản ghi toàn cục gần nhất ra báo cáo liên quan tới mã đang xem.
       if (merged.length === 0) {
         const globalResults = await Promise.all(
           agents.map(agent =>
@@ -740,7 +740,7 @@ export default function StockInsightModal(props: {
     loadCore()
   }, [props.open, symbol, market, loadCore])
 
-  // 切到「深度」tab 时按需拉取(仅首次)
+  // Chuyển sang tab «Chuyên sâu» thì mới kéo dữ liệu (chỉ lần đầu)
   useEffect(() => {
     if (!props.open || !symbol) return
     if (tab === 'deep' && !deepLoaded && !deepLoading) {
@@ -812,7 +812,7 @@ export default function StockInsightModal(props: {
       action: technicalScored.action,
       action_label: technicalScored.action_label,
       signal: technicalScored.signal || 'Kỹ thuật trung tính',
-      reason: topEvidence.length > 0 ? topEvidence.join('；') : '基于K线技术指标自动生成的基础建议',
+      reason: topEvidence.length > 0 ? topEvidence.join('；') : 'Khuyến nghị nền tự dựng từ chỉ báo kỹ thuật của nến',
       should_alert: technicalScored.action === 'buy' || technicalScored.action === 'add' || technicalScored.action === 'sell' || technicalScored.action === 'reduce',
       agent_name: 'technical_fallback',
       agent_label: 'Chỉ báo kỹ thuật',
@@ -828,39 +828,39 @@ export default function StockInsightModal(props: {
   const buildPageContext = useCallback(() => {
     const parts: string[] = []
     if (quote) {
-      const items = [`价格${quote.current_price}`, `涨跌幅${quote.change_pct}%`]
-      if (quote.volume != null) items.push(`成交量${quote.volume}`)
-      if (quote.turnover_rate != null) items.push(`换手率${quote.turnover_rate}%`)
-      if (quote.pe_ratio != null) items.push(`市盈率${quote.pe_ratio}`)
-      if (quote.total_market_value != null) items.push(`总市值${quote.total_market_value}`)
-      parts.push(`实时行情：${items.join('，')}`)
+      const items = [`Giá ${quote.current_price}`, `Biên độ ${quote.change_pct}%`]
+      if (quote.volume != null) items.push(`Khối lượng ${quote.volume}`)
+      if (quote.turnover_rate != null) items.push(`Tỷ lệ sang tay ${quote.turnover_rate}%`)
+      if (quote.pe_ratio != null) items.push(`P/E ${quote.pe_ratio}`)
+      if (quote.total_market_value != null) items.push(`Tổng vốn hóa ${quote.total_market_value}`)
+      parts.push(`Bảng giá thời gian thực: ${items.join(', ')}`)
     }
     if (klineSummary) {
       const k = klineSummary as any
       const items = []
-      if (k.trend) items.push(`趋势${k.trend}`)
+      if (k.trend) items.push(`Xu thế ${k.trend}`)
       if (k.macd_status) items.push(`MACD${k.macd_status}`)
       if (k.rsi_status) items.push(`RSI${k.rsi_status}${k.rsi6 != null ? `(${k.rsi6})` : ''}`)
       if (k.kdj_status) items.push(`KDJ${k.kdj_status}`)
-      if (k.boll_status) items.push(`布林${k.boll_status}`)
-      if (k.volume_trend) items.push(`量能${k.volume_trend}${k.volume_ratio != null ? `(${k.volume_ratio}x)` : ''}`)
-      if (k.support != null) items.push(`支撑${k.support}`)
-      if (k.resistance != null) items.push(`压力${k.resistance}`)
-      if (items.length) parts.push(`技术面：${items.join('，')}`)
+      if (k.boll_status) items.push(`Bollinger ${k.boll_status}`)
+      if (k.volume_trend) items.push(`Khối lượng ${k.volume_trend}${k.volume_ratio != null ? `(${k.volume_ratio}x)` : ''}`)
+      if (k.support != null) items.push(`Hỗ trợ ${k.support}`)
+      if (k.resistance != null) items.push(`Kháng cự ${k.resistance}`)
+      if (items.length) parts.push(`Mặt kỹ thuật: ${items.join(', ')}`)
     }
     if (technicalScored) {
-      parts.push(`技术评分：${technicalScored.action_label}(score=${technicalScored.score})，信号：${technicalScored.signal || '中性'}`)
+      parts.push(`Điểm kỹ thuật: ${technicalScored.action_label}(score=${technicalScored.score}), tín hiệu: ${technicalScored.signal || 'Trung tính'}`)
       const evidence = (technicalScored.evidence || []).filter((e: any) => e.delta !== 0)
       if (evidence.length) {
-        parts.push(`评分依据：${evidence.map((e: any) => `${e.text}(${e.delta > 0 ? '+' : ''}${e.delta})`).join('；')}`)
+        parts.push(`Căn cứ chấm điểm: ${evidence.map((e: any) => `${e.text}(${e.delta > 0 ? '+' : ''}${e.delta})`).join('; ')}`)
       }
     }
     if (suggestions.length > 0) {
       const lines = suggestions.slice(0, 3).map(s => `- [${s.agent_label || s.agent_name}] ${s.action_label}: ${s.signal}`)
-      parts.push(`最近AI建议：\n${lines.join('\n')}`)
+      parts.push(`Khuyến nghị AI gần nhất:\n${lines.join('\n')}`)
     }
     if (holdingAgg) {
-      parts.push(`持仓：${holdingAgg.quantity}股，成本${holdingAgg.unitCost}，市值${holdingAgg.marketValue}，盈亏${holdingAgg.pnl}`)
+      parts.push(`Vị thế: ${holdingAgg.quantity} cổ, giá vốn ${holdingAgg.unitCost}, giá trị ${holdingAgg.marketValue}, lãi lỗ ${holdingAgg.pnl}`)
     }
     return parts.join('\n')
   }, [quote, klineSummary, technicalScored, suggestions, holdingAgg])
@@ -930,7 +930,7 @@ export default function StockInsightModal(props: {
     const marketLabel = badge.label
     const price = quote?.current_price != null ? formatNumber(quote.current_price) : '--'
     const chg = quote?.change_pct != null ? `${quote.change_pct >= 0 ? '+' : ''}${quote.change_pct.toFixed(2)}%` : '--'
-    const action = latestShareSuggestion?.action_label || latestShareSuggestion?.action || '暂无'
+    const action = latestShareSuggestion?.action_label || latestShareSuggestion?.action || 'Chưa có'
     const signal = firstNonEmptyText(
       latestShareSuggestion?.signal,
       pickFromJson('signal', 'summary', 'core_view'),
@@ -941,7 +941,7 @@ export default function StockInsightModal(props: {
       latestShareSuggestion?.reason,
       pickFromJson('reason', 'thesis', 'core_judgement', 'core_judgment', 'analysis'),
       technicalFallbackSuggestion?.reason,
-      '暂无'
+      'Chưa có'
     ) || '--'
     const risksList = [
       ...normalizeTextList((latestShareSuggestion as any)?.meta?.risks),
@@ -949,7 +949,7 @@ export default function StockInsightModal(props: {
       ...buildShareTechnicalRisks(klineSummary),
     ].filter(Boolean)
     const dedupRisks = Array.from(new Set(risksList))
-    const risks = dedupRisks.length > 0 ? dedupRisks.slice(0, 2).join('；') : '市场波动风险'
+    const risks = dedupRisks.length > 0 ? dedupRisks.slice(0, 2).join('；') : 'Rủi ro biến động thị trường'
     const triggerList = pickListFromJson('triggers', 'trigger', 'signals')
     const invalidList = pickListFromJson('invalidations', 'invalidation', 'stop_conditions')
     const trigger = triggerList.length > 0 ? triggerList.slice(0, 2).join('；') : '--'
@@ -959,7 +959,7 @@ export default function StockInsightModal(props: {
       technicalScored?.signal
     ) || '--'
     const levelsBrief = (klineSummary?.support != null && klineSummary?.resistance != null)
-      ? `支撑 ${formatNumber(klineSummary.support)} / 压力 ${formatNumber(klineSummary.resistance)}`
+      ? `Hỗ trợ ${formatNumber(klineSummary.support)} / kháng cự ${formatNumber(klineSummary.resistance)}`
       : '--'
     const source = latestShareSuggestion?.agent_label || latestShareSuggestion?.agent_name || 'Chỉ báo kỹ thuật'
     const ts = new Date().toLocaleString('zh-CN', {
@@ -976,19 +976,19 @@ export default function StockInsightModal(props: {
   const shareText = useMemo(() => {
     const { marketLabel, price, chg, action, signal, reason, risks, trigger, invalidation, technicalBrief, levelsBrief, source, ts } = shareCardPayload
     const lines = [
-      `【PanWatch 洞察】${resolvedName}（${symbol} · ${marketLabel}）`,
-      `时间：${ts}`,
-      `现价：${price}（${chg}）`,
-      `建议：${action}`,
-      `信号：${signal}`,
-      `理由：${reason}`,
-      `风险：${risks}`,
-      `技术：${technicalBrief}`,
-      `关键位：${levelsBrief}`,
-      `来源：${source}`,
+      `[Góc nhìn PanWatch] ${resolvedName} (${symbol} · ${marketLabel})`,
+      `Thời gian: ${ts}`,
+      `Giá hiện tại: ${price} (${chg})`,
+      `Khuyến nghị: ${action}`,
+      `Tín hiệu: ${signal}`,
+      `Lý do: ${reason}`,
+      `Rủi ro: ${risks}`,
+      `Kỹ thuật: ${technicalBrief}`,
+      `Mốc then chốt: ${levelsBrief}`,
+      `Nguồn: ${source}`,
     ]
-    if (trigger !== '--') lines.splice(7, 0, `触发：${trigger}`)
-    if (invalidation !== '--') lines.splice(8, 0, `失效：${invalidation}`)
+    if (trigger !== '--') lines.splice(7, 0, `Kích hoạt: ${trigger}`)
+    if (invalidation !== '--') lines.splice(8, 0, `Mất hiệu lực: ${invalidation}`)
     return lines.join('\n')
   }, [shareCardPayload, resolvedName, symbol])
 
@@ -1019,31 +1019,31 @@ export default function StockInsightModal(props: {
   </defs>
   <rect x="0" y="0" width="1200" height="630" fill="url(#bg)"/>
   <rect x="40" y="30" width="1120" height="570" rx="22" fill="#0f172a" stroke="#1f2937"/>
-  <text x="76" y="104" fill="#93c5fd" font-size="26" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">PanWatch 洞察</text>
-  <text x="76" y="150" fill="#f8fafc" font-size="42" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(`${resolvedName}（${symbol} · ${marketLabel}）`, 28))}</text>
+  <text x="76" y="104" fill="#93c5fd" font-size="26" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Góc nhìn PanWatch</text>
+  <text x="76" y="150" fill="#f8fafc" font-size="42" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(`${resolvedName} (${symbol} · ${marketLabel})`, 28))}</text>
   <text x="76" y="198" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(ts)}</text>
 
   <text x="76" y="284" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Giá hiện tại</text>
   <text x="180" y="284" fill="#f8fafc" font-size="52" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(price)}</text>
   <text x="380" y="284" fill="${changeColor}" font-size="36" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(chg)}</text>
 
-  <text x="76" y="352" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">建议</text>
+  <text x="76" y="352" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Khuyến nghị</text>
   <text x="180" y="352" fill="#22d3ee" font-size="34" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(action, 20))}</text>
 
-  <text x="76" y="412" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">信号</text>
+  <text x="76" y="412" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Tín hiệu</text>
   <text x="180" y="412" fill="#e2e8f0" font-size="26" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(signal, 46))}</text>
 
-  <text x="76" y="466" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">理由</text>
+  <text x="76" y="466" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Lý do</text>
   <text x="180" y="466" fill="#cbd5e1" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(reason, 52))}</text>
 
   <text x="76" y="520" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Rủi ro</text>
   <text x="180" y="520" fill="#cbd5e1" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(risks, 52))}</text>
 
-  <text x="76" y="560" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">技术</text>
+  <text x="76" y="560" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Kỹ thuật</text>
   <text x="180" y="560" fill="#cbd5e1" font-size="21" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(technicalBrief, 58))}</text>
-  <text x="76" y="590" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">关键位</text>
+  <text x="76" y="590" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Mốc then chốt</text>
   <text x="180" y="590" fill="#cbd5e1" font-size="21" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(levelsBrief, 58))}</text>
-  <text x="76" y="618" fill="#64748b" font-size="18" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">来源：${esc(source)} · 仅供参考，不构成投资建议</text>
+  <text x="76" y="618" fill="#64748b" font-size="18" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Nguồn: ${esc(source)} · chỉ để tham khảo, không phải khuyến nghị đầu tư</text>
 </svg>`
 
       const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
@@ -1058,7 +1058,7 @@ export default function StockInsightModal(props: {
       canvas.width = 1200
       canvas.height = 630
       const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('无法创建画布')
+      if (!ctx) throw new Error('Không tạo được canvas')
       ctx.drawImage(img, 0, 0)
       URL.revokeObjectURL(url)
       const png = canvas.toDataURL('image/png')
@@ -1066,9 +1066,9 @@ export default function StockInsightModal(props: {
       a.href = png
       a.download = `panwatch-${symbol}-${Date.now()}.png`
       a.click()
-      toast('分享图片已生成并下载', 'success')
+      toast('Đã dựng và tải ảnh chia sẻ', 'success')
     } catch {
-      toast('图片生成失败，请稍后重试', 'error')
+      toast('Dựng ảnh thất bại, xin thử lại sau', 'error')
     } finally {
       setImageExporting(false)
     }
@@ -1113,12 +1113,12 @@ export default function StockInsightModal(props: {
     try {
       const copied = await copyTextWithFallback(shareText)
       if (copied) {
-        toast('洞察内容已复制', 'success')
+        toast('Đã chép nội dung góc nhìn', 'success')
       } else {
-        toast('复制失败，请优先使用“图片”分享', 'error')
+        toast('Chép thất bại, xin ưu tiên chia sẻ bằng "Ảnh"', 'error')
       }
     } catch {
-      toast('复制失败，请优先使用“图片”分享', 'error')
+      toast('Chép thất bại, xin ưu tiên chia sẻ bằng "Ảnh"', 'error')
     }
   }, [copyTextWithFallback, shareText, toast])
 
@@ -1126,24 +1126,24 @@ export default function StockInsightModal(props: {
     try {
       if (typeof navigator !== 'undefined' && (navigator as any).share) {
         await (navigator as any).share({
-          title: `${resolvedName} 洞察`,
+          title: `Góc nhìn ${resolvedName}`,
           text: shareText,
         })
         return
       }
       const copied = await copyTextWithFallback(shareText)
       if (copied) {
-        toast('当前环境不支持系统分享，已自动复制内容', 'success')
+        toast('Môi trường hiện tại không hỗ trợ chia sẻ hệ thống, đã tự chép nội dung', 'success')
       } else {
-        toast('当前环境不支持分享且复制失败，请使用“图片”分享', 'error')
+        toast('Môi trường hiện tại không hỗ trợ chia sẻ mà chép cũng thất bại, xin chia sẻ bằng "Ảnh"', 'error')
       }
     } catch (e: any) {
       if (e?.name === 'AbortError') return
       const copied = await copyTextWithFallback(shareText)
       if (copied) {
-        toast('分享失败，已自动复制内容', 'success')
+        toast('Chia sẻ thất bại, đã tự chép nội dung', 'success')
       } else {
-        toast('分享失败且复制失败，请使用“图片”分享', 'error')
+        toast('Chia sẻ thất bại mà chép cũng thất bại, xin chia sẻ bằng "Ảnh"', 'error')
       }
     }
   }, [copyTextWithFallback, resolvedName, shareText, toast])
@@ -1174,19 +1174,19 @@ export default function StockInsightModal(props: {
         bypass_throttle: true,
         bypass_market_hours: true,
       })
-      toast('已设置提醒，AI 分析已提交', 'success')
-      // 轮询等待建议生成（最多 2 分钟，每 5 秒一次）
+      toast('Đã đặt cảnh báo, đã gửi yêu cầu phân tích AI', 'success')
+      // Hỏi vòng chờ khuyến nghị sinh ra (tối đa 2 phút, 5 giây một lần)
       const before = Date.now()
       const poll = setInterval(async () => {
         if (Date.now() - before > 120_000) { clearInterval(poll); setAlerting(false); return }
         await loadSuggestions()
       }, 5_000)
       await loadSuggestions()
-      // 延迟清理：2 分钟后 interval 自动停止
+      // Dọn muộn: sau 2 phút interval tự dừng
       setTimeout(() => clearInterval(poll), 125_000)
       return
     } catch (e) {
-      toast(e instanceof Error ? e.message : '设置提醒失败', 'error')
+      toast(e instanceof Error ? e.message : 'Đặt cảnh báo thất bại', 'error')
     } finally {
       setAlerting(false)
     }
@@ -1195,7 +1195,7 @@ export default function StockInsightModal(props: {
   const toggleWatch = useCallback(async () => {
     if (!symbol) return
     if (watchingStock && hasHolding) {
-      toast('该股票存在持仓，请先删除持仓后再取消关注', 'error')
+      toast('Mã này đang có vị thế, xin xóa vị thế trước rồi mới bỏ theo dõi', 'error')
       return
     }
 
@@ -1205,12 +1205,12 @@ export default function StockInsightModal(props: {
         await stocksApi.remove(watchingStock.id)
         setWatchingStock(null)
         delete stockCacheRef.current[`${market}:${symbol}`]
-        toast('已取消关注', 'success')
+        toast('Đã bỏ theo dõi', 'success')
       } else {
         const created = await stocksApi.create({ symbol, name: resolvedName || symbol, market })
         setWatchingStock(created)
         stockCacheRef.current[`${market}:${symbol}`] = created
-        toast('已添加关注', 'success')
+        toast('Đã thêm vào danh mục theo dõi', 'success')
       }
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Thao tác thất bại', 'error')
@@ -1220,7 +1220,7 @@ export default function StockInsightModal(props: {
   }, [hasHolding, market, resolvedName, symbol, toast, watchingStock])
 
   const triggerAutoAiSuggestion = useCallback(async () => {
-    // 自动建议仅针对”确认未持仓”的股票，且不自动创建股票/绑定 Agent。
+    // Khuyến nghị tự động chỉ nhắm vào mã "chắc chắn chưa nắm giữ", và không tự tạo mã/gắn Agent.
     if (!symbol || !market || !holdingLoaded || holdingLoadError || hasHolding || autoSuggesting) return
     const key = `${market}:${symbol}`
     const lastTs = autoTriggeredRef.current[key] || 0
@@ -1228,7 +1228,7 @@ export default function StockInsightModal(props: {
     autoTriggeredRef.current[key] = Date.now()
     setAutoSuggesting(true)
     try {
-      // intraday_monitor 较 chart_analyst 更轻量、稳定，不依赖截图链路
+      // intraday_monitor nhẹ và ổn định hơn chart_analyst, không phụ thuộc chuỗi chụp màn hình
       await stocksApi.triggerAgent(0, 'intraday_monitor', {
         allow_unbound: true,
         symbol,
@@ -1237,7 +1237,7 @@ export default function StockInsightModal(props: {
         bypass_throttle: true,
         bypass_market_hours: true,
       })
-      // 异步模式：triggerAgent 立即返回，轮询等待建议生成
+      // Chế độ bất đồng bộ: triggerAgent trả về ngay, rồi hỏi vòng chờ khuyến nghị sinh ra
       const before = Date.now()
       const poll = setInterval(async () => {
         if (Date.now() - before > 120_000) { clearInterval(poll); setAutoSuggesting(false); return }
@@ -1248,7 +1248,7 @@ export default function StockInsightModal(props: {
       return
     } catch (e) {
       toast(
-        e instanceof Error ? e.message : '自动 AI 建议触发失败，可点击「一键设提醒」重试',
+        e instanceof Error ? e.message : 'Kích hoạt khuyến nghị AI tự động thất bại, bấm «Đặt cảnh báo nhanh» để thử lại',
         'error'
       )
       setAutoSuggesting(false)
@@ -1287,20 +1287,20 @@ export default function StockInsightModal(props: {
                   <span className="break-all">{resolvedName}</span>
                   <span className="font-mono text-[12px] text-muted-foreground">({symbol})</span>
                 </DialogTitle>
-                <DialogDescription className="hidden md:block">概览、K线、AI建议、新闻、历史分析都在同一弹窗查看</DialogDescription>
+                <DialogDescription className="hidden md:block">Tổng quan, nến, khuyến nghị AI, tin tức, phân tích lịch sử đều xem trong cùng một hộp thoại</DialogDescription>
               </div>
               <div className="hidden md:flex items-center gap-2">
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={() => handleExportShareImage()} disabled={imageExporting}>
                   <Download className={`w-3.5 h-3.5 ${imageExporting ? 'animate-pulse' : ''}`} />
-                  <span>{imageExporting ? '生成中' : '图片'}</span>
+                  <span>{imageExporting ? 'Đang dựng' : 'Ảnh'}</span>
                 </Button>
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={() => handleShareInsight()}>
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>分享</span>
+                  <span>Chia sẻ</span>
                 </Button>
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={() => handleCopyShareText()}>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>复制</span>
+                  <span>Chép</span>
                 </Button>
                 <Button
                   variant="secondary"
@@ -1308,13 +1308,13 @@ export default function StockInsightModal(props: {
                   className="h-8 px-2.5"
                   onClick={toggleWatch}
                   disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
-                  title={hasHolding && watchingStock ? '持仓中的股票无法取消关注' : undefined}
+                  title={hasHolding && watchingStock ? 'Mã đang có vị thế thì không bỏ theo dõi được' : undefined}
                 >
-                  {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : '取消关注') : '快速关注')}
+                  {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : 'Bỏ theo dõi') : 'Theo dõi nhanh')}
                 </Button>
                 <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={handleSetAlert} disabled={alerting}>
-                  {alerting ? '设置中...' : '一键设提醒'}
+                  {alerting ? 'Đang đặt...' : 'Đặt cảnh báo nhanh'}
                 </Button>
                 <Button
                   variant="secondary"
@@ -1327,7 +1327,7 @@ export default function StockInsightModal(props: {
                     props.onOpenChange(false)
                   }}
                 >
-                  <Sparkles className="w-3.5 h-3.5 mr-1" /> 问 AI
+                  <Sparkles className="w-3.5 h-3.5 mr-1" /> Hỏi AI
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={() => handleRefreshAll()} disabled={loading}>
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -1351,11 +1351,11 @@ export default function StockInsightModal(props: {
                 onClick={toggleWatch}
                 disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
               >
-                {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : '取消关注') : '快速关注')}
+                {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : 'Bỏ theo dõi') : 'Theo dõi nhanh')}
               </Button>
               <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
               <Button variant="secondary" size="sm" className="h-8 px-2.5 shrink-0" onClick={handleSetAlert} disabled={alerting}>
-                {alerting ? '设置中...' : '一键设提醒'}
+                {alerting ? 'Đang đặt...' : 'Đặt cảnh báo nhanh'}
               </Button>
               <Button
                 variant="secondary"
@@ -1368,7 +1368,7 @@ export default function StockInsightModal(props: {
                   props.onOpenChange(false)
                 }}
               >
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> 问 AI
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> Hỏi AI
               </Button>
               <Button variant="outline" size="sm" className="h-8 px-2.5 shrink-0" onClick={() => handleRefreshAll()} disabled={loading}>
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -1379,13 +1379,13 @@ export default function StockInsightModal(props: {
           <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
             <div className="flex items-center gap-1 flex-wrap">
               {[
-                { id: 'overview', label: '概览' },
-                { id: 'suggestions', label: `建议 (${suggestions.length})` },
-                { id: 'reports', label: `报告 (${reports.length})` },
-                { id: 'deep', label: deepResult ? '深度 (1)' : '深度' },
+                { id: 'overview', label: 'Tổng quan' },
+                { id: 'suggestions', label: `Khuyến nghị (${suggestions.length})` },
+                { id: 'reports', label: `Báo cáo (${reports.length})` },
+                { id: 'deep', label: deepResult ? 'Chuyên sâu (1)' : 'Chuyên sâu' },
                 { id: 'kline', label: 'Nến' },
-                { id: 'announcements', label: `公告 (${announcements.length})` },
-                { id: 'news', label: `新闻 (${news.length})` },
+                { id: 'announcements', label: `Công bố (${announcements.length})` },
+                { id: 'news', label: `Tin tức (${news.length})` },
               ].map(item => (
                 <button
                   key={item.id}
@@ -1410,10 +1410,10 @@ export default function StockInsightModal(props: {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10">10秒</SelectItem>
-                  <SelectItem value="20">20秒</SelectItem>
-                  <SelectItem value="30">30秒</SelectItem>
-                  <SelectItem value="60">60秒</SelectItem>
+                  <SelectItem value="10">10 giây</SelectItem>
+                  <SelectItem value="20">20 giây</SelectItem>
+                  <SelectItem value="30">30 giây</SelectItem>
+                  <SelectItem value="60">60 giây</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1433,18 +1433,18 @@ export default function StockInsightModal(props: {
                       </div>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-[12px]">
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">今开</div><div className={`font-mono ${levelColor(quote?.open_price)}`}>{formatNumber(quote?.open_price)}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">最高</div><div className={`font-mono ${levelColor(quote?.high_price)}`}>{formatNumber(quote?.high_price)}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">最低</div><div className={`font-mono ${levelColor(quote?.low_price)}`}>{formatNumber(quote?.low_price)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Mở cửa</div><div className={`font-mono ${levelColor(quote?.open_price)}`}>{formatNumber(quote?.open_price)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Cao nhất</div><div className={`font-mono ${levelColor(quote?.high_price)}`}>{formatNumber(quote?.high_price)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Thấp nhất</div><div className={`font-mono ${levelColor(quote?.low_price)}`}>{formatNumber(quote?.low_price)}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Khối lượng khớp lệnh</div><div className="font-mono">{formatCompactNumber(quote?.volume)}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Giá trị khớp lệnh</div><div className="font-mono">{formatCompactNumber(quote?.turnover)}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">振幅</div><div className="font-mono">{amplitudePct != null ? `${amplitudePct.toFixed(2)}%` : '--'}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">换手率</div><div className="font-mono">{quote?.turnover_rate != null ? `${Number(quote.turnover_rate).toFixed(2)}%` : '--'}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">市盈率</div><div className="font-mono">{quote?.pe_ratio != null ? Number(quote.pe_ratio).toFixed(2) : '--'}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Biên độ dao động</div><div className="font-mono">{amplitudePct != null ? `${amplitudePct.toFixed(2)}%` : '--'}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Tỷ lệ sang tay</div><div className="font-mono">{quote?.turnover_rate != null ? `${Number(quote.turnover_rate).toFixed(2)}%` : '--'}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">P/E</div><div className="font-mono">{quote?.pe_ratio != null ? Number(quote.pe_ratio).toFixed(2) : '--'}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Tổng giá trị</div><div className="font-mono">{formatMarketCap(quote?.total_market_value, market)}</div></div>
                     </div>
                     <div className="mt-3 border-t border-border/50 pt-3">
-                      <div className="text-[11px] text-muted-foreground mb-2">持仓信息</div>
+                      <div className="text-[11px] text-muted-foreground mb-2">Thông tin vị thế</div>
                       {holdingAgg ? (
                         <div className="grid grid-cols-2 gap-2 text-[12px]">
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
@@ -1452,7 +1452,7 @@ export default function StockInsightModal(props: {
                             <div className="font-mono">{holdingAgg.quantity}</div>
                           </div>
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
-                            <div className="text-[10px] text-muted-foreground">持仓成本(单价)</div>
+                            <div className="text-[10px] text-muted-foreground">Giá vốn vị thế (đơn giá)</div>
                             <div
                               className={`font-mono ${
                                 quote?.current_price != null
@@ -1468,7 +1468,7 @@ export default function StockInsightModal(props: {
                             </div>
                           </div>
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
-                            <div className="text-[10px] text-muted-foreground">持仓市值</div>
+                            <div className="text-[10px] text-muted-foreground">Giá trị vị thế</div>
                             <div className="font-mono">{formatCompactNumber(holdingAgg.marketValue)}</div>
                           </div>
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
@@ -1479,7 +1479,7 @@ export default function StockInsightModal(props: {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-[11px] text-muted-foreground">未在持仓中</div>
+                        <div className="text-[11px] text-muted-foreground">Không có trong danh mục</div>
                       )}
                       <AddPositionCalculator
                         symbol={symbol}
@@ -1492,9 +1492,9 @@ export default function StockInsightModal(props: {
                   </div>
 
                   <div className="card p-4 h-full">
-                    <div className="text-[12px] text-muted-foreground mb-2">迷你K线</div>
+                    <div className="text-[12px] text-muted-foreground mb-2">Nến thu nhỏ</div>
                     {!klineSummary ? (
-                      <div className="text-[12px] text-muted-foreground py-8">暂无K线摘要</div>
+                      <div className="text-[12px] text-muted-foreground py-8">Chưa có tóm tắt nến</div>
                     ) : (
                       <>
                         {miniKlineLoading ? (
@@ -1513,7 +1513,7 @@ export default function StockInsightModal(props: {
                               setMiniHoverIdx(Math.max(0, Math.min(miniKlines.length - 1, idx)))
                             }}
                           >
-                            <title>点击进入交互式K线</title>
+                            <title>Bấm để vào đồ thị nến tương tác</title>
                             {miniKlines.map((k, idx) => {
                               const xStep = 320 / miniKlines.length
                               const x = xStep * idx + xStep / 2
@@ -1538,7 +1538,7 @@ export default function StockInsightModal(props: {
                             })}
                           </svg>
                         ) : (
-                          <div className="h-32 text-[11px] text-muted-foreground flex items-center justify-center">暂无迷你K线</div>
+                          <div className="h-32 text-[11px] text-muted-foreground flex items-center justify-center">Chưa có nến thu nhỏ</div>
                         )}
                         <div className="mt-2 rounded bg-accent/10 p-2.5">
                           <TechnicalIndicatorStrip
@@ -1560,12 +1560,12 @@ export default function StockInsightModal(props: {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-stretch">
                   <div className="card p-4 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-[12px] text-muted-foreground">AI建议</div>
+                      <div className="text-[12px] text-muted-foreground">Khuyến nghị AI</div>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground" onClick={() => setTab('suggestions')}>
-                        更多
+                        Thêm
                       </Button>
                       {autoSuggesting && suggestions.length > 0 && (
-                        <div className="text-[10px] text-primary">更新中...</div>
+                        <div className="text-[10px] text-primary">Đang cập nhật...</div>
                       )}
                     </div>
                     {suggestions.length > 0 ? (
@@ -1579,17 +1579,17 @@ export default function StockInsightModal(props: {
                           showTechnicalCompanion={false}
                         />
                         <div className="rounded bg-accent/10 p-2 text-[11px]">
-                          <div className="text-muted-foreground">核心判断</div>
-                          <div className="mt-1 text-foreground line-clamp-2">{suggestions[0].signal || suggestions[0].reason || '暂无说明'}</div>
+                          <div className="text-muted-foreground">Nhận định cốt lõi</div>
+                          <div className="mt-1 text-foreground line-clamp-2">{suggestions[0].signal || suggestions[0].reason || 'Chưa có giải thích'}</div>
                           <div className="mt-1 text-muted-foreground">动作: {suggestions[0].action_label || suggestions[0].action || '--'}</div>
-                          <div className="mt-1 text-foreground line-clamp-2">依据: {suggestions[0].reason || '暂无补充依据'}</div>
+                          <div className="mt-1 text-foreground line-clamp-2">依据: {suggestions[0].reason || 'Chưa có căn cứ bổ sung'}</div>
                           <div className="mt-1 text-muted-foreground">
                             来源: {suggestions[0].agent_label || suggestions[0].agent_name || 'AI'}{suggestions[0].created_at ? ` · ${formatTime(suggestions[0].created_at)}` : ''}
                           </div>
                         </div>
                         {suggestions.length > 1 && (
                           <div className="rounded bg-accent/10 p-2 text-[11px]">
-                            <div className="text-muted-foreground mb-1">近期补充建议</div>
+                            <div className="text-muted-foreground mb-1">Khuyến nghị bổ sung gần đây</div>
                             {suggestions.slice(1, 3).map((item, idx) => (
                               <div key={`${item.created_at || 'extra'}-${idx}`} className="line-clamp-1 text-foreground">
                                 {item.action_label || item.action} · {item.signal || item.reason || '--'}
@@ -1597,25 +1597,25 @@ export default function StockInsightModal(props: {
                             ))}
                           </div>
                         )}
-                        <div className="text-[10px] text-primary min-h-[14px]">{autoSuggesting && suggestions.length === 0 ? '正在自动生成 AI 建议...' : ''}</div>
+                        <div className="text-[10px] text-primary min-h-[14px]">{autoSuggesting && suggestions.length === 0 ? 'Đang tự dựng khuyến nghị AI...' : ''}</div>
                       </div>
                     ) : (
                       <div className="text-[12px] text-muted-foreground py-6">
-                        {autoSuggesting ? '正在自动生成 AI 建议（通常 5-15 秒）...' : '暂无 AI 建议'}
+                        {autoSuggesting ? 'Đang tự dựng khuyến nghị AI (thường 5-15 giây)...' : 'Chưa có khuyến nghị AI'}
                       </div>
                     )}
                   </div>
 
                   <div className="card p-4 h-full flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-[12px] text-muted-foreground">新闻</div>
+                      <div className="text-[12px] text-muted-foreground">Tin tức</div>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground" onClick={() => setTab('news')}>
-                        更多
+                        Thêm
                       </Button>
                     </div>
                     <div className="flex-1 space-y-2">
                       {news.length === 0 ? (
-                        <div className="text-[12px] text-muted-foreground py-6">暂无相关新闻</div>
+                        <div className="text-[12px] text-muted-foreground py-6">Chưa có tin liên quan</div>
                       ) : (
                         news.slice(0, 3).map((item, idx) => (
                           <a
@@ -1634,21 +1634,21 @@ export default function StockInsightModal(props: {
                   </div>
                   <div className="card p-4 h-full flex flex-col">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="text-[12px] text-muted-foreground">AI报告</div>
+                      <div className="text-[12px] text-muted-foreground">Báo cáo AI</div>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground" onClick={() => setTab('reports')}>
-                        更多
+                        Thêm
                       </Button>
                     </div>
                     {!latestReport ? (
-                      <div className="text-[12px] text-muted-foreground py-3">暂无报告</div>
+                      <div className="text-[12px] text-muted-foreground py-3">Chưa có báo cáo</div>
                     ) : (
                       <div className="rounded-lg border border-border/30 bg-accent/10 p-2.5">
                         <div className="text-[11px] text-muted-foreground">
                           {AGENT_LABELS[latestReport.agent_name] || latestReport.agent_name} · {latestReport.analysis_date}
                         </div>
-                        <div className="mt-1 text-[13px] font-medium line-clamp-1">{latestReport.title || '报告摘要'}</div>
+                        <div className="mt-1 text-[13px] font-medium line-clamp-1">{latestReport.title || 'Tóm tắt báo cáo'}</div>
                         <div className="mt-1 text-[12px] text-foreground/90 line-clamp-3">
-                          {markdownToPlainText(latestReport.content) || '暂无报告内容'}
+                          {markdownToPlainText(latestReport.content) || 'Chưa có nội dung báo cáo'}
                         </div>
                       </div>
                     )}
@@ -1672,9 +1672,9 @@ export default function StockInsightModal(props: {
                 <div className="card p-3">
                   <div className="flex items-center gap-1">
                     {([
-                      { key: 'premarket_outlook', label: '盘前' },
-                      { key: 'daily_report', label: '盘后' },
-                      { key: 'news_digest', label: '新闻' },
+                      { key: 'premarket_outlook', label: 'Trước phiên' },
+                      { key: 'daily_report', label: 'Sau phiên' },
+                      { key: 'news_digest', label: 'Tin tức' },
                     ] as const).map(item => (
                       <button
                         key={item.key}
@@ -1689,13 +1689,13 @@ export default function StockInsightModal(props: {
                   </div>
                 </div>
                 {!activeReport ? (
-                  <div className="card p-6 text-[12px] text-muted-foreground text-center">暂无报告</div>
+                  <div className="card p-6 text-[12px] text-muted-foreground text-center">Chưa có báo cáo</div>
                 ) : (
                   <div className="card p-4 space-y-3">
                     <div className="text-[11px] text-muted-foreground">
                       {AGENT_LABELS[activeReport.agent_name] || activeReport.agent_name} · {activeReport.analysis_date}
                     </div>
-                    <div className="text-[15px] font-medium">{activeReport.title || '报告摘要'}</div>
+                    <div className="text-[15px] font-medium">{activeReport.title || 'Tóm tắt báo cáo'}</div>
                     {activeReport.suggestions && (activeReport.suggestions as any)?.[symbol]?.action_label && (
                       <div className="text-[11px] inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary">
                         {(activeReport.suggestions as any)[symbol].action_label}
@@ -1703,15 +1703,15 @@ export default function StockInsightModal(props: {
                     )}
                     <div className="rounded-lg bg-accent/10 p-3">
                       <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 break-words">
-                        <ReactMarkdown>{activeReport.content || '暂无报告内容'}</ReactMarkdown>
+                        <ReactMarkdown>{activeReport.content || 'Chưa có nội dung báo cáo'}</ReactMarkdown>
                       </div>
                     </div>
                     {(activeReport.prompt_context || activeReport.context_payload || activeReport.news_debug) && (
                       <details className="rounded-lg border border-border/40 bg-accent/10 p-3">
-                        <summary className="cursor-pointer text-[12px] text-muted-foreground select-none">查看分析上下文</summary>
+                        <summary className="cursor-pointer text-[12px] text-muted-foreground select-none">Xem ngữ cảnh phân tích</summary>
                         {activeReport.prompt_stats ? (
                           <div className="mt-2">
-                            <div className="text-[11px] text-muted-foreground mb-1">Prompt统计</div>
+                            <div className="text-[11px] text-muted-foreground mb-1">Thống kê Prompt</div>
                             <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words overflow-x-auto">{JSON.stringify(activeReport.prompt_stats, null, 2)}</pre>
                           </div>
                         ) : null}
@@ -1729,7 +1729,7 @@ export default function StockInsightModal(props: {
                         ) : null}
                         {activeReport.prompt_context ? (
                           <div className="mt-2">
-                            <div className="text-[11px] text-muted-foreground mb-1">Prompt原文</div>
+                            <div className="text-[11px] text-muted-foreground mb-1">Prompt nguyên văn</div>
                             <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words overflow-x-auto max-h-[220px] overflow-y-auto">{activeReport.prompt_context}</pre>
                           </div>
                         ) : null}
@@ -1755,7 +1755,7 @@ export default function StockInsightModal(props: {
                         )
                       }
                     >
-                      打开详情页 ↗
+                      Mở trang chi tiết ↗
                     </Button>
                   </div>
                 )}
@@ -1777,13 +1777,13 @@ export default function StockInsightModal(props: {
             {tab === 'suggestions' && (
               <div className="space-y-3">
                 <div className="card p-3 flex items-center justify-between gap-3">
-                  <div className="text-[12px] text-muted-foreground">显示过期建议</div>
+                  <div className="text-[12px] text-muted-foreground">Hiện khuyến nghị đã hết hạn</div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">{includeExpiredSuggestions ? '包含过期' : '仅有效'}</span>
+                    <span className="text-[11px] text-muted-foreground">{includeExpiredSuggestions ? 'Gồm cả đã hết hạn' : 'Chỉ còn hiệu lực'}</span>
                     <Switch
                       checked={includeExpiredSuggestions}
                       onCheckedChange={setIncludeExpiredSuggestions}
-                      aria-label="显示过期建议"
+                      aria-label="Hiện khuyến nghị đã hết hạn"
                     />
                   </div>
                 </div>
@@ -1792,12 +1792,12 @@ export default function StockInsightModal(props: {
                     <div className="card p-4">
                       <SuggestionBadge suggestion={technicalFallbackSuggestion} stockName={resolvedName} stockSymbol={symbol} kline={klineSummary} hasPosition={!!props.hasPosition} />
                       <div className="mt-2 text-[10px] text-muted-foreground">
-                        {autoSuggesting ? '正在自动生成 AI 建议（通常 5-15 秒）...' : '当前显示技术指标基础建议'}
+                        {autoSuggesting ? 'Đang tự dựng khuyến nghị AI (thường 5-15 giây)...' : 'Hiện đang hiện khuyến nghị nền từ chỉ báo kỹ thuật'}
                       </div>
                     </div>
                   ) : (
                     <div className="card p-6 text-[12px] text-muted-foreground text-center">
-                      {autoSuggesting ? '正在自动生成 AI 建议（通常 5-15 秒）...' : '暂无建议'}
+                      {autoSuggesting ? 'Đang tự dựng khuyến nghị AI (thường 5-15 giây)...' : 'Chưa có khuyến nghị'}
                     </div>
                   )
                 ) : (
@@ -1820,16 +1820,16 @@ export default function StockInsightModal(props: {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="6">近6小时</SelectItem>
-                      <SelectItem value="12">近12小时</SelectItem>
-                      <SelectItem value="24">近24小时</SelectItem>
-                      <SelectItem value="48">近48小时</SelectItem>
-                      <SelectItem value="168">近7天</SelectItem>
+                      <SelectItem value="6">6 giờ gần nhất</SelectItem>
+                      <SelectItem value="12">12 giờ gần nhất</SelectItem>
+                      <SelectItem value="24">24 giờ gần nhất</SelectItem>
+                      <SelectItem value="48">48 giờ gần nhất</SelectItem>
+                      <SelectItem value="168">7 ngày gần nhất</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {news.length === 0 ? (
-                  <div className="card p-6 text-[12px] text-muted-foreground text-center">暂无相关新闻</div>
+                  <div className="card p-6 text-[12px] text-muted-foreground text-center">Chưa có tin liên quan</div>
                 ) : (
                   news.map((item, idx) => (
                     <a
@@ -1858,19 +1858,19 @@ export default function StockInsightModal(props: {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="168">近7天</SelectItem>
-                      <SelectItem value="336">近14天</SelectItem>
-                      <SelectItem value="720">近30天</SelectItem>
-                      <SelectItem value="2160">近90天</SelectItem>
-                      <SelectItem value="4320">近180天</SelectItem>
-                      <SelectItem value="24">近24小时</SelectItem>
-                      <SelectItem value="48">近48小时</SelectItem>
-                      <SelectItem value="72">近72小时</SelectItem>
+                      <SelectItem value="168">7 ngày gần nhất</SelectItem>
+                      <SelectItem value="336">14 ngày gần nhất</SelectItem>
+                      <SelectItem value="720">30 ngày gần nhất</SelectItem>
+                      <SelectItem value="2160">90 ngày gần nhất</SelectItem>
+                      <SelectItem value="4320">180 ngày gần nhất</SelectItem>
+                      <SelectItem value="24">24 giờ gần nhất</SelectItem>
+                      <SelectItem value="48">48 giờ gần nhất</SelectItem>
+                      <SelectItem value="72">72 giờ gần nhất</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {announcements.length === 0 ? (
-                  <div className="card p-6 text-[12px] text-muted-foreground text-center">暂无公告</div>
+                  <div className="card p-6 text-[12px] text-muted-foreground text-center">Chưa có công bố</div>
                 ) : (
                   announcements.map((item, idx) => (
                     <a
@@ -1940,16 +1940,16 @@ function DeepAnalysisSection({
     return (
       <div className="card p-6 text-center text-[12px] text-muted-foreground">
         <span className="inline-block w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin mr-2 align-middle" />
-        正在加载深度分析报告...
+        Đang tải báo cáo phân tích chuyên sâu...
       </div>
     )
   }
   if (!result && !history?.items?.length) {
     return (
       <div className="card p-6 text-center text-[12px] text-muted-foreground space-y-2">
-        <div>暂无深度分析报告</div>
+        <div>Chưa có báo cáo phân tích chuyên sâu</div>
         <div className="text-[11px] text-muted-foreground/70">
-          可在持仓 / 自选页点击 🧠 深度分析按钮触发
+          Vào trang vị thế / danh mục theo dõi, bấm nút 🧠 phân tích chuyên sâu để kích hoạt
         </div>
       </div>
     )
@@ -2019,7 +2019,7 @@ function DeepAnalysisSection({
                     <summary className="font-medium cursor-pointer">{DEEP_STAGE_LABEL[k] || k}</summary>
                     <div className="mt-2 text-[11px] text-foreground/80 whitespace-pre-wrap">
                       {text.slice(0, 1500)}
-                      {text.length > 1500 && '... (截断)'}
+                      {text.length > 1500 && '... (đã cắt bớt)'}
                     </div>
                   </details>
                 )
@@ -2042,7 +2042,7 @@ function DeepAnalysisSection({
               {debate.history}
               {debate.judge_decision && (
                 <>
-                  <div className="font-medium mt-3 mb-1">研究主管裁决:</div>
+                  <div className="font-medium mt-3 mb-1">Phán quyết của trưởng nhóm nghiên cứu:</div>
                   <div>{debate.judge_decision}</div>
                 </>
               )}
@@ -2052,7 +2052,7 @@ function DeepAnalysisSection({
       )}
 
       <div className="text-[10px] text-muted-foreground/70 italic border-t border-border/30 pt-2">
-        本分析由 AI 多 Agent 框架生成,仅供学习研究参考,不构成任何投资建议。
+        Bản phân tích này do khung nhiều Agent AI dựng ra, chỉ để học hỏi nghiên cứu tham khảo, không phải khuyến nghị đầu tư.
       </div>
     </div>
   )
@@ -2068,7 +2068,7 @@ function DeepHistoryComparison({
   if (loading && !history) {
     return (
       <div className="rounded-lg border border-border/40 p-3 text-[11px] text-muted-foreground text-center">
-        历史对比加载中...
+        Đang tải phần đối chiếu lịch sử...
       </div>
     )
   }
@@ -2083,8 +2083,8 @@ function DeepHistoryComparison({
   return (
     <div className="rounded-lg border border-border/50 p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[12px] font-medium">历史决策 vs 实际涨跌</div>
-        <div className="text-[10px] text-muted-foreground">仅基于满 20 个交易日的决策统计</div>
+        <div className="text-[12px] font-medium">Quyết định lịch sử vs tăng giảm thực tế</div>
+        <div className="text-[10px] text-muted-foreground">Chỉ thống kê các quyết định đã đủ 20 phiên giao dịch</div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
         <div className="rounded bg-accent/30 px-2 py-1.5">
