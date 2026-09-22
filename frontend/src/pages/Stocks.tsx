@@ -955,7 +955,7 @@ export default function StocksPage() {
             const p = await fetchAPI<SchedulePreview>(`/agents/schedule/preview?schedule=${encodeURIComponent(s)}&count=5`)
             return [s, p] as const
           } catch (e) {
-            const msg = e instanceof Error ? e.message : '预览失败'
+            const msg = e instanceof Error ? e.message : 'Xem trước thất bại'
             return [s, { error: msg }] as const
           }
         }))
@@ -1340,7 +1340,7 @@ export default function StocksPage() {
         }
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '触发失败'
+      const msg = e instanceof Error ? e.message : 'Kích hoạt thất bại'
       if (/非交易时段|跳过执行/.test(msg)) {
         toast(msg, 'info')
       } else {
@@ -1834,7 +1834,7 @@ export default function StocksPage() {
                 <Label className="mb-0">搜索股票</Label>
                 <div className="flex items-center gap-1">
                   {[
-                    { value: '', label: '全部' },
+                    { value: '', label: 'Tất cả' },
                     { value: 'CN', label: 'Cổ phiếu A' },
                     { value: 'HK', label: 'Cổ phiếu HK' },
                     { value: 'US', label: 'Cổ phiếu Mỹ' },
@@ -1907,7 +1907,7 @@ export default function StocksPage() {
               )}
             </div>
             <div className="mt-6 flex items-center gap-3 justify-end">
-              <Button type="button" variant="ghost" onClick={() => { setShowStockForm(false); setSearchQuery('') }}>取消</Button>
+              <Button type="button" variant="ghost" onClick={() => { setShowStockForm(false); setSearchQuery('') }}>Hủy</Button>
               <Button type="submit" disabled={!stockForm.symbol}>确认添加</Button>
             </div>
           </form>
@@ -2359,7 +2359,7 @@ export default function StocksPage() {
             <h3 className="text-[13px] font-semibold text-foreground">关注列表</h3>
             <div className="flex items-center gap-1">
               {[
-                { value: '', label: '全部', count: stocks.length },
+                { value: '', label: 'Tất cả', count: stocks.length },
                 { value: 'CN', label: 'Cổ phiếu A', count: stocks.filter(s => s.market === 'CN').length },
                 { value: 'HK', label: 'Cổ phiếu HK', count: stocks.filter(s => s.market === 'HK').length },
                 { value: 'US', label: 'Cổ phiếu Mỹ', count: stocks.filter(s => s.market === 'US').length },
@@ -2632,7 +2632,7 @@ export default function StocksPage() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setRemoveWatchStock(null)} disabled={removingWatchStock}>取消</Button>
+                <Button variant="ghost" onClick={() => setRemoveWatchStock(null)} disabled={removingWatchStock}>Hủy</Button>
                 <Button
                   variant="destructive"
                   onClick={() => removeFromWatchlist(removeWatchStock)}
@@ -2673,9 +2673,9 @@ export default function StocksPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setAccountDialogOpen(false)}>取消</Button>
+              <Button variant="ghost" onClick={() => setAccountDialogOpen(false)}>Hủy</Button>
               <Button onClick={handleAccountSubmit} disabled={!accountForm.name}>
-                {editAccountId ? '保存' : '创建'}
+                {editAccountId ? 'Lưu' : '创建'}
               </Button>
             </div>
           </div>
@@ -2717,7 +2717,7 @@ export default function StocksPage() {
                   <Label className="mb-0">搜索股票</Label>
                   <div className="flex items-center gap-1">
                     {[
-                      { value: '', label: '全部' },
+                      { value: '', label: 'Tất cả' },
                       { value: 'CN', label: 'Cổ phiếu A' },
                       { value: 'HK', label: 'Cổ phiếu HK' },
                       { value: 'US', label: 'Cổ phiếu Mỹ' },
@@ -2840,12 +2840,12 @@ export default function StocksPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setPositionDialogOpen(false)}>取消</Button>
+              <Button variant="ghost" onClick={() => setPositionDialogOpen(false)}>Hủy</Button>
               <Button
                 onClick={handlePositionSubmit}
                 disabled={!positionForm.cost_price || !positionForm.quantity || (!editPositionId && !positionForm.stock_id && !positionForm.stock_symbol)}
               >
-                {editPositionId ? '保存' : '添加'}
+                {editPositionId ? 'Lưu' : '添加'}
               </Button>
             </div>
           </div>
@@ -2913,10 +2913,10 @@ export default function StocksPage() {
                               <SelectItem value="__default__">跟随全局</SelectItem>
                               <SelectItem value="*/1 9-15 * * 1-5">每 1 分钟</SelectItem>
                               <SelectItem value="*/3 9-15 * * 1-5">每 3 分钟</SelectItem>
-                              <SelectItem value="*/5 9-15 * * 1-5">每 5 分钟</SelectItem>
-                              <SelectItem value="*/10 9-15 * * 1-5">每 10 分钟</SelectItem>
-                              <SelectItem value="*/15 9-15 * * 1-5">每 15 分钟</SelectItem>
-                              <SelectItem value="*/30 9-15 * * 1-5">每 30 分钟</SelectItem>
+                              <SelectItem value="*/5 9-15 * * 1-5">Mỗi 5 phút</SelectItem>
+                              <SelectItem value="*/10 9-15 * * 1-5">Mỗi 10 phút</SelectItem>
+                              <SelectItem value="*/15 9-15 * * 1-5">Mỗi 15 phút</SelectItem>
+                              <SelectItem value="*/30 9-15 * * 1-5">Mỗi 30 phút</SelectItem>
                             </SelectContent>
                           </Select>
                           <span className="text-[10px] text-muted-foreground">交易时段</span>
@@ -2971,7 +2971,7 @@ export default function StocksPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__default__">系统默认</SelectItem>
+                              <SelectItem value="__default__">Mặc định hệ thống</SelectItem>
                               {services.map(svc => (
                                 <SelectGroup key={svc.id}>
                                   <SelectLabel>{svc.name}</SelectLabel>
@@ -3006,7 +3006,7 @@ export default function StocksPage() {
                               )
                             })}
                             {(stockAgent?.notify_channel_ids || []).length === 0 && (
-                              <span className="text-[10px] text-muted-foreground">系统默认</span>
+                              <span className="text-[10px] text-muted-foreground">Mặc định hệ thống</span>
                             )}
                           </div>
                         )}

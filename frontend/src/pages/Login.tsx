@@ -56,7 +56,7 @@ export default function LoginPage() {
       toast(isSetup ? '密码设置成功' : '登录成功', 'success')
       navigate('/')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '操作失败', 'error')
+      toast(e instanceof Error ? e.message : 'Thao tác thất bại', 'error')
     } finally {
       setLoading(false)
     }

@@ -137,11 +137,11 @@ function formatSchedule(cron: string): string {
   const config = parseCronToConfig(cron)
   switch (config.type) {
     case 'daily':
-      return `每天 ${config.time}`
+      return `Mỗi ngày ${config.time}`
     case 'weekdays':
-      return `工作日 ${config.time}`
+      return `Ngày làm việc ${config.time}`
     case 'interval':
-      return `每 ${config.interval} 分钟`
+      return `Mỗi ${config.interval} phút`
     case 'cron':
       return cron
     default:
@@ -219,7 +219,7 @@ export default function AgentsPage() {
           const p = await fetchAPI<SchedulePreview>(`/agents/${a.name}/schedule/preview?count=3`)
           return [a.name, p] as const
         } catch (e) {
-          const msg = e instanceof Error ? e.message : '预览失败'
+          const msg = e instanceof Error ? e.message : 'Xem trước thất bại'
           return [a.name, { error: msg }] as const
         }
       }))
@@ -260,7 +260,7 @@ export default function AgentsPage() {
         const p = await fetchAPI<SchedulePreview>(`/agents/schedule/preview?schedule=${encodeURIComponent(cron)}&count=5`)
         setSchedulePreview(p)
       } catch (e) {
-        const msg = e instanceof Error ? e.message : '预览失败'
+        const msg = e instanceof Error ? e.message : 'Xem trước thất bại'
         setSchedulePreview({ error: msg })
       } finally {
         setSchedulePreviewLoading(false)
@@ -350,7 +350,7 @@ export default function AgentsPage() {
       })
       setStocks(prev => prev.map(s => (s.id === stock.id ? updated : s)))
     } catch (e) {
-      toast(e instanceof Error ? e.message : '切换绑定失败', 'error')
+      toast(e instanceof Error ? e.message : 'Đổi trạng thái gắn thất bại', 'error')
     } finally {
       updateBindSaving(stock.id, false)
     }
@@ -360,7 +360,7 @@ export default function AgentsPage() {
     if (!bindDialogAgent) return
     const target = filteredBindStocks.filter(s => hasAgentBound(s, bindDialogAgent.name) !== shouldBind)
     if (target.length === 0) {
-      toast(shouldBind ? '当前筛选已全部绑定' : '当前筛选已全部解绑', 'info')
+      toast(shouldBind ? 'Bộ lọc hiện tại đã gắn hết' : 'Bộ lọc hiện tại đã bỏ gắn hết', 'info')
       return
     }
 
@@ -384,9 +384,9 @@ export default function AgentsPage() {
       const updatedList = await Promise.all(tasks)
       const map = new Map(updatedList.map(s => [s.id, s]))
       setStocks(prev => prev.map(s => map.get(s.id) || s))
-      toast(shouldBind ? `已绑定 ${updatedList.length} 只` : `已解绑 ${updatedList.length} 只`, 'success')
+      toast(shouldBind ? `Đã gắn ${updatedList.length} mã` : `Đã bỏ gắn ${updatedList.length} mã`, 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '批量操作失败', 'error')
+      toast(e instanceof Error ? e.message : 'Thao tác hàng loạt thất bại', 'error')
     } finally {
       setBindSavingStockIds(new Set())
     }
@@ -396,9 +396,9 @@ export default function AgentsPage() {
     setTriggering(name)
     try {
       const res = await fetchAPI<{ queued?: boolean; message?: string }>(`/agents/${name}/trigger`, { method: 'POST' })
-      toast(res?.queued ? 'Agent 已提交后台执行' : (res?.message || 'Agent 已触发'), 'success')
+      toast(res?.queued ? 'Agent đã được đưa vào chạy nền' : (res?.message || 'Đã kích hoạt Agent'), 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '触发失败', 'error')
+      toast(e instanceof Error ? e.message : 'Kích hoạt thất bại', 'error')
     } finally {
       setTriggering(null)
     }
@@ -456,7 +456,7 @@ export default function AgentsPage() {
         method: 'PUT',
         body: JSON.stringify({ config: taConfigForm }),
       })
-      toast('TradingAgents 配置已保存', 'success')
+      toast('Đã lưu cấu hình TradingAgents', 'success')
       setTaConfigAgent(null)
       load()
     } catch (e) {
@@ -478,7 +478,7 @@ export default function AgentsPage() {
     })
     setScheduleDialogAgent(null)
     load()
-    toast('调度已更新', 'success')
+    toast('Đã cập nhật lịch chạy', 'success')
   }
 
   if (loading) {
@@ -493,13 +493,13 @@ export default function AgentsPage() {
     <div>
       <div className="mb-4 md:mb-8">
         <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight">Agent</h1>
-        <p className="text-[12px] md:text-[13px] text-muted-foreground mt-0.5 md:mt-1">自动化任务管理与调度</p>
+        <p className="text-[12px] md:text-[13px] text-muted-foreground mt-0.5 md:mt-1">Quản lý và lập lịch tác vụ tự động</p>
       </div>
 
       {/* Scheduler Health */}
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between">
-          <div className="text-[13px] font-semibold text-foreground">调度健康</div>
+          <div className="text-[13px] font-semibold text-foreground">Sức khỏe lịch chạy</div>
           <Button variant="secondary" size="sm" className="h-8" onClick={loadHealth} disabled={healthLoading}>
             {healthLoading ? (
               <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
@@ -510,11 +510,11 @@ export default function AgentsPage() {
         </div>
         {health ? (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
-            <span>时区: <span className="font-mono text-foreground/90">{health.timezone}</span></span>
+            <span>Múi giờ:  <span className="font-mono text-foreground/90">{health.timezone}</span></span>
             <span className="opacity-50">|</span>
-            <span>未来 24h 将触发: <span className="font-mono text-foreground/90">{health.summary.next_24h_count}</span></span>
+            <span>Sẽ kích hoạt trong 24h tới:  <span className="font-mono text-foreground/90">{health.summary.next_24h_count}</span></span>
             <span className="opacity-50">|</span>
-            <span>最近失败: <span className={`font-mono ${health.summary.recent_failed_count > 0 ? 'text-rose-600' : 'text-foreground/90'}`}>{health.summary.recent_failed_count}</span></span>
+            <span>Lần hỏng gần nhất:  <span className={`font-mono ${health.summary.recent_failed_count > 0 ? 'text-rose-600' : 'text-foreground/90'}`}>{health.summary.recent_failed_count}</span></span>
           </div>
         ) : (
           <div className="mt-2 text-[12px] text-muted-foreground">—</div>
@@ -526,18 +526,18 @@ export default function AgentsPage() {
           <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
             <Bot className="w-6 h-6 text-primary" />
           </div>
-          <p className="text-[15px] font-semibold text-foreground">暂无 Agent</p>
-          <p className="text-[13px] text-muted-foreground mt-1.5">启动后台服务后 Agent 会自动注册</p>
+          <p className="text-[15px] font-semibold text-foreground">Chưa có Agent nào</p>
+          <p className="text-[13px] text-muted-foreground mt-1.5">Khởi động dịch vụ nền xong, Agent sẽ tự đăng ký</p>
         </div>
       ) : (
         <div className="space-y-4">
           {agents.map(agent => {
-            const modeLabel = agent.execution_mode === 'single' ? '逐只分析' : '批量分析'
+            const modeLabel = agent.execution_mode === 'single' ? 'Phân tích từng mã' : 'Phân tích hàng loạt'
             const preview = previews[agent.name]
             const boundStocks = getBoundStocks(agent.name)
             const boundSummary = boundStocks.length > 0
-              ? `${boundStocks.slice(0, 3).map(s => s.name || s.symbol).join('、')}${boundStocks.length > 3 ? '、...更多' : ''}`
-              : '未绑定股票'
+              ? `${boundStocks.slice(0, 3).map(s => s.name || s.symbol).join('、')}${boundStocks.length > 3 ? ', ...và nữa' : ''}`
+              : 'Chưa gắn mã nào'
             return (
               <div key={agent.name} className="card-hover p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-6">
@@ -554,7 +554,7 @@ export default function AgentsPage() {
                             ? 'bg-primary/12 border-primary/35 text-primary hover:bg-primary/18'
                             : 'bg-accent/30 border-border/60 text-muted-foreground hover:border-primary/30'
                         }`}
-                        title={`${boundSummary}（已绑定 ${getAgentBoundCount(agent.name)} / ${stocks.length}）`}
+                        title={`${boundSummary} (đã gắn ${getAgentBoundCount(agent.name)} / ${stocks.length})`}
                       >
                         {boundSummary}
                       </button>
@@ -575,10 +575,10 @@ export default function AgentsPage() {
                         <button
                           onClick={() => setTaConfigAgent(agent)}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 hover:bg-primary/20 transition-colors text-primary"
-                          title="编辑 TradingAgents 双模型/预算/超时/模拟盘等高级配置"
+                          title="Sửa cấu hình nâng cao của TradingAgents: hai mô hình/ngân sách/hết giờ/mô phỏng"
                         >
                           <Settings2 className="w-3.5 h-3.5" />
-                          <span className="text-[12px]">深度配置</span>
+                          <span className="text-[12px]">Cấu hình chuyên sâu</span>
                         </button>
                       )}
                     </div>
@@ -590,7 +590,7 @@ export default function AgentsPage() {
                       </div>
                     ) : (preview as SchedulePreview | undefined)?.next_runs?.length ? (
                       <div className="mt-2 ml-[22px] flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span className="opacity-80">未来 3 次：</span>
+                        <span className="opacity-80">3 lần tới: </span>
                         {(preview as SchedulePreview).next_runs.map((t, i) => (
                           <span
                             key={i}
@@ -618,7 +618,7 @@ export default function AgentsPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__default__">系统默认</SelectItem>
+                            <SelectItem value="__default__">Mặc định hệ thống</SelectItem>
                             {services.map(svc => (
                               <SelectGroup key={svc.id}>
                                 <SelectLabel>{svc.name}</SelectLabel>
@@ -654,7 +654,7 @@ export default function AgentsPage() {
                             )
                           })}
                           {(agent.notify_channel_ids || []).length === 0 && (
-                            <span className="text-[11px] text-muted-foreground">系统默认</span>
+                            <span className="text-[11px] text-muted-foreground">Mặc định hệ thống</span>
                           )}
                         </div>
                       )}
@@ -673,7 +673,7 @@ export default function AgentsPage() {
                       ) : (
                         <Play className="w-3.5 h-3.5" />
                       )}
-                      <span className="hidden sm:inline">{triggering === agent.name ? '运行中' : '触发'}</span>
+                      <span className="hidden sm:inline">{triggering === agent.name ? 'Đang chạy' : 'Kích hoạt'}</span>
                     </Button>
                     <Button
                       variant="secondary"
@@ -681,7 +681,7 @@ export default function AgentsPage() {
                       className="h-8"
                       onClick={() => toggleRuns(agent.name)}
                     >
-                      <span className="text-[12px]">最近运行</span>
+                      <span className="text-[12px]">Lần chạy gần nhất</span>
                     </Button>
                     <Button
                       variant={agent.enabled ? 'destructive' : 'default'}
@@ -698,7 +698,7 @@ export default function AgentsPage() {
                 {runsOpen[agent.name] && (
                   <div className="mt-4 ml-[22px] sm:ml-0 rounded-lg border border-border/40 bg-accent/20 p-3">
                     <div className="flex items-center justify-between">
-                      <div className="text-[12px] font-medium text-foreground">最近 5 次运行</div>
+                      <div className="text-[12px] font-medium text-foreground">5 lần chạy gần nhất</div>
                       {runsLoading[agent.name] && (
                         <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                       )}
@@ -712,7 +712,7 @@ export default function AgentsPage() {
                         return <div className="mt-2 text-[11px] text-muted-foreground">{data.error}</div>
                       }
                       if (data.length === 0) {
-                        return <div className="mt-2 text-[11px] text-muted-foreground">暂无记录</div>
+                        return <div className="mt-2 text-[11px] text-muted-foreground">Chưa có ghi nhận nào</div>
                       }
                       return (
                         <div className="mt-2 space-y-2">
@@ -746,12 +746,12 @@ export default function AgentsPage() {
       <Dialog open={!!scheduleDialogAgent} onOpenChange={open => !open && setScheduleDialogAgent(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>设置执行周期</DialogTitle>
+            <DialogTitle>Đặt chu kỳ chạy</DialogTitle>
             <DialogDescription>{scheduleDialogAgent?.display_name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label>调度类型</Label>
+              <Label>Kiểu lịch chạy</Label>
               <Select
                 value={scheduleConfig.type}
                 onValueChange={val => setScheduleConfig({ ...scheduleConfig, type: val as ScheduleType })}
@@ -760,31 +760,31 @@ export default function AgentsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">每天定时</SelectItem>
-                  <SelectItem value="weekdays">工作日定时</SelectItem>
-                  <SelectItem value="interval">固定间隔</SelectItem>
-                  <SelectItem value="cron">自定义 Cron</SelectItem>
+                  <SelectItem value="daily">Hằng ngày theo giờ</SelectItem>
+                  <SelectItem value="weekdays">Ngày làm việc theo giờ</SelectItem>
+                  <SelectItem value="interval">Khoảng cách cố định</SelectItem>
+                  <SelectItem value="cron">Cron tự đặt</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {(scheduleConfig.type === 'daily' || scheduleConfig.type === 'weekdays') && (
               <div>
-                <Label>执行时间</Label>
+                <Label>Giờ chạy</Label>
                 <Input
                   type="time"
                   value={scheduleConfig.time || '15:30'}
                   onChange={e => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  {scheduleConfig.type === 'weekdays' ? '周一至周五' : '每天'}在此时间执行
+                  {scheduleConfig.type === 'weekdays' ? 'Thứ Hai đến thứ Sáu' : 'Mỗi ngày'}在此时间执行
                 </p>
               </div>
             )}
 
             {scheduleConfig.type === 'interval' && (
               <div>
-                <Label>执行间隔（分钟）</Label>
+                <Label>Khoảng cách chạy (phút)</Label>
                 <Select
                   value={(scheduleConfig.interval || 30).toString()}
                   onValueChange={val => setScheduleConfig({ ...scheduleConfig, interval: parseInt(val) })}
@@ -793,11 +793,11 @@ export default function AgentsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">每 5 分钟</SelectItem>
-                    <SelectItem value="10">每 10 分钟</SelectItem>
-                    <SelectItem value="15">每 15 分钟</SelectItem>
-                    <SelectItem value="30">每 30 分钟</SelectItem>
-                    <SelectItem value="60">每小时</SelectItem>
+                    <SelectItem value="5">Mỗi 5 phút</SelectItem>
+                    <SelectItem value="10">Mỗi 10 phút</SelectItem>
+                    <SelectItem value="15">Mỗi 15 phút</SelectItem>
+                    <SelectItem value="30">Mỗi 30 phút</SelectItem>
+                    <SelectItem value="60">Mỗi giờ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -805,7 +805,7 @@ export default function AgentsPage() {
 
             {scheduleConfig.type === 'cron' && (
               <div>
-                <Label>Cron 表达式</Label>
+                <Label>Biểu thức Cron</Label>
                 <Input
                   value={scheduleConfig.cron || ''}
                   onChange={e => setScheduleConfig({ ...scheduleConfig, cron: e.target.value })}
@@ -813,7 +813,7 @@ export default function AgentsPage() {
                   className="font-mono"
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  格式：分 时 日 月 周（如 0 15 * * 1-5 表示工作日 15:00）
+                  Định dạng: phút giờ ngày tháng thứ (ví dụ 0 15 * * 1-5 nghĩa là 15:00 các ngày làm việc)
                 </p>
               </div>
             )}
@@ -821,7 +821,7 @@ export default function AgentsPage() {
             {/* Preview */}
             <div className="rounded-lg border border-border/50 bg-accent/20 p-3">
               <div className="flex items-center justify-between">
-                <div className="text-[12px] font-medium text-foreground">未来触发时间预览</div>
+                <div className="text-[12px] font-medium text-foreground">Xem trước các mốc kích hoạt sắp tới</div>
                 {schedulePreviewLoading && (
                   <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 )}
@@ -854,8 +854,8 @@ export default function AgentsPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setScheduleDialogAgent(null)}>取消</Button>
-              <Button onClick={saveSchedule}>保存</Button>
+              <Button variant="ghost" onClick={() => setScheduleDialogAgent(null)}>Hủy</Button>
+              <Button onClick={saveSchedule}>Lưu</Button>
             </div>
           </div>
         </DialogContent>
@@ -865,35 +865,35 @@ export default function AgentsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {bindDialogAgent ? `${bindDialogAgent.display_name} 股票绑定` : '股票绑定'}
+              {bindDialogAgent ? `Gắn mã cho ${bindDialogAgent.display_name}` : 'Gắn mã'}
             </DialogTitle>
-            <DialogDescription>点击即可切换绑定/不绑定，不会覆盖该股票的其它 Agent 个性化配置</DialogDescription>
+            <DialogDescription>Bấm để đảo gắn/không gắn, không ghi đè cấu hình riêng của Agent khác trên mã đó</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
             <div>
-              <Label>筛选股票</Label>
+              <Label>Lọc mã</Label>
               <Input
                 value={bindKeyword}
                 onChange={(e) => setBindKeyword(e.target.value)}
-                placeholder="按代码或名称筛选"
+                placeholder="Lọc theo mã hoặc tên"
               />
             </div>
 
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1.5">
-                <Button variant={bindFilter === 'all' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('all')}>全部</Button>
-                <Button variant={bindFilter === 'bound' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('bound')}>已绑定</Button>
-                <Button variant={bindFilter === 'unbound' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('unbound')}>未绑定</Button>
+                <Button variant={bindFilter === 'all' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('all')}>Tất cả</Button>
+                <Button variant={bindFilter === 'bound' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('bound')}>Đã gắn</Button>
+                <Button variant={bindFilter === 'unbound' ? 'default' : 'secondary'} size="sm" className="h-7 text-[11px]" onClick={() => setBindFilter('unbound')}>Chưa gắn</Button>
               </div>
               <div className="flex items-center gap-1.5">
-                <Button variant="secondary" size="sm" className="h-7 text-[11px]" disabled={!bindDialogAgent || bindSavingStockIds.size > 0} onClick={() => applyBulkBindingForAgent(true)}>批量绑定</Button>
-                <Button variant="secondary" size="sm" className="h-7 text-[11px]" disabled={!bindDialogAgent || bindSavingStockIds.size > 0} onClick={() => applyBulkBindingForAgent(false)}>批量解绑</Button>
+                <Button variant="secondary" size="sm" className="h-7 text-[11px]" disabled={!bindDialogAgent || bindSavingStockIds.size > 0} onClick={() => applyBulkBindingForAgent(true)}>Gắn hàng loạt</Button>
+                <Button variant="secondary" size="sm" className="h-7 text-[11px]" disabled={!bindDialogAgent || bindSavingStockIds.size > 0} onClick={() => applyBulkBindingForAgent(false)}>Bỏ gắn hàng loạt</Button>
               </div>
             </div>
 
             <div className="max-h-[40vh] overflow-y-auto rounded border border-border/50 p-3">
               {filteredBindStocks.length === 0 ? (
-                <div className="p-4 text-[12px] text-muted-foreground text-center">无可选股票</div>
+                <div className="p-4 text-[12px] text-muted-foreground text-center">Không có mã nào để chọn</div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {filteredBindStocks.map((s) => {
@@ -912,7 +912,7 @@ export default function AgentsPage() {
                         }`}
                         title={`${s.name} (${s.symbol})`}
                       >
-                        {saving ? '处理中...' : `${s.name || s.symbol}`}
+                        {saving ? 'Đang xử lý...' : `${s.name || s.symbol}`}
                       </button>
                     )
                   })}
@@ -921,7 +921,7 @@ export default function AgentsPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="ghost" onClick={() => setBindDialogAgent(null)}>关闭</Button>
+              <Button variant="ghost" onClick={() => setBindDialogAgent(null)}>Đóng</Button>
             </div>
           </div>
         </DialogContent>
@@ -931,17 +931,17 @@ export default function AgentsPage() {
       <Dialog open={!!taConfigAgent} onOpenChange={open => !open && setTaConfigAgent(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>TradingAgents 深度配置</DialogTitle>
+            <DialogTitle>Cấu hình chuyên sâu TradingAgents</DialogTitle>
             <DialogDescription>
-              双模型分档 / 月度预算 / 超时 / 模拟盘对接。完整说明见
+              Phân tầng hai mô hình / ngân sách tháng / hết giờ / nối mô phỏng. Xem giải thích đầy đủ tại
               <code className="ml-1 text-[11px] bg-accent/40 px-1">.docs/tradingagents/USER_GUIDE.md § 12</code>
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 mt-2 text-[13px]">
-            {/* 模型分档(可选)— 从 Agent 默认 model 所在的同一 AI Service 选 */}
+            {/* Phân tầng mô hình (tùy chọn) — chọn trong cùng một AI Service với model mặc định của Agent */}
             {(() => {
-              // Agent 卡片上选的默认 model 决定 service;深度/快速只能从同 service 里选
+              // Model mặc định chọn trên thẻ Agent quyết định service; tầng chuyên sâu/nhanh chỉ được chọn trong cùng service
               const defaultModelId = taConfigAgent?.ai_model_id ?? null
               const agentService = defaultModelId
                 ? services.find(s => s.models.some(m => m.id === defaultModelId))
@@ -949,40 +949,40 @@ export default function AgentsPage() {
               const defaultModel = defaultModelId
                 ? agentService?.models.find(m => m.id === defaultModelId)
                 : null
-              // 候选 model 列表:有 service 则限定该 service,否则所有 services 全部 model
+              // Danh sách model ứng viên: có service thì bó trong service đó, không thì lấy toàn bộ model của mọi service
               const candidateModels = agentService
                 ? agentService.models
                 : services.flatMap(s => s.models)
 
               return (
                 <section>
-                  <div className="font-medium mb-2">模型分档(可选)</div>
+                  <div className="font-medium mb-2">Phân tầng mô hình (tùy chọn)</div>
 
-                  {/* 显示 Agent 默认模型来源,让用户知道 service 上下文 */}
+                  {/* Hiện nguồn model mặc định của Agent để người dùng biết đang ở service nào */}
                   <div className="rounded-md bg-accent/30 border border-border/40 p-2 text-[11px] text-muted-foreground mb-3">
                     {defaultModel && agentService ? (
-                      <>当前 Agent 默认模型: <span className="text-foreground font-medium">{defaultModel.model}</span>
+                      <>Mô hình mặc định của Agent hiện tại:  <span className="text-foreground font-medium">{defaultModel.model}</span>
                        <span className="opacity-70"> (来自 {agentService.name})</span></>
                     ) : (
-                      <>当前 Agent 使用系统默认 AI 服务(在 Agent 卡片上「模型」处选择)。
-                       建议先选定一个 Service 再来分档配置。</>
+                      <>Agent hiện tại dùng dịch vụ AI mặc định của hệ thống (chọn ở mục «Mô hình» trên thẻ Agent).
+                       Nên chốt một Service trước rồi mới vào phân tầng.</>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-[12px]">
-                        深度思考模型 <span className="text-muted-foreground/70 font-normal">(辩论/风控/PM)</span>
+                        Mô hình nghĩ sâu  <span className="text-muted-foreground/70 font-normal">(tranh luận/kiểm soát rủi ro/PM)</span>
                       </Label>
                       <Select
                         value={(taConfigForm.deep_model as string) || '__default__'}
                         onValueChange={val => setTaConfigForm({ ...taConfigForm, deep_model: val === '__default__' ? '' : val })}
                       >
                         <SelectTrigger className="h-9 text-[12px]">
-                          <SelectValue placeholder="使用 Agent 默认" />
+                          <SelectValue placeholder="Dùng mặc định của Agent" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__default__">使用 Agent 默认</SelectItem>
+                          <SelectItem value="__default__">Dùng mặc định của Agent</SelectItem>
                           {candidateModels.map(m => (
                             <SelectItem key={`deep-${m.id}`} value={m.model}>
                               {m.model}{m.name !== m.model ? ` · ${m.name}` : ''}
@@ -993,17 +993,17 @@ export default function AgentsPage() {
                     </div>
                     <div>
                       <Label className="text-[12px]">
-                        快速思考模型 <span className="text-muted-foreground/70 font-normal">(分析师/工具)</span>
+                        Mô hình nghĩ nhanh  <span className="text-muted-foreground/70 font-normal">(chuyên viên phân tích/công cụ)</span>
                       </Label>
                       <Select
                         value={(taConfigForm.quick_model as string) || '__default__'}
                         onValueChange={val => setTaConfigForm({ ...taConfigForm, quick_model: val === '__default__' ? '' : val })}
                       >
                         <SelectTrigger className="h-9 text-[12px]">
-                          <SelectValue placeholder="= 深度模型" />
+                          <SelectValue placeholder="= mô hình chuyên sâu" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__default__">= 深度模型</SelectItem>
+                          <SelectItem value="__default__">= mô hình chuyên sâu</SelectItem>
                           {candidateModels.map(m => (
                             <SelectItem key={`quick-${m.id}`} value={m.model}>
                               {m.model}{m.name !== m.model ? ` · ${m.name}` : ''}
@@ -1014,20 +1014,20 @@ export default function AgentsPage() {
                     </div>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-2 space-y-0.5">
-                    <div>• 留空 = 用 Agent 默认模型,不分档</div>
-                    <div>• 两个分档必须在同一个 AI 服务下(TradingAgents 共用 backend_url)</div>
-                    <div className="text-amber-600">⚠️ 不要选推理模型 (如 deepseek-r1 / o1) — 它们在 langchain agent loop 里会输出乱码。用 chat 类: claude-sonnet / deepseek-chat / gpt-4o-mini</div>
+                    <div>• Để trống = dùng mô hình mặc định của Agent, không phân tầng</div>
+                    <div>• Hai tầng phải nằm trong cùng một dịch vụ AI (TradingAgents dùng chung backend_url)</div>
+                    <div className="text-amber-600">⚠️ Đừng chọn mô hình suy luận (như deepseek-r1 / o1) — chúng sinh ra ký tự loạn trong langchain agent loop. Hãy dùng loại chat: claude-sonnet / deepseek-chat / gpt-4o-mini</div>
                   </div>
                 </section>
               )
             })()}
 
-            {/* 预算与策略 */}
+            {/* Ngân sách và chính sách */}
             <section>
-              <div className="font-medium mb-2">预算与策略</div>
+              <div className="font-medium mb-2">Ngân sách và chính sách</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-[12px]">月度预算(美元)</Label>
+                  <Label className="text-[12px]">Ngân sách tháng (đô la Mỹ)</Label>
                   <Input
                     type="number"
                     step="0.5"
@@ -1036,19 +1036,19 @@ export default function AgentsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-[12px]">超预算行为</Label>
+                  <Label className="text-[12px]">Hành xử khi vượt ngân sách</Label>
                   <select
                     className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
                     value={(taConfigForm.over_budget_action as string) || 'reject'}
                     onChange={e => setTaConfigForm({ ...taConfigForm, over_budget_action: e.target.value })}
                   >
-                    <option value="reject">拒绝新触发</option>
-                    <option value="warn">警告但继续</option>
-                    <option value="continue">不提示也不挡</option>
+                    <option value="reject">Chặn kích hoạt mới</option>
+                    <option value="warn">Cảnh báo nhưng vẫn chạy</option>
+                    <option value="continue">Không nhắc cũng không chặn</option>
                   </select>
                 </div>
                 <div>
-                  <Label className="text-[12px]">辩论轮次</Label>
+                  <Label className="text-[12px]">Số vòng tranh luận</Label>
                   <Input
                     type="number"
                     min={1}
@@ -1058,7 +1058,7 @@ export default function AgentsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-[12px]">超时(分钟)</Label>
+                  <Label className="text-[12px]">Hết giờ (phút)</Label>
                   <Input
                     type="number"
                     min={1}
@@ -1070,7 +1070,7 @@ export default function AgentsPage() {
               </div>
             </section>
 
-            {/* 模拟盘对接 */}
+            {/* Nối mô phỏng bàn giao dịch */}
             <section>
               <div className="flex items-center gap-2 mb-2">
                 <input
@@ -1080,16 +1080,16 @@ export default function AgentsPage() {
                   onChange={e => setTaConfigForm({ ...taConfigForm, emit_paper_trading_signal: e.target.checked })}
                 />
                 <label htmlFor="emit-paper-trading" className="font-medium cursor-pointer">
-                  把 BUY 决策写入模拟盘信号
+                  Ghi quyết định BUY thành tín hiệu mô phỏng
                 </label>
               </div>
               <div className="text-[11px] text-muted-foreground">
-                启用后,TA 输出 BUY 决策时会写一条 StrategySignalRun,PaperTradingEngine 下个 tick 自动开模拟仓
-                (止损 -5%,止盈 +10%)。<strong>默认关闭</strong> 防止误开仓。SELL 不会自动平仓。
+                Bật lên, khi TA ra quyết định BUY sẽ ghi một bản StrategySignalRun, PaperTradingEngine tick kế tiếp tự mở vị thế mô phỏng
+                (cắt lỗ -5%, chốt lời +10%).<strong>Mặc định tắt</strong>  để khỏi mở vị thế nhầm. SELL không tự đóng vị thế.
               </div>
             </section>
 
-            {/* 联动触发(intraday 急涨/急跌) */}
+            {/* Kích hoạt liên động (tăng/giảm gấp trong phiên) */}
             {(() => {
               const autoTrigger = (taConfigForm.auto_trigger as Record<string, unknown>) || {}
               const setAuto = (patch: Record<string, unknown>) =>
@@ -1104,12 +1104,12 @@ export default function AgentsPage() {
                       onChange={e => setAuto({ enabled: e.target.checked })}
                     />
                     <label htmlFor="auto-trigger-enabled" className="font-medium cursor-pointer">
-                      盘中急涨/急跌自动触发深度分析
+                      Tăng/giảm gấp trong phiên tự kích hoạt phân tích chuyên sâu
                     </label>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-2">
                     <div>
-                      <Label className="text-[12px]">涨跌幅阈值(%)</Label>
+                      <Label className="text-[12px]">Ngưỡng biên độ (%)</Label>
                       <Input
                         type="number"
                         step="0.5"
@@ -1120,7 +1120,7 @@ export default function AgentsPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[12px]">冷却时间(小时)</Label>
+                      <Label className="text-[12px]">Thời gian chờ (giờ)</Label>
                       <Input
                         type="number"
                         min={1}
@@ -1131,17 +1131,17 @@ export default function AgentsPage() {
                     </div>
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    启用后,intraday_monitor 分析时若发现 |涨跌幅| ≥ 阈值,自动 fire-and-forget 触发 TA 深度分析。
-                    冷却时间内同一标的不会重复触发;月度预算用尽也会停止。<strong>默认关闭</strong> 避免成本失控。
+                    Bật lên, khi intraday_monitor phân tích mà thấy |biên độ| ≥ ngưỡng thì tự fire-and-forget kích hoạt phân tích chuyên sâu TA.
+                    Trong thời gian chờ, cùng một mã sẽ không kích hoạt lại; hết ngân sách tháng cũng dừng.<strong>Mặc định tắt</strong>  để chi phí khỏi vượt tầm kiểm soát.
                   </div>
                 </section>
               )
             })()}
 
-            {/* 高级 JSON */}
+            {/* JSON nâng cao */}
             <details className="text-[12px]">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                高级:完整 config JSON
+                Nâng cao: toàn bộ config JSON
               </summary>
               <textarea
                 className="mt-2 w-full font-mono text-[11px] p-2 border border-border rounded bg-background min-h-[120px]"
@@ -1150,15 +1150,15 @@ export default function AgentsPage() {
                   try {
                     setTaConfigForm(JSON.parse(e.target.value))
                   } catch {
-                    /* 输入未完成,允许继续编辑 */
+                    /* Nhập chưa xong, cho phép sửa tiếp */
                   }
                 }}
               />
             </details>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setTaConfigAgent(null)}>取消</Button>
-              <Button onClick={saveTaConfig}>保存</Button>
+              <Button variant="ghost" onClick={() => setTaConfigAgent(null)}>Hủy</Button>
+              <Button onClick={saveTaConfig}>Lưu</Button>
             </div>
           </div>
         </DialogContent>

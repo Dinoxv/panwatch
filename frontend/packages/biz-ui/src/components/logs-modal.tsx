@@ -40,11 +40,11 @@ const TIME_RANGES = [
   { label: '1h', value: 1 },
   { label: '6h', value: 6 },
   { label: '24h', value: 24 },
-  { label: '全部', value: 0 },
+  { label: 'Tất cả', value: 0 },
 ]
 const DOMAIN_OPTIONS: Array<{ label: string, value: 'business' | 'all' | 'infra' }> = [
   { label: '业务优先', value: 'business' },
-  { label: '全部', value: 'all' },
+  { label: 'Tất cả', value: 'all' },
   { label: '基础设施', value: 'infra' },
 ]
 const FLOW_PRESETS: Array<{ key: string, label: string, loggers: string[] }> = [

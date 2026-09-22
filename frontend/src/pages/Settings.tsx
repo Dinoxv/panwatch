@@ -613,7 +613,7 @@ export default function SettingsPage() {
       await fetchAPI(`/channels/${channel.id}`, { method: 'PUT', body: JSON.stringify({ enabled: !channel.enabled }) })
       load()
     } catch {
-      toast('操作失败', 'error')
+      toast('Thao tác thất bại', 'error')
     }
   }
 
@@ -1147,9 +1147,9 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setServiceDialogOpen(false)}>取消</Button>
+              <Button variant="ghost" onClick={() => setServiceDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveService} disabled={!serviceForm.name || !serviceForm.base_url}>
-                {editServiceId ? '保存' : '创建'}
+                {editServiceId ? 'Lưu' : '创建'}
               </Button>
             </div>
           </div>
@@ -1199,9 +1199,9 @@ export default function SettingsPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setModelDialogOpen(false)}>取消</Button>
+              <Button variant="ghost" onClick={() => setModelDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveModel} disabled={!modelForm.model || !modelForm.service_id}>
-                {editModelId ? '保存' : '创建'}
+                {editModelId ? 'Lưu' : '创建'}
               </Button>
             </div>
           </div>
@@ -1341,9 +1341,9 @@ export default function SettingsPage() {
               </div>
             ))}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setChannelDialogOpen(false)}>取消</Button>
+              <Button variant="ghost" onClick={() => setChannelDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveChannel} disabled={!isChannelFormValid()}>
-                {editChannelId ? '保存' : '创建'}
+                {editChannelId ? 'Lưu' : '创建'}
               </Button>
             </div>
           </div>

@@ -182,7 +182,7 @@ export default function HistoryPage() {
             <SelectContent>
               <SelectItem value="workflow">主流程</SelectItem>
               <SelectItem value="capability">能力层</SelectItem>
-              <SelectItem value="all">全部</SelectItem>
+              <SelectItem value="all">Tất cả</SelectItem>
             </SelectContent>
           </Select>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>

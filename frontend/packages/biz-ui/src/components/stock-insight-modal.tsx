@@ -1213,7 +1213,7 @@ export default function StockInsightModal(props: {
         toast('已添加关注', 'success')
       }
     } catch (e) {
-      toast(e instanceof Error ? e.message : '操作失败', 'error')
+      toast(e instanceof Error ? e.message : 'Thao tác thất bại', 'error')
     } finally {
       setWatchToggleLoading(false)
     }
@@ -1310,7 +1310,7 @@ export default function StockInsightModal(props: {
                   disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
                   title={hasHolding && watchingStock ? '持仓中的股票无法取消关注' : undefined}
                 >
-                  {watchToggleLoading ? '处理中...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
+                  {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
                 </Button>
                 <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={handleSetAlert} disabled={alerting}>
@@ -1351,7 +1351,7 @@ export default function StockInsightModal(props: {
                 onClick={toggleWatch}
                 disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
               >
-                {watchToggleLoading ? '处理中...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
+                {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
               </Button>
               <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
               <Button variant="secondary" size="sm" className="h-8 px-2.5 shrink-0" onClick={handleSetAlert} disabled={alerting}>

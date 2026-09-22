@@ -302,7 +302,7 @@ export default function PriceAlertFormDialog(props: {
                         </Button>
                       </div>
                       <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
-                        {['日', '一', '二', '三', '四', '五', '六'].map(w => <div key={w}>{w}</div>)}
+                        {['CN', 'T2', 'T3', 'T4', '四', '五', '六'].map(w => <div key={w}>{w}</div>)}
                       </div>
                       <div className="grid grid-cols-7 gap-1">
                         {daysInMonth.map((c, i) => (
@@ -464,7 +464,7 @@ export default function PriceAlertFormDialog(props: {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" onClick={() => props.onOpenChange(false)}>取消</Button>
+            <Button variant="ghost" onClick={() => props.onOpenChange(false)}>Hủy</Button>
             <Button onClick={submit} disabled={props.submitting}>
               {props.submitting ? '保存中...' : (props.submitLabel || 'Lưu quy tắc')}
             </Button>

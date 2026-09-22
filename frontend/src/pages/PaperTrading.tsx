@@ -169,7 +169,7 @@ export default function PaperTradingPage() {
       setAccount(res)
       toast(res.enabled ? '模拟盘已启动' : '模拟盘已暂停', 'success')
     } catch {
-      toast('操作失败', 'error')
+      toast('Thao tác thất bại', 'error')
     }
   }
 
@@ -330,7 +330,7 @@ export default function PaperTradingPage() {
           <h1 className="text-lg font-bold">Mô phỏng</h1>
           {account && (
             <span className={`text-xs px-2 py-0.5 rounded-full ${account.enabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
-              {account.enabled ? '运行中' : '已暂停'}
+              {account.enabled ? 'Đang chạy' : '已暂停'}
             </span>
           )}
         </div>
@@ -372,7 +372,7 @@ export default function PaperTradingPage() {
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground text-xs">交易市场:</span>
             {(['ALL', 'CN', 'HK', 'US'] as const).map(m => {
-              const label = m === 'ALL' ? '全部' : m === 'CN' ? 'Cổ phiếu A' : m === 'HK' ? 'Cổ phiếu HK' : 'Cổ phiếu Mỹ'
+              const label = m === 'ALL' ? 'Tất cả' : m === 'CN' ? 'Cổ phiếu A' : m === 'HK' ? 'Cổ phiếu HK' : 'Cổ phiếu Mỹ'
               const active = marketView === m
               const ratio = m !== 'ALL' ? account.market_allocations?.[m] : undefined
               const isOff = m !== 'ALL' && (ratio ?? 0) <= 0
@@ -676,7 +676,7 @@ export default function PaperTradingPage() {
 
             <div className="flex items-center gap-2 pt-1">
               <Button size="sm" onClick={handleSaveConfig} disabled={cfgSaving || ratioSum > 100}>
-                {cfgSaving ? '保存中...' : '保存'}
+                {cfgSaving ? '保存中...' : 'Lưu'}
               </Button>
             </div>
           </div>
@@ -761,7 +761,7 @@ export default function PaperTradingPage() {
             {/* 操作按钮 */}
             <div className="flex items-center gap-2 pt-2">
               <Button size="sm" onClick={handleSaveNotify} disabled={notifySaving}>
-                {notifySaving ? '保存中...' : '保存'}
+                {notifySaving ? '保存中...' : 'Lưu'}
               </Button>
               {notifyEnabled && (
                 <Button variant="outline" size="sm" onClick={handleTestNotify} disabled={notifyTesting}>

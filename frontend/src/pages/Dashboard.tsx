@@ -41,20 +41,20 @@ function moveColor(v?: number | null): string {
   if (v == null) return 'text-muted-foreground'
   return v > 0 ? 'text-rose-500' : v < 0 ? 'text-emerald-500' : 'text-muted-foreground'
 }
-/** 涨跌着色 chip 的背景+文字类;null/平盘 → 灰底。红涨绿跌(A股口径)。 */
+/** Lớp nền + chữ của chip tô màu tăng giảm; null/tham chiếu → nền xám. Đỏ tăng xanh giảm (theo lệ cổ phiếu A). */
 function pctChipCls(v?: number | null): string {
   if (v == null) return 'bg-accent text-muted-foreground'
   if (v > 0) return 'bg-rose-500/10 text-rose-500'
   if (v < 0) return 'bg-emerald-500/10 text-emerald-500'
   return 'bg-accent text-muted-foreground'
 }
-/** 金额展示:+¥2,175 风格(千分位 + 正负号),脱敏场景外的常规展示用。 */
+/** Hiển thị số tiền: kiểu +¥2,175 (phân cách nghìn + dấu âm dương), dùng cho hiển thị thường ngoài ngữ cảnh ẩn danh. */
 function fmtMoney(v?: number | null): string {
   if (v == null || !isFinite(v)) return '--'
   const sign = v > 0 ? '+' : v < 0 ? '-' : ''
   return `${sign}¥${Math.abs(v).toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
 }
-/** 去掉常见 markdown 标记,供简报摘要行取纯文本用。 */
+/** Bỏ các dấu markdown thường gặp, để dòng tóm tắt bản tin lấy văn bản thuần. */
 function stripMarkdown(s: string): string {
   return s
     .replace(/```[\s\S]*?```/g, ' ')
@@ -64,7 +64,7 @@ function stripMarkdown(s: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
-const WEEKDAY_LABEL = ['日', '一', '二', '三', '四', '五', '六']
+const WEEKDAY_LABEL = ['CN', 'T2', 'T3', 'T4', '四', '五', '六']
 function formatHeaderTime(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -91,7 +91,7 @@ const FEED_BADGE: Record<string, { label: string; cls: string }> = {
   opportunity: { label: 'Cơ hội', cls: 'bg-primary/10 text-primary' },
 }
 
-// 市场分布 stacked 条配色:CN 用品牌色,US/HK 用差异化色区分
+// Màu thanh xếp chồng phân bố thị trường: CN dùng màu thương hiệu, US/HK dùng màu khác để phân biệt
 const MARKET_BAR_CLS: Record<string, string> = {
   CN: 'bg-primary',
   US: 'bg-emerald-500',
@@ -119,7 +119,7 @@ export default function DashboardPage() {
   const [portfolioSummary, setPortfolioSummary] = useState<DashboardPortfolioSummary | null>(null)
   const [marketStatus, setMarketStatus] = useState<DashboardMarketStatus[]>([])
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null)
-  // 分享卡开关:成绩单(基准)/ 组合体检 / 每日 digest
+  // Công tắc thẻ chia sẻ: bảng thành tích (so tham chiếu) / soi sức khỏe danh mục / digest hằng ngày
   const [shareBench, setShareBench] = useState(false)
   const [shareDiag, setShareDiag] = useState(false)
   const [shareDigest, setShareDigest] = useState(false)
@@ -132,7 +132,7 @@ export default function DashboardPage() {
     hasPosition: false,
   })
 
-  // 慢车道:基准/归因(拉全持仓 K 线,分钟级);独立可重试,失败/为空各有明确状态
+  // Làn chậm: tham chiếu/phân rã đóng góp (kéo nến toàn bộ danh mục, mất cỡ phút); chạy độc lập và thử lại được, hỏng/rỗng đều có trạng thái rõ ràng
   const loadBench = useCallback(() => {
     setBenchState('loading')
     Promise.allSettled([portfolioApi.benchmark({ days: 60 }), portfolioApi.attribution(60)]).then(([bn, at]) => {
@@ -148,9 +148,9 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    // 指数 pills:独立加载不阻塞首屏(spark 冷启动可能 ~1s,数据到了自然浮现)
+    // Pill chỉ số: tải riêng, không chặn màn hình đầu (spark khởi động nguội có thể ~1s, dữ liệu tới thì tự hiện)
     dashboardApi.indices().then(setIndices).catch(() => {})
-    // 快车道:DB/轻量查询,先让首屏(要紧事/体检分布/组合速览)尽快出来
+    // Làn nhanh: DB/truy vấn nhẹ, để màn hình đầu (việc cần kíp/phân bố sức khỏe/lướt nhanh danh mục) ra sớm nhất
     const [sc, ov, dg, ht, td, ps, ms] = await Promise.allSettled([
       dashboardApi.intradayScan(),
       dashboardApi.overview({ market: 'ALL', action_limit: 6, risk_limit: 6 }),
@@ -167,10 +167,10 @@ export default function DashboardPage() {
     if (td.status === 'fulfilled') setTodos(td.value.todos || [])
     if (ps.status === 'fulfilled') setPortfolioSummary(ps.value)
     if (ms.status === 'fulfilled') setMarketStatus(ms.value)
-    setLoading(false) // 首屏不再等基准/归因(要拉全持仓 K 线)
+    setLoading(false) // Màn hình đầu không chờ tham chiếu/phân rã đóng góp nữa (vì phải kéo nến toàn bộ danh mục)
     setRefreshedAt(new Date())
 
-    // 机会兜底:overview 无机会时再取(不挡首屏)
+    // Lưới hứng cơ hội: overview không có cơ hội thì mới lấy thêm (không chặn màn hình đầu)
     if (ov.status !== 'fulfilled' || !ov.value.action_center?.opportunities?.length) {
       recommendationsApi
         .listStrategySignals({ status: 'active', limit: 5 })
@@ -178,10 +178,10 @@ export default function DashboardPage() {
         .catch(() => {})
     }
 
-    // 慢车道:基准/归因需拉全持仓 K 线(分钟级),独立加载,就绪后回填超额/归因
+    // Làn chậm: tham chiếu/phân rã đóng góp phải kéo nến toàn bộ danh mục (mất cỡ phút), tải riêng, xong thì bù vào phần vượt trội/đóng góp
     loadBench()
 
-    // 盘前/盘后简报:独立加载,取较新一条
+    // Bản tin trước/sau phiên: tải riêng, lấy bản mới hơn
     Promise.allSettled([dashboardApi.brief('premarket'), dashboardApi.brief('eod')]).then((res) => {
       const briefs = res
         .filter((b): b is PromiseFulfilledResult<DashboardBrief> => b.status === 'fulfilled' && !b.value.empty)
@@ -215,7 +215,7 @@ export default function DashboardPage() {
     }
   }
 
-  // 今日要紧事:持仓异动 + 触发的盯盘信号(有 AI 建议/告警优先)
+  // Việc cần kíp hôm nay: biến động danh mục + tín hiệu canh bảng đã kích hoạt (có khuyến nghị AI/cảnh báo thì ưu tiên)
   const urgent = useMemo(() => {
     const items = (scan || []).filter((s) => s.has_position || s.alert_type || s.suggestion?.should_alert)
     const weight = (s: DashboardMonitorStock) =>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
     return list.slice(0, 5)
   }, [overview, oppFallback])
 
-  // 今日必读候选(多源)→ 交 AI 策展(失败兜底原序)
+  // Ứng viên phải đọc hôm nay (nhiều nguồn) → giao AI sắp xếp (hỏng thì giữ thứ tự gốc)
   const candidates = useMemo<CurateCandidate[]>(() => {
     const out: CurateCandidate[] = []
     for (const h of alertHits) {
@@ -293,7 +293,7 @@ export default function DashboardPage() {
       ? (diag.total_unrealized_pnl / (diag.total_market_value - diag.total_unrealized_pnl)) * 100
       : null
 
-  // 今日盈亏(组合速览条 hero):来自 portfolioSummary.total.total_daily_pnl(与 Stocks 页同源字段)
+  // Lãi lỗ hôm nay (hero của thanh lướt nhanh danh mục): lấy từ portfolioSummary.total.total_daily_pnl (cùng trường với trang Mã)
   const dailyPnl = portfolioSummary?.total?.total_daily_pnl ?? null
   const dailyPnlPct = useMemo(() => {
     if (!portfolioSummary || dailyPnl == null) return null
@@ -307,7 +307,7 @@ export default function DashboardPage() {
   }, [portfolioSummary])
   const benchPortfolioSeries = useMemo(() => (bench?.curve || []).map((p) => p.portfolio), [bench])
 
-  // 市场分布 stacked 条的分段(占比降序,过滤掉 0 占比)
+  // Các đoạn của thanh xếp chồng phân bố thị trường (giảm dần theo tỷ trọng, lọc bỏ tỷ trọng 0)
   const marketSegs = useMemo(() => {
     if (!diag || diag.total_market_value <= 0) return []
     return Object.entries(diag.by_market)
@@ -316,7 +316,7 @@ export default function DashboardPage() {
       .sort((a, b) => b.pct - a.pct)
   }, [diag])
 
-  // 领涨/拖累双向条的归一基准(取全量 attribution 里最大贡献绝对值,双向对称)
+  // Mốc chuẩn hóa của thanh hai chiều dẫn dắt/kéo lùi (lấy trị tuyệt đối đóng góp lớn nhất trong toàn bộ attribution, đối xứng hai chiều)
   const attributionMaxAbs = useMemo(() => {
     if (attribution.length === 0) return 0
     return Math.max(...attribution.map((a) => Math.abs(a.contribution_pct)), 0.01)
@@ -330,7 +330,7 @@ export default function DashboardPage() {
 
   return (
     <div className="page-container pb-10">
-      {/* 顶部:标题 + 刷新 + 日期/市场状态 pills */}
+      {/* Trên cùng: tiêu đề + làm mới + pill ngày/trạng thái thị trường */}
       <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-[20px] font-bold tracking-tight text-foreground md:text-[22px]">今日该看什么</h1>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 组合速览条:今日盈亏 hero + 累计浮盈 + 60日超额 + 仓位% + mini 净值走势 */}
+      {/* Thanh lướt nhanh danh mục: hero lãi lỗ hôm nay + lãi lỗ tạm tính lũy kế + vượt trội 60 ngày + tỷ trọng % + đường giá trị ròng thu nhỏ */}
       <div className="card mb-3 p-4">
         {!hasHoldings ? (
           <div className="py-4 text-center text-[12px] text-muted-foreground">
@@ -395,7 +395,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* 指数走势 pills */}
+      {/* Pill diễn biến chỉ số */}
       <div className="mb-3 grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-5">
         {indices.slice(0, 5).map((ix) => (
           <div key={`${ix.market}:${ix.symbol}`} className="card-subtle relative p-2.5">
@@ -419,9 +419,9 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* 主体:要紧事(7) | 体检(5);机会(5) | 简报(7) */}
+      {/* Thân: việc cần kíp (7) | soi sức khỏe (5); cơ hội (5) | bản tin (7) */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-        {/* 今日要紧事(主角) */}
+        {/* Việc cần kíp hôm nay (vai chính) */}
         <div className="card p-4 lg:col-span-7">
           <div className="mb-2 flex items-center gap-2">
             <Activity className="h-4 w-4 text-primary" />
@@ -486,7 +486,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 组合体检(并入首页) */}
+        {/* Soi sức khỏe danh mục (gộp vào trang chủ) */}
         <div className="card p-4 lg:col-span-5">
           <div className="mb-2 flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-primary" />
@@ -520,7 +520,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3 text-[12px]">
-              {/* 图例行:色块 + 我的组合/基准收益 + 超额 chip */}
+              {/* Dòng chú giải: ô màu + danh mục của tôi/lợi nhuận tham chiếu + chip vượt trội */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1.5">
@@ -541,7 +541,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* 净值 vs 基准双线图:loading/ready/empty/error 四态,不再永远"计算中" */}
+              {/* Đồ thị hai đường giá trị ròng vs tham chiếu: bốn trạng thái loading/ready/empty/error, không còn kẹt mãi ở "đang tính" */}
               {benchState === 'ready' && bench?.curve && bench.curve.length >= 2 ? (
                 <BenchChart curve={bench.curve} />
               ) : (
@@ -570,7 +570,7 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* 市场分布:stacked 单条 */}
+              {/* Phân bố thị trường: một thanh xếp chồng */}
               {marketSegs.length > 0 && (
                 <div>
                   <div className="flex h-2 overflow-hidden rounded-full bg-accent/30">
@@ -588,7 +588,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* 领涨/拖累:双向条 */}
+              {/* Dẫn dắt/kéo lùi: thanh hai chiều */}
               {attribution.length > 1 &&
                 [
                   { label: '领涨', item: attribution[0] },
@@ -646,7 +646,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 机会精选 */}
+        {/* Cơ hội chọn lọc */}
         <div className="card p-4 lg:col-span-5">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -694,7 +694,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 盘前/盘后简报 */}
+        {/* Bản tin trước/sau phiên */}
         {brief && (brief.title || brief.content) && (
           <div className="card p-4 lg:col-span-7">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -739,12 +739,12 @@ export default function DashboardPage() {
         hasPosition={modal.hasPosition}
       />
 
-      {/* 分享卡:模拟盘成绩单(vs 基准) */}
+      {/* Thẻ chia sẻ: bảng thành tích mô phỏng (so tham chiếu) */}
       {shareBench && bench && (
         <BenchmarkShareCard open={shareBench} onClose={() => setShareBench(false)} bench={bench} />
       )}
 
-      {/* 分享卡:组合体检(脱敏,无金额) */}
+      {/* Thẻ chia sẻ: soi sức khỏe danh mục (ẩn danh, không số tiền) */}
       {shareDiag && diag && (
         <DiagnosticsShareCard
           open={shareDiag}
@@ -755,7 +755,7 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* 分享卡:今日盯盘 digest */}
+      {/* Thẻ chia sẻ: digest canh bảng hôm nay */}
       <DigestShareCard
         open={shareDigest}
         onClose={() => setShareDigest(false)}

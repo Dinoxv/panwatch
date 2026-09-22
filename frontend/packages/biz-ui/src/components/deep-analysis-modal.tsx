@@ -328,7 +328,7 @@ export function DeepAnalysisModal({
       pollProgress(tid)
     } catch (e) {
       setStage('error')
-      setError(e instanceof Error ? e.message : '触发失败')
+      setError(e instanceof Error ? e.message : 'Kích hoạt thất bại')
     }
   }, [stockId, stockSymbol, startWatching, pollProgress, toast])
 
@@ -375,7 +375,7 @@ export function DeepAnalysisModal({
               <div className="text-[12px]">{error}</div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleClose}>关闭</Button>
+              <Button variant="outline" onClick={handleClose}>Đóng</Button>
               <Button onClick={() => handleStart(false)}>重试</Button>
             </div>
           </div>
@@ -435,7 +435,7 @@ function IdleView({
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onCancel}>取消</Button>
+        <Button variant="outline" onClick={onCancel}>Hủy</Button>
         <Button onClick={onStart} disabled={overBudget}>开始分析</Button>
       </div>
     </div>
