@@ -407,7 +407,7 @@ export default function OpportunitiesPage() {
       }
       await Promise.all([load(), loadStats()])
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '刷新失败'
+      const msg = e instanceof Error ? e.message : 'Làm mới thất bại'
       if (msg.includes('超时')) {
         setError('刷新任务耗时较长，已在后台继续执行，请稍后再点刷新')
         await load()

@@ -64,23 +64,23 @@ function stripMarkdown(s: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
-const WEEKDAY_LABEL = ['CN', 'T2', 'T3', 'T4', '四', '五', '六']
+const WEEKDAY_LABEL = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 function formatHeaderTime(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   const hh = String(d.getHours()).padStart(2, '0')
   const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${y}-${m}-${day} 周${WEEKDAY_LABEL[d.getDay()]} · ${hh}:${mm} 已刷新`
+  return `${y}-${m}-${day} ${WEEKDAY_LABEL[d.getDay()]} · ${hh}:${mm} đã làm mới`
 }
 const ALERT_LABEL: Record<string, string> = {
-  surge: '快速拉升',
-  plunge: '快速跳水',
-  high_volume: '放量异动',
-  breakout: '突破',
-  breakdown: '破位',
-  limit_up: '涨停',
-  limit_down: '跌停',
+  surge: 'Kéo lên nhanh',
+  plunge: 'Lao xuống nhanh',
+  high_volume: 'Bùng khối lượng bất thường',
+  breakout: 'Bứt phá',
+  breakdown: 'Thủng nền',
+  limit_up: 'Trần giá',
+  limit_down: 'Sàn giá',
 }
 
 const FEED_BADGE: Record<string, { label: string; cls: string }> = {
@@ -209,7 +209,7 @@ export default function DashboardPage() {
     try {
       setAiReview(await portfolioApi.aiReview())
     } catch (e) {
-      setAiReview({ content: e instanceof Error ? `AI 体检失败: ${e.message}` : 'AI 体检失败' })
+      setAiReview({ content: e instanceof Error ? `Soi sức khỏe AI thất bại: ${e.message}` : 'Soi sức khỏe AI thất bại' })
     } finally {
       setAiReviewLoading(false)
     }
@@ -232,7 +232,7 @@ export default function DashboardPage() {
   const candidates = useMemo<CurateCandidate[]>(() => {
     const out: CurateCandidate[] = []
     for (const h of alertHits) {
-      out.push({ type: 'alert', symbol: h.symbol, name: h.name || h.symbol, market: h.market, signal: `触发提醒 ${h.rule_name}` })
+      out.push({ type: 'alert', symbol: h.symbol, name: h.name || h.symbol, market: h.market, signal: `Chạm cảnh báo ${h.rule_name}` })
     }
     for (const s of urgent) {
       out.push({
@@ -244,7 +244,7 @@ export default function DashboardPage() {
         signal: s.suggestion?.signal || (s.alert_type ? ALERT_LABEL[s.alert_type] || s.alert_type : ''),
       })
     }
-    for (const a of diag?.alerts || []) out.push({ type: 'risk', name: '组合风险', market: '', signal: a })
+    for (const a of diag?.alerts || []) out.push({ type: 'risk', name: 'Rủi ro danh mục', market: '', signal: a })
     for (const o of opportunities.slice(0, 3)) {
       out.push({ type: 'opportunity', symbol: o.stock_symbol, name: o.stock_name || o.stock_symbol, market: o.stock_market, signal: o.signal || o.reason || o.action_label || '' })
     }
@@ -333,7 +333,7 @@ export default function DashboardPage() {
       {/* Trên cùng: tiêu đề + làm mới + pill ngày/trạng thái thị trường */}
       <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-[20px] font-bold tracking-tight text-foreground md:text-[22px]">今日该看什么</h1>
+          <h1 className="text-[20px] font-bold tracking-tight text-foreground md:text-[22px]">Hôm nay nên xem gì</h1>
           <Button onClick={load} disabled={loading} size="sm" variant="ghost" className="h-7 px-2">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -353,30 +353,30 @@ export default function DashboardPage() {
       <div className="card mb-3 p-4">
         {!hasHoldings ? (
           <div className="py-4 text-center text-[12px] text-muted-foreground">
-            {loading ? 'Đang tải…' : '暂无持仓,添加持仓后这里展示今日盈亏与组合走势'}
+            {loading ? 'Đang tải…' : 'Chưa có vị thế nào, thêm vị thế rồi đây sẽ hiện lãi lỗ hôm nay và diễn biến danh mục'}
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div>
-              <div className="text-[11px] text-muted-foreground">今日盈亏</div>
+              <div className="text-[11px] text-muted-foreground">Lãi lỗ hôm nay</div>
               <div className={`font-mono text-[22px] font-bold leading-tight ${moveColor(dailyPnl)}`}>{fmtMoney(dailyPnl)}</div>
               {dailyPnlPct != null && <div className={`font-mono text-[11px] ${moveColor(dailyPnlPct)}`}>{pct(dailyPnlPct)}</div>}
             </div>
             <div className="hidden h-9 w-px bg-border/60 sm:block" />
             <div>
-              <div className="text-[11px] text-muted-foreground">累计浮盈</div>
+              <div className="text-[11px] text-muted-foreground">Lãi tạm tính lũy kế</div>
               <div className={`font-mono text-[14px] ${moveColor(diag!.total_unrealized_pnl)}`}>
                 {fmtMoney(diag!.total_unrealized_pnl)} <span className="text-[11px]">{pct(portfolioPnlPct)}</span>
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-muted-foreground">60日超额</div>
+              <div className="text-[11px] text-muted-foreground">Vượt trội 60 ngày</div>
               <div className={`font-mono text-[14px] ${benchReady ? moveColor(bench!.excess_return) : 'text-muted-foreground'}`}>
                 {benchReady ? pct(bench!.excess_return) : '--'}
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-muted-foreground">仓位</div>
+              <div className="text-[11px] text-muted-foreground">Tỷ trọng</div>
               <div className="font-mono text-[14px]">{positionRatioPct != null ? `${positionRatioPct.toFixed(0)}%` : '--'}</div>
             </div>
             <div className="ml-auto flex items-center gap-3">
@@ -388,7 +388,7 @@ export default function DashboardPage() {
                 onClick={() => navigate('/portfolio')}
                 className="shrink-0 text-[11px] text-muted-foreground hover:text-primary"
               >
-                持仓页 →
+                Trang vị thế →
               </button>
             </div>
           </div>
@@ -425,26 +425,26 @@ export default function DashboardPage() {
         <div className="card p-4 lg:col-span-7">
           <div className="mb-2 flex items-center gap-2">
             <Activity className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">今日要紧事</h2>
-            <span className="text-[11px] text-muted-foreground">你的持仓/自选里今天该关注的</span>
+            <h2 className="text-sm font-semibold">Việc cần kíp hôm nay</h2>
+            <span className="text-[11px] text-muted-foreground">Những thứ đáng chú ý hôm nay trong danh mục/mã theo dõi của bạn</span>
             {feed.length > 0 && (
               <button
                 type="button"
                 onClick={() => setShareDigest(true)}
                 className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-primary"
-                title="生成今日盯盘分享图"
+                title="Dựng ảnh chia sẻ canh bảng hôm nay"
               >
                 <Share2 className="h-3.5 w-3.5" />
-                分享图
+                Ảnh chia sẻ
               </button>
             )}
           </div>
           {loading && candidates.length === 0 ? (
-            <div className="py-6 text-center text-[12px] text-muted-foreground">扫描中…</div>
+            <div className="py-6 text-center text-[12px] text-muted-foreground">Đang quét…</div>
           ) : candidates.length === 0 ? (
             todos.length > 0 ? (
               <div className="space-y-1.5 py-1">
-                <div className="text-[11px] text-muted-foreground">今日暂无异动/触发 ✓ · 待办:</div>
+                <div className="text-[11px] text-muted-foreground">Hôm nay chưa có biến động/kích hoạt ✓ · việc còn treo:</div>
                 {todos.map((t, i) => (
                   <div
                     key={i}
@@ -452,14 +452,14 @@ export default function DashboardPage() {
                     onClick={() => t.symbol && openStock(t.symbol, t.market || 'CN', '')}
                   >
                     <span className="shrink-0 rounded bg-amber-500/15 px-1 text-[9px] text-amber-600">
-                      {t.type === 'no_alert' ? '加提醒' : '将到期'}
+                      {t.type === 'no_alert' ? 'Thêm cảnh báo' : 'Sắp tới hạn'}
                     </span>
                     <span className="truncate">{t.message}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-6 text-center text-[12px] text-muted-foreground">今日暂无明显异动或触发信号 ✓</div>
+              <div className="py-6 text-center text-[12px] text-muted-foreground">Hôm nay chưa thấy biến động rõ rệt hay tín hiệu kích hoạt ✓</div>
             )
           ) : (
             <div className="divide-y divide-border/40">
@@ -496,10 +496,10 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => setShareBench(true)}
                 className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-primary"
-                title="生成模拟盘成绩单分享图"
+                title="Dựng ảnh chia sẻ bảng thành tích mô phỏng"
               >
                 <Share2 className="h-3.5 w-3.5" />
-                成绩单
+                Bảng thành tích
               </button>
             )}
             {hasHoldings && (
@@ -507,16 +507,16 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => setShareDiag(true)}
                 className={`${benchReady ? '' : 'ml-auto'} inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-primary`}
-                title="生成组合体检分享图"
+                title="Dựng ảnh chia sẻ soi sức khỏe danh mục"
               >
                 <Share2 className="h-3.5 w-3.5" />
-                体检图
+                Ảnh sức khỏe
               </button>
             )}
           </div>
           {!hasHoldings ? (
             <div className="py-6 text-center text-[12px] text-muted-foreground">
-              {loading ? 'Đang tải…' : '暂无持仓,添加持仓后这里给风险与相对大盘表现'}
+              {loading ? 'Đang tải…' : 'Chưa có vị thế nào, thêm vị thế rồi đây sẽ cho biết rủi ro và mức so với thị trường chung'}
             </div>
           ) : (
             <div className="space-y-3 text-[12px]">
@@ -546,17 +546,17 @@ export default function DashboardPage() {
                 <BenchChart curve={bench.curve} />
               ) : (
                 <div className="flex h-[150px] flex-col items-center justify-center gap-2 rounded-lg bg-accent/10 text-[11px] text-muted-foreground">
-                  {benchState === 'loading' && <span>基准对比计算中…(需拉全部持仓 K 线,约 1 分钟)</span>}
-                  {benchState === 'empty' && <span>{bench?.reason || '数据不足,暂无法计算基准对比'}</span>}
+                  {benchState === 'loading' && <span>Đang tính đối chiếu tham chiếu… (phải kéo nến toàn bộ vị thế, khoảng 1 phút)</span>}
+                  {benchState === 'empty' && <span>{bench?.reason || 'Chưa đủ dữ liệu, tạm chưa tính được đối chiếu với tham chiếu'}</span>}
                   {benchState === 'error' && (
                     <>
-                      <span>基准对比加载失败(超时或网络异常)</span>
+                      <span>Tải đối chiếu tham chiếu thất bại (hết giờ hoặc lỗi mạng)</span>
                       <button
                         type="button"
                         onClick={loadBench}
                         className="rounded border border-border/60 px-2.5 py-1 text-[11px] text-primary hover:bg-accent/30"
                       >
-                        重试
+                        Thử lại
                       </button>
                     </>
                   )}
@@ -591,8 +591,8 @@ export default function DashboardPage() {
               {/* Dẫn dắt/kéo lùi: thanh hai chiều */}
               {attribution.length > 1 &&
                 [
-                  { label: '领涨', item: attribution[0] },
-                  { label: '拖累', item: attribution[attribution.length - 1] },
+                  { label: 'Dẫn dắt', item: attribution[0] },
+                  { label: 'Kéo lùi', item: attribution[attribution.length - 1] },
                 ].map(({ label, item }) => {
                   const w = Math.min(50, (Math.abs(item.contribution_pct) / attributionMaxAbs) * 50)
                   const positive = item.contribution_pct >= 0
@@ -627,7 +627,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="pt-1 text-[11px] text-emerald-500">✓ 集中度/分布未见明显风险</div>
+                <div className="pt-1 text-[11px] text-emerald-500">✓ Mức tập trung/phân bố chưa thấy rủi ro rõ rệt</div>
               )}
               <button
                 type="button"
@@ -635,7 +635,7 @@ export default function DashboardPage() {
                 disabled={aiReviewLoading}
                 className="mt-1 w-full rounded border border-border/60 py-1 text-[11px] text-primary hover:bg-accent/30 disabled:opacity-60"
               >
-                {aiReviewLoading ? 'AI 体检中…' : 'AI 体检报告'}
+                {aiReviewLoading ? 'Đang soi sức khỏe AI…' : 'Báo cáo soi sức khỏe AI'}
               </button>
               {aiReview?.content && (
                 <div className="prose prose-sm dark:prose-invert mt-1 max-w-none break-words text-[12px] [&_p]:my-1 [&_ul]:my-1">
@@ -651,7 +651,7 @@ export default function DashboardPage() {
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="h-4 w-4 text-primary" />
-              机会精选
+              Cơ hội chọn lọc
             </h2>
             <button
               type="button"
@@ -662,7 +662,7 @@ export default function DashboardPage() {
             </button>
           </div>
           {opportunities.length === 0 ? (
-            <div className="py-6 text-center text-[12px] text-muted-foreground">{loading ? 'Đang tải…' : '暂无活跃机会信号'}</div>
+            <div className="py-6 text-center text-[12px] text-muted-foreground">{loading ? 'Đang tải…' : 'Chưa có tín hiệu cơ hội nào đang hoạt động'}</div>
           ) : (
             <div className="divide-y divide-border/40">
               {opportunities.slice(0, 3).map((o) => {
@@ -682,7 +682,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="font-mono text-[13px] text-foreground">{score.toFixed(0)}</div>
-                      <div className="text-[9px] text-muted-foreground">评分</div>
+                      <div className="text-[9px] text-muted-foreground">Điểm</div>
                       <div className="mt-1 h-[3px] w-10 rounded bg-accent/40">
                         <div className="h-[3px] rounded bg-primary/70" style={{ width: `${score}%` }} />
                       </div>
@@ -712,7 +712,7 @@ export default function DashboardPage() {
                     className="text-[11px] text-muted-foreground hover:text-foreground"
                     onClick={() => setBriefOpen((v) => !v)}
                   >
-                    {briefOpen ? '收起' : '展开'}
+                    {briefOpen ? 'Thu lại' : 'Mở ra'}
                   </button>
                 )}
               </div>

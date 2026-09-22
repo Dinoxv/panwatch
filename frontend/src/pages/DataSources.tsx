@@ -424,7 +424,7 @@ export default function DataSourcesPage() {
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Ưu tiên  <span className="text-muted-foreground font-normal">(số càng nhỏ càng ưu tiên)</span></Label>
+                <Label>Ưu tiên <span className="text-muted-foreground font-normal">(số càng nhỏ càng ưu tiên)</span></Label>
                 <Input
                   type="number"
                   value={form.priority}
@@ -434,7 +434,7 @@ export default function DataSourcesPage() {
               </div>
             </div>
             <div>
-              <Label>Mã kiểm thử  <span className="text-muted-foreground font-normal">(ngăn cách bằng dấu phẩy)</span></Label>
+              <Label>Mã kiểm thử <span className="text-muted-foreground font-normal">(ngăn cách bằng dấu phẩy)</span></Label>
               <Input
                 value={testSymbolsInput}
                 onChange={e => setTestSymbolsInput(e.target.value)}
@@ -492,7 +492,6 @@ export default function DataSourcesPage() {
               {editId ? (
                 <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={deleteSource}>
                   <Trash2 className="w-4 h-4 mr-1" />Xóa
-                
                 </Button>
               ) : <span />}
               <div className="flex gap-2">

@@ -510,11 +510,11 @@ export default function AgentsPage() {
         </div>
         {health ? (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
-            <span>Múi giờ:  <span className="font-mono text-foreground/90">{health.timezone}</span></span>
+            <span>Múi giờ: <span className="font-mono text-foreground/90">{health.timezone}</span></span>
             <span className="opacity-50">|</span>
-            <span>Sẽ kích hoạt trong 24h tới:  <span className="font-mono text-foreground/90">{health.summary.next_24h_count}</span></span>
+            <span>Sẽ kích hoạt trong 24h tới: <span className="font-mono text-foreground/90">{health.summary.next_24h_count}</span></span>
             <span className="opacity-50">|</span>
-            <span>Lần hỏng gần nhất:  <span className={`font-mono ${health.summary.recent_failed_count > 0 ? 'text-rose-600' : 'text-foreground/90'}`}>{health.summary.recent_failed_count}</span></span>
+            <span>Lần hỏng gần nhất: <span className={`font-mono ${health.summary.recent_failed_count > 0 ? 'text-rose-600' : 'text-foreground/90'}`}>{health.summary.recent_failed_count}</span></span>
           </div>
         ) : (
           <div className="mt-2 text-[12px] text-muted-foreground">—</div>
@@ -961,7 +961,7 @@ export default function AgentsPage() {
                   {/* Hiện nguồn model mặc định của Agent để người dùng biết đang ở service nào */}
                   <div className="rounded-md bg-accent/30 border border-border/40 p-2 text-[11px] text-muted-foreground mb-3">
                     {defaultModel && agentService ? (
-                      <>Mô hình mặc định của Agent hiện tại:  <span className="text-foreground font-medium">{defaultModel.model}</span>
+                      <>Mô hình mặc định của Agent hiện tại: <span className="text-foreground font-medium">{defaultModel.model}</span>
                        <span className="opacity-70"> (来自 {agentService.name})</span></>
                     ) : (
                       <>Agent hiện tại dùng dịch vụ AI mặc định của hệ thống (chọn ở mục «Mô hình» trên thẻ Agent).
@@ -972,7 +972,7 @@ export default function AgentsPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-[12px]">
-                        Mô hình nghĩ sâu  <span className="text-muted-foreground/70 font-normal">(tranh luận/kiểm soát rủi ro/PM)</span>
+                        Mô hình nghĩ sâu <span className="text-muted-foreground/70 font-normal">(tranh luận/kiểm soát rủi ro/PM)</span>
                       </Label>
                       <Select
                         value={(taConfigForm.deep_model as string) || '__default__'}
@@ -993,7 +993,7 @@ export default function AgentsPage() {
                     </div>
                     <div>
                       <Label className="text-[12px]">
-                        Mô hình nghĩ nhanh  <span className="text-muted-foreground/70 font-normal">(chuyên viên phân tích/công cụ)</span>
+                        Mô hình nghĩ nhanh <span className="text-muted-foreground/70 font-normal">(chuyên viên phân tích/công cụ)</span>
                       </Label>
                       <Select
                         value={(taConfigForm.quick_model as string) || '__default__'}
@@ -1085,7 +1085,7 @@ export default function AgentsPage() {
               </div>
               <div className="text-[11px] text-muted-foreground">
                 Bật lên, khi TA ra quyết định BUY sẽ ghi một bản StrategySignalRun, PaperTradingEngine tick kế tiếp tự mở vị thế mô phỏng
-                (cắt lỗ -5%, chốt lời +10%).<strong>Mặc định tắt</strong>  để khỏi mở vị thế nhầm. SELL không tự đóng vị thế.
+                (cắt lỗ -5%, chốt lời +10%).<strong>Mặc định tắt</strong> để khỏi mở vị thế nhầm. SELL không tự đóng vị thế.
               </div>
             </section>
 
@@ -1132,7 +1132,7 @@ export default function AgentsPage() {
                   </div>
                   <div className="text-[11px] text-muted-foreground">
                     Bật lên, khi intraday_monitor phân tích mà thấy |biên độ| ≥ ngưỡng thì tự fire-and-forget kích hoạt phân tích chuyên sâu TA.
-                    Trong thời gian chờ, cùng một mã sẽ không kích hoạt lại; hết ngân sách tháng cũng dừng.<strong>Mặc định tắt</strong>  để chi phí khỏi vượt tầm kiểm soát.
+                    Trong thời gian chờ, cùng một mã sẽ không kích hoạt lại; hết ngân sách tháng cũng dừng.<strong>Mặc định tắt</strong> để chi phí khỏi vượt tầm kiểm soát.
                   </div>
                 </section>
               )

@@ -302,7 +302,7 @@ export default function PriceAlertFormDialog(props: {
                         </Button>
                       </div>
                       <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
-                        {['CN', 'T2', 'T3', 'T4', '四', '五', '六'].map(w => <div key={w}>{w}</div>)}
+                        {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(w => <div key={w}>{w}</div>)}
                       </div>
                       <div className="grid grid-cols-7 gap-1">
                         {daysInMonth.map((c, i) => (

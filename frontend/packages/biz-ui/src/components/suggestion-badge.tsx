@@ -149,7 +149,7 @@ export function SuggestionBadge({
     setFeedback(null)
   }, [suggestion?.id])
 
-  const canFeedback = !!suggestion?.id && suggestion?.agent_label !== '技术指标'
+  const canFeedback = !!suggestion?.id && suggestion?.agent_label !== 'Chỉ báo kỹ thuật'
   const submitFeedback = async (useful: boolean) => {
     if (!suggestion?.id) return
     try {
@@ -180,7 +180,7 @@ export function SuggestionBadge({
   // Dashboard 模式：行内显示完整信息（仅建议 badge）
   if (showFullInline) {
     if (!suggestion) return null
-    const isAI = !!suggestion.agent_name && suggestion.agent_label !== '技术指标'
+    const isAI = !!suggestion.agent_name && suggestion.agent_label !== 'Chỉ báo kỹ thuật'
     const tech = kline ? buildKlineSuggestion(kline as any, hasPosition) : null
     const timeStr = formatSuggestionTime(suggestion.created_at)
     const klineMetaStr = formatKlineMeta(suggestion.meta)
@@ -197,7 +197,7 @@ export function SuggestionBadge({
                 size="lg"
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (suggestion.agent_label === '技术指标') setKlineDialogOpen(true)
+                  if (suggestion.agent_label === 'Chỉ báo kỹ thuật') setKlineDialogOpen(true)
                   else setDialogOpen(true)
                 }}
                 title="点击查看建议详情"
@@ -328,7 +328,7 @@ export function SuggestionBadge({
               {/* 技术指标 */}
               {kline && (
                 <div className="space-y-3">
-                  <div className="text-[11px] text-muted-foreground">技术指标</div>
+                  <div className="text-[11px] text-muted-foreground">Chỉ báo kỹ thuật</div>
                   <KlineIndicators summary={kline as any} />
                 </div>
               )}
@@ -401,7 +401,7 @@ export function SuggestionBadge({
   }
 
   if (!suggestion) return null
-  const isAI = !!suggestion.agent_name && suggestion.agent_label !== '技术指标'
+  const isAI = !!suggestion.agent_name && suggestion.agent_label !== 'Chỉ báo kỹ thuật'
 
   // 持仓页模式：小徽章 + 点击弹窗
   const timeStr = formatSuggestionTime(suggestion.created_at)
@@ -419,12 +419,12 @@ export function SuggestionBadge({
             size="md"
             onClick={(e) => {
               e.stopPropagation()
-              if (suggestion.agent_label === '技术指标') setKlineDialogOpen(true)
+              if (suggestion.agent_label === 'Chỉ báo kỹ thuật') setKlineDialogOpen(true)
               else setDialogOpen(true)
             }}
             title={sourceInfo ? `${sourceInfo} - 点击查看详情` : '点击查看建议详情'}
           />
-          {showTechnicalCompanion && suggestion.agent_label !== '技术指标' && (
+          {showTechnicalCompanion && suggestion.agent_label !== 'Chỉ báo kỹ thuật' && (
             (() => {
               const tech = kline ? buildKlineSuggestion(kline as any, hasPosition) : null
               return (
@@ -536,7 +536,7 @@ export function SuggestionBadge({
             {/* 技术指标 */}
             {kline && (
               <div className="space-y-3">
-                <div className="text-[11px] text-muted-foreground">技术指标</div>
+                <div className="text-[11px] text-muted-foreground">Chỉ báo kỹ thuật</div>
                 <KlineIndicators summary={kline as any} />
               </div>
             )}

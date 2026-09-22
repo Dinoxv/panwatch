@@ -815,7 +815,7 @@ export default function StockInsightModal(props: {
       reason: topEvidence.length > 0 ? topEvidence.join('；') : '基于K线技术指标自动生成的基础建议',
       should_alert: technicalScored.action === 'buy' || technicalScored.action === 'add' || technicalScored.action === 'sell' || technicalScored.action === 'reduce',
       agent_name: 'technical_fallback',
-      agent_label: '技术指标',
+      agent_label: 'Chỉ báo kỹ thuật',
       created_at: new Date().toISOString(),
       is_expired: false,
       meta: {
@@ -961,7 +961,7 @@ export default function StockInsightModal(props: {
     const levelsBrief = (klineSummary?.support != null && klineSummary?.resistance != null)
       ? `支撑 ${formatNumber(klineSummary.support)} / 压力 ${formatNumber(klineSummary.resistance)}`
       : '--'
-    const source = latestShareSuggestion?.agent_label || latestShareSuggestion?.agent_name || '技术指标'
+    const source = latestShareSuggestion?.agent_label || latestShareSuggestion?.agent_name || 'Chỉ báo kỹ thuật'
     const ts = new Date().toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
@@ -1399,11 +1399,11 @@ export default function StockInsightModal(props: {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-muted-foreground">自动刷新</span>
+              <span className="text-[11px] text-muted-foreground">Tự làm mới</span>
               <Switch
                 checked={autoRefreshEnabled}
                 onCheckedChange={setAutoRefreshEnabled}
-                aria-label="自动刷新"
+                aria-label="Tự làm mới"
               />
               <Select value={String(autoRefreshSec)} onValueChange={(v) => setAutoRefreshSec(Number(v))}>
                 <SelectTrigger className="h-7 w-[84px] text-[11px]">
@@ -1441,7 +1441,7 @@ export default function StockInsightModal(props: {
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">振幅</div><div className="font-mono">{amplitudePct != null ? `${amplitudePct.toFixed(2)}%` : '--'}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">换手率</div><div className="font-mono">{quote?.turnover_rate != null ? `${Number(quote.turnover_rate).toFixed(2)}%` : '--'}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">市盈率</div><div className="font-mono">{quote?.pe_ratio != null ? Number(quote.pe_ratio).toFixed(2) : '--'}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">总市值</div><div className="font-mono">{formatMarketCap(quote?.total_market_value, market)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Tổng giá trị</div><div className="font-mono">{formatMarketCap(quote?.total_market_value, market)}</div></div>
                     </div>
                     <div className="mt-3 border-t border-border/50 pt-3">
                       <div className="text-[11px] text-muted-foreground mb-2">持仓信息</div>
@@ -1472,7 +1472,7 @@ export default function StockInsightModal(props: {
                             <div className="font-mono">{formatCompactNumber(holdingAgg.marketValue)}</div>
                           </div>
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
-                            <div className="text-[10px] text-muted-foreground">总盈亏</div>
+                            <div className="text-[10px] text-muted-foreground">Tổng lãi lỗ</div>
                             <div className={`font-mono ${holdingAgg.pnl >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                               {holdingAgg.pnl >= 0 ? '+' : ''}{formatCompactNumber(holdingAgg.pnl)}
                             </div>

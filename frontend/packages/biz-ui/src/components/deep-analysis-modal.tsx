@@ -513,7 +513,7 @@ function DataCollectionDiagnostics({ sources }: { sources: ProgressDataSource[] 
     capital_flow: '资金流',
     events: '事件',
     financial: '财报',
-    technical: '技术指标',
+    technical: 'Chỉ báo kỹ thuật',
   }
   const statusLabels: Record<ProgressDataSource['status'], string> = {
     pending: '等待',

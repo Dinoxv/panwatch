@@ -277,7 +277,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               自动刷新
             </Button>
             <Button variant="outline" size="sm" className="h-7" onClick={loadLatest}>
-              刷新
+              Làm mới
             </Button>
             <Button variant="ghost" size="sm" className="h-7 hover:text-destructive hover:bg-destructive/8 ml-auto" onClick={handleClear}>
               <Trash2 className="w-3.5 h-3.5" /> 清空

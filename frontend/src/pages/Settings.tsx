@@ -837,11 +837,11 @@ export default function SettingsPage() {
             </div>
             <Button size="sm" className="h-8" onClick={() => openChannelDialog()}>
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">添加</span>
+              <span className="hidden sm:inline">Thêm</span>
             </Button>
           </div>
           {channels.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-6">暂无通知渠道，点击"添加"创建</p>
+            <p className="text-[13px] text-muted-foreground text-center py-6">暂无通知渠道，点击"Thêm"创建</p>
           ) : (
             <div className="space-y-3">
               {channels.map(ch => (
@@ -1149,7 +1149,7 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setServiceDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveService} disabled={!serviceForm.name || !serviceForm.base_url}>
-                {editServiceId ? 'Lưu' : '创建'}
+                {editServiceId ? 'Lưu' : 'Tạo'}
               </Button>
             </div>
           </div>
@@ -1201,7 +1201,7 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setModelDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveModel} disabled={!modelForm.model || !modelForm.service_id}>
-                {editModelId ? 'Lưu' : '创建'}
+                {editModelId ? 'Lưu' : 'Tạo'}
               </Button>
             </div>
           </div>
@@ -1343,7 +1343,7 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setChannelDialogOpen(false)}>Hủy</Button>
               <Button onClick={saveChannel} disabled={!isChannelFormValid()}>
-                {editChannelId ? 'Lưu' : '创建'}
+                {editChannelId ? 'Lưu' : 'Tạo'}
               </Button>
             </div>
           </div>
