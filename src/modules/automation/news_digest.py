@@ -1,4 +1,4 @@
-"""新闻速递 Agent - 自选股相关新闻摘要"""
+"""Agent tin nhanh - tóm tắt tin tức liên quan tới mã theo dõi"""
 
 import logging
 import re
@@ -33,7 +33,7 @@ NEWS_ACTION_MAP = {
 
 
 class NewsDigestAgent(BaseAgent):
-    """新闻速递 Agent"""
+    """Agent tin nhanh"""
 
     name = "news_digest"
     display_name = "新闻速递"
@@ -42,14 +42,14 @@ class NewsDigestAgent(BaseAgent):
     def __init__(self, since_hours: int = 12, fallback_since_hours: int = 24):
         """
         Args:
-            since_hours: 获取最近 N 小时的新闻
-            fallback_since_hours: 当近 N 小时无新闻时，自动回退到更长时间窗（避免“空跑”）
+            since_hours: lấy tin trong N giờ gần nhất
+            fallback_since_hours: khi N giờ gần nhất không có tin thì tự nới sang cửa sổ dài hơn (tránh "chạy không")
         """
         self.since_hours = since_hours
         self.fallback_since_hours = fallback_since_hours
 
     def _dedupe_with_db(self, items: list[NewsItem]) -> list[NewsItem]:
-        """使用 NewsCache 表去重（跨进程/重启也有效），避免重复推送同一条新闻。"""
+        """Dùng bảng NewsCache để gộp trùng (có hiệu lực cả khi khác tiến trình/khởi động lại), tránh đẩy lặp cùng một tin."""
         if not items:
             return []
 
@@ -109,7 +109,7 @@ class NewsDigestAgent(BaseAgent):
             db.close()
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集新闻（自选股相关 + 重要市场新闻）"""
+        """Thu thập tin tức (liên quan mã theo dõi + tin thị trường quan trọng)"""
         symbols = [stock.symbol for stock in context.watchlist]
 
         if not symbols:
@@ -176,7 +176,7 @@ class NewsDigestAgent(BaseAgent):
     def _filter_related_news(
         self, news_list: list[NewsItem], symbols: list[str]
     ) -> list[NewsItem]:
-        """过滤与自选股相关的新闻"""
+        """Lọc các tin liên quan tới mã theo dõi"""
         related = []
         for news in news_list:
             # Tin đã được gắn mã cổ phiếu
@@ -191,7 +191,7 @@ class NewsDigestAgent(BaseAgent):
         return related
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建新闻速递 Prompt"""
+        """Dựng Prompt tin nhanh"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         lines = []
@@ -257,7 +257,7 @@ class NewsDigestAgent(BaseAgent):
     def _format_news_item(
         self, lines: list[str], news: NewsItem, watchlist_map: dict
     ) -> None:
-        """格式化单条新闻"""
+        """Định dạng một bản tin"""
         importance_label = ["", "[一般]", "[重要]", "[重大]"][min(news.importance, 3)]
         time_str = news.publish_time.strftime("%H:%M")
         source_label = {"sina": "新浪", "eastmoney": "东财"}.get(
@@ -451,7 +451,7 @@ class NewsDigestAgent(BaseAgent):
         return suggestions
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """有自选股相关新闻或重要市场新闻时通知"""
+        """Có tin liên quan mã theo dõi hoặc tin thị trường quan trọng thì mới thông báo"""
         related_news = result.raw_data.get("related_news", [])
         important_news = result.raw_data.get("important_news", [])
 
@@ -464,7 +464,7 @@ class NewsDigestAgent(BaseAgent):
         return False
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """重写分析：落库到历史，便于在 UI 中查看“新闻速递”产物。"""
+        """Ghi đè phần phân tích: ghi xuống lịch sử, để trên giao diện xem được sản phẩm «tin nhanh»."""
         system_prompt, user_content = self.build_prompt(data, context)
         content = await context.ai_client.chat(system_prompt, user_content)
 

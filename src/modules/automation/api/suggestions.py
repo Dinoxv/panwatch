@@ -1,4 +1,4 @@
-"""建议池 API"""
+"""API kho khuyến nghị"""
 import logging
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -23,9 +23,9 @@ def get_stock_suggestions(
     db: Session = Depends(get_db),
 ):
     """
-    获取某只股票的所有建议
+    Lấy mọi khuyến nghị của một mã
 
-    返回该股票的建议列表，按时间倒序排列
+    Trả về danh sách khuyến nghị của mã đó, xếp theo thời gian giảm dần
     """
     suggestions = get_suggestions_for_stock(
         stock_symbol=symbol,
@@ -47,10 +47,10 @@ def get_all_latest_suggestions(
     db: Session = Depends(get_db),
 ):
     """
-    获取所有股票的最新建议
+    Lấy khuyến nghị mới nhất của mọi mã
 
-    每只股票只返回最新的一条有效建议
-    用于持仓页面快速展示各股票的最新建议
+    Mỗi mã chỉ trả về một khuyến nghị còn hiệu lực mới nhất
+    Dùng cho trang vị thế hiện nhanh khuyến nghị mới nhất của từng mã
     """
     symbol_list = None
     if symbols:
@@ -87,9 +87,9 @@ def cleanup_suggestions(
     db: Session = Depends(get_db),
 ):
     """
-    清理过期的建议记录
+    Dọn các bản ghi khuyến nghị đã hết hạn
 
-    默认清理 7 天前的记录
+    Mặc định dọn bản ghi cũ hơn 7 ngày
     """
     count = cleanup_expired_suggestions(days=days)
     return {"deleted": count}

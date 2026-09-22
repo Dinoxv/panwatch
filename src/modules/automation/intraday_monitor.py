@@ -1,4 +1,4 @@
-"""盘中监测 Agent - 实时监控持仓，AI 判断是否需要提醒"""
+"""Agent theo dõi trong phiên - giám sát vị thế thời gian thực, để AI xét có cần cảnh báo không"""
 
 import json
 import logging
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_market_trading(market: MarketCode) -> bool:
-    """按市场判断是否在交易时段。"""
+    """Xét theo thị trường xem có đang trong giờ giao dịch không."""
     market_def = MARKETS.get(market)
     if not market_def:
         return False
@@ -56,13 +56,13 @@ PROMPT_PATH = Path(__file__).parent.parent.parent.parent / "prompts" / "intraday
 
 class IntradayMonitorAgent(BaseAgent):
     """
-    盘中监测 Agent
+    Agent theo dõi trong phiên
 
-    特点：
-    - 单只模式 (single): 逐只股票分析，每只单独发送通知
-    - AI 智能判断: 把股票数据发给 AI，由 AI 决定是否值得提醒
-    - 通知节流: 同一股票短时间内不重复通知
-    - 技术分析: 包含 K 线和技术指标
+    Đặc điểm:
+    - Chế độ từng mã (single): phân tích lần lượt, mỗi mã gửi thông báo riêng
+    - AI tự xét: đưa dữ liệu mã cho AI, để AI quyết định có đáng cảnh báo không
+    - Tiết lưu thông báo: cùng một mã trong thời gian ngắn không báo lặp
+    - Phân tích kỹ thuật: gồm nến và chỉ báo kỹ thuật
     """
 
     name = "intraday_monitor"
@@ -82,13 +82,13 @@ class IntradayMonitorAgent(BaseAgent):
     ):
         """
         Args:
-            throttle_minutes: 同一股票通知间隔（分钟）
-            bypass_throttle: 是否跳过节流（测试用）
-            bypass_market_hours: 是否跳过交易时段门禁（仅手动分析场景）
-            price_alert_threshold: 涨跌幅超过阈值视为价格异动（%）
-            volume_alert_ratio: 量比超过阈值视为放量异动
-            stop_loss_warning: 浮亏超过阈值触发止损预警（%）
-            take_profit_warning: 浮盈超过阈值触发止盈提醒（%）
+            throttle_minutes: khoảng cách thông báo cho cùng một mã (phút)
+            bypass_throttle: có bỏ qua tiết lưu không (dùng khi test)
+            bypass_market_hours: có bỏ qua cổng giờ giao dịch không (chỉ cho tình huống phân tích tay)
+            price_alert_threshold: biên độ vượt ngưỡng thì coi là biến động giá (%)
+            volume_alert_ratio: tỷ lệ khối lượng vượt ngưỡng thì coi là bùng khối lượng bất thường
+            stop_loss_warning: lỗ tạm tính vượt ngưỡng thì cảnh báo cắt lỗ (%)
+            take_profit_warning: lãi tạm tính vượt ngưỡng thì nhắc chốt lời (%)
         """
         self.throttle_minutes = throttle_minutes
         self.bypass_throttle = bypass_throttle
@@ -100,7 +100,7 @@ class IntradayMonitorAgent(BaseAgent):
         self.take_profit_warning = take_profit_warning
 
     async def collect(self, context: AgentContext) -> dict:
-        """采集实时行情 + K线 + 历史分析"""
+        """Thu thập bảng giá thời gian thực + nến + phân tích lịch sử"""
         if not context.watchlist:
             logger.warning("自选股列表为空，跳过盘中监测")
             return {"stocks": [], "stock_data": None}
@@ -179,7 +179,7 @@ class IntradayMonitorAgent(BaseAgent):
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
-        """构建盘中分析 Prompt"""
+        """Dựng Prompt phân tích trong phiên"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
@@ -523,12 +523,12 @@ class IntradayMonitorAgent(BaseAgent):
 
     def _parse_suggestion(self, content: str) -> dict:
         """
-        从 AI 响应中解析操作建议
+        Đọc khuyến nghị thao tác từ phản hồi của AI
 
         Returns:
             {
                 "action": "hold",  # buy/add/reduce/sell/hold/watch
-                "action_label": "持有",
+                "action_label": "Nắm giữ",
                 "signal": "...",
                 "reason": "...",
                 "should_alert": True
@@ -645,7 +645,7 @@ class IntradayMonitorAgent(BaseAgent):
         return result
 
     def _try_parse_loose_json(self, text: str) -> dict | None:
-        """宽松解析 JSON 输出，兜底兼容模型异常格式。"""
+        """Đọc JSON kiểu nới tay, hứng luôn các định dạng bất thường của mô hình."""
         raw = (text or "").strip()
         if not raw:
             return None
@@ -687,7 +687,7 @@ class IntradayMonitorAgent(BaseAgent):
     def _format_human_readable_content(
         self, stock: StockData, suggestion: dict, raw_content: str
     ) -> str:
-        """当模型返回 JSON 时，生成可读通知内容。"""
+        """Khi mô hình trả về JSON thì dựng nội dung thông báo cho người đọc được."""
         action_label = suggestion.get("action_label") or "观望"
         signal = suggestion.get("signal") or "无明显新信号"
         reason = suggestion.get("reason") or "请结合盘面与风控策略审慎判断。"
@@ -732,7 +732,7 @@ class IntradayMonitorAgent(BaseAgent):
         return "\n".join(lines)
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """AI 分析并判断是否需要提醒"""
+        """AI phân tích rồi xét có cần cảnh báo không"""
         # Ngoài giờ giao dịch thì bỏ qua
         if data.get("skip_reason"):
             return AnalysisResult(
@@ -882,7 +882,7 @@ class IntradayMonitorAgent(BaseAgent):
         )
 
     async def should_notify(self, result: AnalysisResult) -> bool:
-        """检查是否需要通知"""
+        """Kiểm tra xem có cần thông báo không"""
         # Kết quả bị bỏ qua thì không gửi thông báo
         if result.raw_data.get("skipped"):
             return False
@@ -915,7 +915,7 @@ class IntradayMonitorAgent(BaseAgent):
         return True
 
     def _check_throttle(self, symbol: str) -> bool:
-        """检查是否可以发送通知（未被节流）"""
+        """Kiểm tra xem có gửi thông báo được không (chưa bị tiết lưu)"""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import NotifyThrottle
 
@@ -944,7 +944,7 @@ class IntradayMonitorAgent(BaseAgent):
             db.close()
 
     def _update_throttle(self, symbol: str):
-        """更新节流记录"""
+        """Cập nhật bản ghi tiết lưu"""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import NotifyThrottle
 
@@ -985,9 +985,9 @@ class IntradayMonitorAgent(BaseAgent):
         self, context: AgentContext, stock_symbol: str
     ) -> AnalysisResult | None:
         """
-        单只模式执行：只分析指定的一只股票
+        Chạy ở chế độ từng mã: chỉ phân tích đúng một mã đã chỉ định
 
-        用于实时监控场景，每只股票独立分析和通知
+        Dùng cho tình huống giám sát thời gian thực, mỗi mã phân tích và thông báo riêng
         """
         # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist

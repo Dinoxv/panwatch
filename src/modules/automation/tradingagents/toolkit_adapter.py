@@ -1,22 +1,24 @@
-"""把 PanWatch Provider 体系适配进 TradingAgents 数据流。
+"""Khớp hệ Provider của PanWatch vào luồng dữ liệu TradingAgents.
 
-TradingAgents 上游(0.2.x)默认通过 `tradingagents.dataflows.interface.route_to_vendor`
-把数据请求路由到 yfinance / alpha_vantage 等 vendor。**没有公开 toolkit 注入入口**。
+Thượng nguồn TradingAgents (0.2.x) mặc định định tuyến yêu cầu dữ liệu tới các vendor
+yfinance / alpha_vantage… qua `tradingagents.dataflows.interface.route_to_vendor`.
+**Không có lối tiêm toolkit công khai.**
 
-我们的策略:**monkeypatch route_to_vendor**。当 LangGraph 节点调用 `get_stockstats_*`
-等方法时,我们的 patch 检测 symbol 是 A 股代码(6 位数字)就走 PanWatch Provider,
-否则放行到上游默认 vendor(yfinance 等)。
+Cách của ta: **monkeypatch route_to_vendor**. Khi nút LangGraph gọi `get_stockstats_*` và
+tương tự, bản patch của ta xét thấy symbol là mã cổ phiếu A (6 chữ số) thì đi qua Provider
+của PanWatch, ngược lại thả cho vendor mặc định của thượng nguồn (yfinance…).
 
-这避免:
-- TradingAgents 用 yfinance 拉 A 股拉不到(A 股 yfinance 不全)
-- 重复请求外部 API(PanWatch 已有缓存的 quote/kline 直接复用)
+Cách này tránh:
+- TradingAgents dùng yfinance kéo cổ phiếu A mà không ra (yfinance không đủ dữ liệu cổ phiếu A)
+- Gọi lặp API bên ngoài (quote/kline PanWatch đã đệm sẵn thì dùng lại thẳng)
 
-也保留:
-- US/HK 走上游 yfinance vendor 不变
-- 用户可关闭 patch 走原生路径
+Và vẫn giữ:
+- US/HK đi qua vendor yfinance của thượng nguồn như cũ
+- Người dùng tắt patch để về đường đi nguyên bản được
 
-注意:本模块对上游 TradingAgents API 有强依赖,如上游重构 route_to_vendor 接口
-需要同步更新。已通过 `tradingagents` 软依赖 + try/except 优雅降级。
+Lưu ý: module này phụ thuộc chặt vào API của TradingAgents thượng nguồn, thượng nguồn mà
+đổi giao diện route_to_vendor thì phải cập nhật theo. Đã có phụ thuộc mềm `tradingagents`
++ try/except để hạ cấp êm.
 """
 
 from __future__ import annotations
@@ -60,7 +62,7 @@ __all__ = [
 
 
 class TradingAgentsCancelled(RuntimeError):
-    """TradingAgents 任务已进入终态，禁止残留 worker 再发起外部请求。"""
+    """Tác vụ TradingAgents đã tới trạng thái cuối, cấm worker còn sót phát thêm yêu cầu ra ngoài."""
 
 
 def _raise_if_cancelled() -> None:
@@ -70,7 +72,7 @@ def _raise_if_cancelled() -> None:
 
 
 def _cache() -> dict[str, Any]:
-    """读当前 context 的 PanWatch 数据快照(并发隔离)。"""
+    """Đọc ảnh chụp dữ liệu PanWatch của context hiện tại (cô lập khi chạy song song)."""
     return _PANWATCH_DATA.get()
 
 
@@ -80,14 +82,14 @@ def panwatch_data_context(
     trace_id: str = "",
     cancel_event: threading.Event | None = None,
 ):
-    """在调用 TradingAgents 的代码块周围用本 context manager 注入数据。
+    """Dùng context manager này bọc quanh khối mã gọi TradingAgents để tiêm dữ liệu vào.
 
     Args:
-        data: 含 stock / quote / klines / events / capital_flow 的字典
-        trace_id: 本次分析的 trace_id,用于把 toolkit 命中日志归属到该运行
+        data: dict chứa stock / quote / klines / events / capital_flow
+        trace_id: trace_id của lần phân tích này, để quy nhật ký toolkit khớp về đúng lượt chạy đó
 
-    退出 context 时还原数据。基于 ContextVar,并发任务(及其 to_thread worker)
-    互不干扰。
+    Thoát context thì khôi phục dữ liệu. Dựa trên ContextVar, các tác vụ chạy song song
+    (và worker to_thread của chúng) không đụng nhau.
     """
     token = _PANWATCH_DATA.set(dict(data))
     tid_token = _CURRENT_TRACE_ID.set(trace_id or "")
@@ -101,7 +103,7 @@ def panwatch_data_context(
 
 
 def _emit_toolkit_log(level: str, action: str, method_name: str, symbol: str, **extra):
-    """把 toolkit hit/miss/passthrough 写进同 trace_id 的日志,前端可在弹窗看到。"""
+    """Ghi hit/miss/passthrough của toolkit vào nhật ký cùng trace_id, frontend xem được trong hộp thoại."""
     from src.platform.observability.log_context import log_context
 
     trace_id = _CURRENT_TRACE_ID.get()
@@ -119,36 +121,36 @@ def _emit_toolkit_log(level: str, action: str, method_name: str, symbol: str, **
 
 
 def is_a_share(symbol: str) -> bool:
-    """A 股代码判定:6 位纯数字。"""
+    """Xét mã cổ phiếu A: 6 chữ số thuần."""
     return bool(symbol) and len(symbol) == 6 and symbol.isdigit()
 
 
 def is_hk_share(symbol: str) -> bool:
-    """港股代码判定:5 位纯数字(00241/00700/...)。"""
+    """Xét mã cổ phiếu HK: 5 chữ số thuần (00241/00700/...)."""
     return bool(symbol) and len(symbol) == 5 and symbol.isdigit()
 
 
 def is_panwatch_routable(symbol: str) -> bool:
-    """该 ticker 是否应该走 PanWatch 数据(而不是上游 yfinance)。
+    """Ticker này có nên đi qua dữ liệu PanWatch không (thay vì yfinance thượng nguồn).
 
-    A 股(6 位数字)yfinance 拉不到,港股(5 位数字)yfinance 也要 .HK 后缀,
-    都需要 PanWatch 兜底。美股(字母 ticker)继续走 yfinance。
+    Cổ phiếu A (6 chữ số) yfinance không kéo được, cổ phiếu HK (5 chữ số) yfinance cũng
+    đòi hậu tố .HK, cả hai đều cần PanWatch hứng. Cổ phiếu Mỹ (ticker chữ cái) vẫn đi qua yfinance.
     """
     return is_a_share(symbol) or is_hk_share(symbol)
 
 
 def _looks_like_cn_keyword(symbol: str) -> bool:
-    """含中文字符 = 行业/主题中文检索词(如「汽车行业」)→ 走东财关键词新闻;
-    纯字母 ticker(美股 BABA/NVDA 等)不算 → 应透传上游 Yahoo 个股新闻。"""
+    """Có chữ Hán = từ khóa tra cứu ngành/chủ đề bằng tiếng Trung (như 「汽车行业」) → đi qua tin theo từ khóa của Đông Tài;
+    ticker thuần chữ cái (cổ phiếu Mỹ BABA/NVDA…) thì không tính → phải chuyển thẳng lên tin cổ phiếu riêng lẻ của Yahoo."""
     return any("一" <= ch <= "鿿" for ch in str(symbol or ""))
 
 
 def hk_symbol_to_yfinance(symbol: str) -> str:
-    """港股 PanWatch 5 位代码 → yfinance 格式。
+    """Mã PanWatch 5 chữ số của cổ phiếu HK → định dạng yfinance.
 
-    阿里健康 00241 → 0241.HK
-    腾讯 00700 → 0700.HK
-    yfinance 港股是 4 位数字 + .HK 后缀。
+    Alibaba Health 00241 → 0241.HK
+    Tencent 00700 → 0700.HK
+    Cổ phiếu HK bên yfinance là 4 chữ số + hậu tố .HK.
     """
     if not is_hk_share(symbol):
         return symbol
@@ -160,10 +162,10 @@ def hk_symbol_to_yfinance(symbol: str) -> str:
 
 
 def _yfinance_response_has_data(text: str) -> bool:
-    """启发式判断 yfinance 返回是否包含真实数据。
+    """Xét theo kinh nghiệm xem phản hồi của yfinance có chứa dữ liệu thật không.
 
-    yfinance 拿不到数据时返回类似:"No data found for symbol 'XXX' between ..."
-    或返回极短的空表头。
+    Khi yfinance không lấy được dữ liệu, nó trả về đại loại: "No data found for symbol 'XXX' between ..."
+    hoặc trả về một đầu bảng rỗng rất ngắn.
     """
     if not text:
         return False
@@ -209,10 +211,10 @@ _DATE_ARGUMENT = re.compile(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}$")
 
 
 def _looks_like_date(value: Any) -> bool:
-    """判断 route_to_vendor 的字符串参数是不是日期，而不是用数字前缀误判 ticker。
+    """Xét xem tham số chuỗi của route_to_vendor có phải ngày không, thay vì lấy tiền tố chữ số mà đoán nhầm ticker.
 
-    A/HK 股票代码本身就是纯数字（如 300624、00700），因此不能再用
-    ``value[:4].isdigit()`` 之类的启发式过滤；只有明确匹配日期格式才跳过。
+    Mã cổ phiếu A/HK vốn đã là chữ số thuần (như 300624, 00700), nên không dùng được kinh
+    nghiệm kiểu ``value[:4].isdigit()`` để lọc nữa; chỉ khi khớp đúng định dạng ngày mới bỏ qua.
     """
     return isinstance(value, str) and bool(_DATE_ARGUMENT.fullmatch(value.strip()))
 

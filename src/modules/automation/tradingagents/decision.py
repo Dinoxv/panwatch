@@ -1,14 +1,15 @@
-"""TradingAgents 输出 → PanWatch AnalysisResult 映射。
+"""Ánh xạ đầu ra của TradingAgents → AnalysisResult của PanWatch.
 
-TradingAgents 的 `final_state` 是 LangGraph 累积的 dict,关键字段(摘自上游):
-- market_report / social_report / news_report / fundamentals_report: 4 个分析师报告
-- investment_debate_state: 看多看空辩论历史 {history, current_response, judge_decision}
-- trader_investment_plan: 交易员意见
-- risk_judge_decision: 风控判定
-- final_trade_decision: PM 整合后的最终决策书
+`final_state` của TradingAgents là dict do LangGraph tích lũy, các trường then chốt (trích từ thượng nguồn):
+- market_report / social_report / news_report / fundamentals_report: báo cáo của 4 chuyên viên phân tích
+- investment_debate_state: lịch sử tranh luận xem tăng xem giảm {history, current_response, judge_decision}
+- trader_investment_plan: ý kiến của trader
+- risk_judge_decision: phán quyết kiểm soát rủi ro
+- final_trade_decision: bản quyết định cuối sau khi PM tổng hợp
 - (processed_signal): "BUY" / "HOLD" / "SELL"
 
-分析结果落库后，文件下半部负责可选的模拟盘信号桥接；两者共享同一套 REVIEW 安全映射。
+Sau khi kết quả phân tích ghi xuống kho, nửa dưới của tệp lo phần bắc cầu tín hiệu mô
+phỏng (tùy chọn); cả hai dùng chung một bộ ánh xạ an toàn REVIEW.
 """
 
 from __future__ import annotations
@@ -60,12 +61,12 @@ def map_state_to_result(
     ta_result: dict[str, Any],
     model_label: str = "",
 ) -> AnalysisResult:
-    """主入口:把 TradingAgents 的 final_state 映射成 AnalysisResult。
+    """Lối vào chính: ánh xạ final_state của TradingAgents thành AnalysisResult.
 
     Args:
-        stock: PanWatch StockConfig(symbol/name/market)
+        stock: StockConfig của PanWatch (symbol/name/market)
         ta_result: {"decision": str, "final_state": dict, "cost_usd": float}
-        model_label: 形如 "deepseek/deepseek-chat",写到 markdown 末尾
+        model_label: dạng "deepseek/deepseek-chat", ghi ở cuối markdown
     """
     state = ta_result.get("final_state") or {}
     cost_usd = float(ta_result.get("cost_usd", 0.0) or 0.0)
@@ -164,10 +165,11 @@ _RATING_ZH_TO_EN = {
 
 
 def _parse_rating_label(text: str) -> str:
-    """只解析 PM 正文里的**显式评级标签**(最终交易决策/评级/FINAL TRANSACTION PROPOSAL: X)。
+    """Chỉ đọc **nhãn xếp hạng tường minh** trong phần thân của PM (quyết định giao dịch cuối/xếp hạng/FINAL TRANSACTION PROPOSAL: X).
 
-    不做模糊关键词扫描 —— 避免正文里"否决了之前的买入建议"这类干扰词被误判。
-    用作评级提取的首选,确保展示与用户可见的最终决策书一致。
+    Không quét từ khóa kiểu mờ — tránh những cụm gây nhiễu như "đã bác bỏ khuyến nghị mua
+    trước đó" trong phần thân bị xét nhầm. Dùng làm lựa chọn đầu tiên khi rút xếp hạng, để
+    phần hiển thị khớp với bản quyết định cuối mà người dùng nhìn thấy.
     """
     if not text:
         return ""
@@ -182,7 +184,7 @@ def _parse_rating_label(text: str) -> str:
 
 
 def _parse_rating_from_text(text: str) -> str:
-    """从文本里抽 5 档评级。优先 'Rating: X' 标签,然后第一个 5 档词。"""
+    """Rút xếp hạng năm bậc từ văn bản. Ưu tiên nhãn 'Rating: X', rồi tới từ năm bậc đầu tiên."""
     if not text:
         return ""
     label = _parse_rating_label(text)
@@ -219,8 +221,8 @@ _RATING_CONFIDENCE_FALLBACK = {
 
 
 def _extract_confidence(state: dict, rating_raw: str = "") -> float:
-    """置信度(0-10):优先抓 PM/风控/交易员文本里的显式数字(A 方案);
-    抓不到则按评级推导(B 方案),不再一律返回 5.0。"""
+    """Độ tin cậy (0-10): ưu tiên bắt con số tường minh trong văn bản của PM/kiểm soát rủi ro/trader (phương án A);
+    bắt không ra thì suy từ xếp hạng (phương án B), không còn trả về 5.0 một cách máy móc."""
     candidates = [
         state.get("final_trade_decision", ""),
         _risk_judgment(state),
@@ -244,7 +246,7 @@ def _extract_confidence(state: dict, rating_raw: str = "") -> float:
 
 
 def _short_reason(state: dict, limit: int = 120) -> str:
-    """取一段精炼理由,优先 final_trade_decision 前 120 字。"""
+    """Lấy một đoạn lý do cô đọng, ưu tiên 120 chữ đầu của final_trade_decision."""
     candidates = [
         state.get("final_trade_decision") or "",
         state.get("trader_investment_plan") or "",
@@ -265,9 +267,9 @@ def _truncate(text: str, limit: int) -> str:
 
 
 def _extract_debate(state: dict) -> dict:
-    """提取辩论历史。上游 investment_debate_state 大致结构:
+    """Rút lịch sử tranh luận. investment_debate_state của thượng nguồn có cấu trúc đại khái:
     {
-        "history": "...",      # 全量辩论文本
+        "history": "...",      # toàn văn tranh luận
         "current_response": ...,
         "judge_decision": ...,
     }
@@ -283,8 +285,8 @@ def _extract_debate(state: dict) -> dict:
 
 
 def _risk_judgment(state: dict) -> str:
-    """风控团队裁决:上游在 risk_debate_state.judge_decision(激进/中立/保守辩论后的结论);
-    上游根本没有顶层 risk_judge_decision 字段,早先读它导致风控裁决一直空白。"""
+    """Phán quyết của đội kiểm soát rủi ro: thượng nguồn đặt ở risk_debate_state.judge_decision (kết luận sau khi ba phía quyết liệt/trung lập/thận trọng tranh luận);
+    thượng nguồn vốn không có trường risk_judge_decision ở cấp trên cùng, trước đây đọc nhầm nó nên phán quyết kiểm soát rủi ro luôn trống."""
     rds = state.get("risk_debate_state")
     if isinstance(rds, dict):
         jd = (rds.get("judge_decision") or "").strip()
@@ -294,8 +296,8 @@ def _risk_judgment(state: dict) -> str:
 
 
 def _extract_risk_debate(state: dict) -> dict:
-    """风控团队辩论(激进/中立/保守 + 裁决),结构对称 _extract_debate。
-    上游 risk_debate_state.history 是三方交替的完整辩论文本。"""
+    """Tranh luận của đội kiểm soát rủi ro (quyết liệt/trung lập/thận trọng + phán quyết), cấu trúc đối xứng với _extract_debate.
+    risk_debate_state.history của thượng nguồn là toàn văn tranh luận ba phía luân phiên."""
     rds = state.get("risk_debate_state")
     if not isinstance(rds, dict):
         return {}
@@ -308,10 +310,12 @@ def _extract_risk_debate(state: dict) -> dict:
 def _render_notify(
     state: dict, suggestion: dict, cost_usd: float, link_md: str = ""
 ) -> str:
-    """通知体:只展示「最终决策」(决策摘要 + PM 最终决策书) + 详情链接。
+    """Thân thông báo: chỉ hiện «quyết định cuối» (tóm tắt quyết định + bản quyết định cuối của PM) + liên kết chi tiết.
 
-    交易员执行计划 / 研究主管裁决 / 风控辩论 / 四位分析师报告等完整内容都在详情页,
-    不进通知 —— 既符合"通知只看最终决策"的诉求,也避免推送过长被各渠道截断。
+    Kế hoạch thực thi của trader / phán quyết của trưởng nhóm nghiên cứu / tranh luận kiểm
+    soát rủi ro / báo cáo của bốn chuyên viên phân tích đều nằm trọn ở trang chi tiết,
+    không vào thông báo — vừa đúng mong muốn "thông báo chỉ xem quyết định cuối", vừa tránh
+    đẩy quá dài rồi bị các kênh cắt cụt.
     """
     rating_raw = suggestion.get("rating_raw") or ""
     rating_note = (
@@ -401,12 +405,12 @@ def maybe_emit_paper_trading_signal(
     current_price: float | None,
     enabled: bool,
 ) -> bool:
-    """将 TA 决策写入 StrategySignalRun。返回是否实际写入。
+    """Ghi quyết định TA vào StrategySignalRun. Trả về có thực sự ghi hay không.
 
-    - 仅 enabled=True 且 decision in (buy, add) 时写入(SELL 不开新仓)
-    - entry_low/high 用当前价 ±2% 作为入场区间
-    - stop_loss 用入场价 -5%,target_price +10%(粗粒度,可以 Phase C 让 TA 输出更精确)
-    - 同标的同日去重:strategy_code+source_candidate_id 唯一性
+    - Chỉ ghi khi enabled=True và decision thuộc (buy, add) (SELL không mở vị thế mới)
+    - entry_low/high lấy giá hiện tại ±2% làm vùng vào lệnh
+    - stop_loss lấy giá vào lệnh -5%, target_price +10% (thô, Phase C có thể để TA xuất chính xác hơn)
+    - Gộp trùng cùng mã cùng ngày: tính duy nhất theo strategy_code+source_candidate_id
     """
     if not enabled:
         return False
