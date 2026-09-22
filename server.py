@@ -20,6 +20,7 @@ from src.platform.persistence.models import (
     DataSource,
 )
 from src.platform.observability.log_handler import DBLogHandler
+from src.web.static_files import resolve_static_file
 from src.platform.runtime.config import Settings, AppConfig, StockConfig
 from src.platform.marketdata.models import MarketCode
 from src.platform.ai.ai_client import AIClient
@@ -1592,12 +1593,17 @@ if os.path.exists(static_dir):
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
 
-    # SPA 路由：所有非 API 请求返回 index.html
+    # Route SPA: mọi request không phải API đều trả index.html.
+    #
+    # Đường dẫn PHẢI đi qua resolve_static_file: ghép thẳng vào static_dir rồi
+    # trả FileResponse sẽ để lọt `GET /../data/panwatch.db` — tải nguyên cơ sở
+    # dữ liệu mà không cần đăng nhập, vì route này nằm ngoài mọi dependency
+    # xác thực.
     @app.get("/{path:path}")
     async def serve_spa(path: str):
-        file_path = os.path.join(static_dir, path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
+        target = resolve_static_file(static_dir, path)
+        if target is not None:
+            return FileResponse(target)
         return FileResponse(os.path.join(static_dir, "index.html"))
 
     logger.info(f"静态文件服务已启用: {static_dir}")
