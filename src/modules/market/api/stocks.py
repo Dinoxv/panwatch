@@ -118,7 +118,7 @@ def _stock_to_response(stock: Stock, agent_display_names: dict[str, str] | None 
 
 @router.get("/markets/status")
 def get_market_status():
-    """获取各市场的交易状态"""
+    """Lấy trạng thái giao dịch của từng thị trường"""
     from datetime import datetime
 
     result = []
@@ -186,13 +186,13 @@ def get_market_status():
 
 @router.get("/search")
 def search(q: str = Query("", min_length=1), market: str = Query("")):
-    """模糊搜索股票(代码/名称)"""
+    """Tìm mã theo kiểu mờ (mã/tên)"""
     return search_stocks(q, market)
 
 
 @router.post("/refresh-list")
 def refresh_list():
-    """刷新股票列表缓存"""
+    """Làm mới bộ đệm danh sách mã"""
     stocks = refresh_stock_list()
     return {"count": len(stocks)}
 
@@ -206,7 +206,7 @@ def list_stocks(db: Session = Depends(get_db)):
 
 @router.get("/quotes")
 def get_quotes(db: Session = Depends(get_db)):
-    """获取所有自选股的实时行情"""
+    """Lấy bảng giá thời gian thực của mọi mã trong danh mục theo dõi"""
     stocks = db.query(Stock).all()
     if not stocks:
         return {}
@@ -326,7 +326,7 @@ def delete_stock(stock_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{stock_id}/agents", response_model=StockResponse)
 def update_stock_agents(stock_id: int, body: StockAgentUpdate, db: Session = Depends(get_db)):
-    """更新股票关联的 Agent 列表（含调度配置和 AI/通知覆盖）"""
+    """Cập nhật danh sách Agent gắn với mã (gồm cấu hình lịch chạy và phần ghi đè AI/thông báo)"""
     db_stock = db.query(Stock).filter(Stock.id == stock_id).first()
     if not db_stock:
         raise HTTPException(404, "股票不存在")
@@ -369,12 +369,12 @@ async def trigger_stock_agent(
     name: str = Query(""),
     db: Session = Depends(get_db),
 ):
-    """手动触发单只股票 Agent。
+    """Kích hoạt tay Agent cho một mã.
 
-    - 正常模式：传有效 stock_id
-    - 无绑定模式：stock_id<=0 且传 symbol/market（需 allow_unbound=true）
-    - 无绑定模式默认禁用通知（仅生成建议）
-    - 默认异步执行（立即返回），传 wait=true 可同步等待结果
+    - Chế độ thường: truyền stock_id hợp lệ
+    - Chế độ không gắn: stock_id<=0 và truyền symbol/market (cần allow_unbound=true)
+    - Chế độ không gắn mặc định tắt thông báo (chỉ sinh khuyến nghị)
+    - Mặc định chạy bất đồng bộ (trả về ngay), truyền wait=true để chờ kết quả đồng bộ
     """
     sa = None
     trigger_stock = None

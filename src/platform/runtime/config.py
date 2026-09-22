@@ -1,6 +1,7 @@
-"""从环境和项目配置文件读取运行期设置的技术边界。
+"""Đọc các mốc giới hạn kỹ thuật lúc chạy từ môi trường và tệp cấu hình của dự án.
 
-该模块可同时被 HTTP、后台任务和平台适配器使用；它不包含任何投资或产品决策。
+Module này dùng được cho cả HTTP, tác vụ nền và adapter nền tảng; nó không chứa bất kỳ
+quyết định đầu tư hay quyết định sản phẩm nào.
 """
 
 from dataclasses import dataclass, field
@@ -14,7 +15,7 @@ from src.platform.marketdata.models import MarketCode
 
 
 class Settings(BaseSettings):
-    """环境变量配置"""
+    """Cấu hình biến môi trường"""
 
     # AI
     ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
@@ -82,7 +83,7 @@ class Settings(BaseSettings):
 
 @dataclass
 class StockConfig:
-    """自选股配置"""
+    """Cấu hình danh mục theo dõi"""
 
     symbol: str
     name: str
@@ -91,14 +92,14 @@ class StockConfig:
 
 @dataclass
 class AppConfig:
-    """应用完整配置"""
+    """Cấu hình đầy đủ của ứng dụng"""
 
     settings: Settings
     watchlist: list[StockConfig] = field(default_factory=list)
 
 
 def load_watchlist(path: str | Path = "config/watchlist.yaml") -> list[StockConfig]:
-    """从 YAML 加载自选股列表"""
+    """Nạp danh sách mã theo dõi từ YAML"""
     path = Path(path)
     if not path.exists():
         return []
@@ -122,7 +123,7 @@ def load_watchlist(path: str | Path = "config/watchlist.yaml") -> list[StockConf
 
 
 def load_config() -> AppConfig:
-    """加载完整配置"""
+    """Nạp cấu hình đầy đủ"""
     settings = Settings()
     watchlist = load_watchlist()
     return AppConfig(settings=settings, watchlist=watchlist)

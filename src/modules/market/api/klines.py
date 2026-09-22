@@ -102,7 +102,7 @@ def _aggregate_klines(klines, interval: str) -> list:
 
 @router.get("/{symbol}")
 def get_klines(symbol: str, market: str = "CN", days: int = 60, interval: str = "1d"):
-    """获取单只股票K线数据"""
+    """Lấy dữ liệu nến của một mã"""
     market_code = _parse_market(market)
     collector = KlineCollector(market_code)
     klines = collector.get_klines(symbol, days=days)
@@ -118,7 +118,7 @@ def get_klines(symbol: str, market: str = "CN", days: int = 60, interval: str = 
 
 @router.post("/batch")
 def get_klines_batch(payload: KlineBatchRequest):
-    """批量获取K线数据"""
+    """Lấy dữ liệu nến của nhiều mã cùng lúc"""
     if not payload.items:
         return []
 
@@ -145,7 +145,7 @@ def get_klines_batch(payload: KlineBatchRequest):
 
 @router.get("/{symbol}/summary")
 def get_kline_summary(symbol: str, market: str = "CN"):
-    """获取单只股票K线摘要"""
+    """Lấy tóm tắt nến của một mã"""
     market_code = _parse_market(market)
     collector = KlineCollector(market_code)
     summary = collector.get_kline_summary(symbol)
@@ -158,7 +158,7 @@ def get_kline_summary(symbol: str, market: str = "CN"):
 
 @router.post("/summary/batch")
 def get_kline_summary_batch(payload: KlineSummaryBatchRequest):
-    """批量获取K线摘要"""
+    """Lấy tóm tắt nến của nhiều mã cùng lúc"""
     if not payload.items:
         return []
 

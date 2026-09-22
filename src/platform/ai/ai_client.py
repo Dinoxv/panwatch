@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIClient:
-    """OpenAI 协议兼容的 AI 客户端"""
+    """Máy khách AI tương thích giao thức OpenAI"""
 
     def __init__(self, base_url: str, api_key: str, model: str = "", proxy: str = ""):
         kwargs = {
@@ -37,13 +37,13 @@ class AIClient:
         temperature: float | None = 0.4,
     ) -> str:
         """
-        调用 LLM 获取文本回复。
+        Gọi LLM lấy câu trả lời dạng văn bản.
 
         Args:
-            system_prompt: 系统提示词
-            user_content: 用户输入内容
-            images: 图片路径列表（用于多模态，可选）
-            temperature: 生成温度
+            system_prompt: prompt hệ thống
+            user_content: nội dung người dùng nhập
+            images: danh sách đường dẫn ảnh (cho đa phương thức, tùy chọn)
+            temperature: nhiệt độ sinh
         """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -97,12 +97,12 @@ class AIClient:
         max_tokens: int | None = None,
     ) -> str:
         """
-        多轮对话：传入完整 messages 列表。
+        Phiên nhiều lượt: truyền vào danh sách messages đầy đủ.
 
         Args:
             messages: [{"role": "system"/"user"/"assistant", "content": "..."}]
-            temperature: 生成温度；传 None 时不下发该参数
-                （用于 failover 对"参数不兼容"错误的摘参重试）
+            temperature: nhiệt độ sinh; truyền None thì không gửi tham số này
+                (dùng cho việc failover bỏ tham số rồi thử lại khi gặp lỗi "tham số không tương thích")
         """
         try:
             create_kwargs: dict = {"model": self.model, "messages": messages}
@@ -135,9 +135,9 @@ class AIClient:
         tools: list[dict],
         temperature: float | None = 0.4,
     ):
-        """带 tool use 的对话调用，返回原始 message 对象。
+        """Lời gọi phiên có tool use, trả về đối tượng message gốc.
 
-        temperature 传 None 时不下发该参数（供 failover 摘参重试）。
+        temperature truyền None thì không gửi tham số này (cho failover bỏ tham số rồi thử lại).
         """
         try:
             create_kwargs: dict = {
@@ -169,15 +169,16 @@ class AIClient:
         temperature: float | None = 0.4,
         tool_choice: str | None = None,
     ):
-        """流式对话通道（stream=True），支持可选 tool use。
+        """Kênh phiên theo luồng (stream=True), hỗ trợ tool use tùy chọn.
 
-        异步生成器，产出二元组事件：
-        - ("token", str)：增量文本片段，边生成边产出；
-        - ("message", dict)：流结束后产出一次完整消息，
-          形如 {"content": 全量文本, "tool_calls": [{"id", "name", "arguments"}, ...]}，
-          无工具调用时 tool_calls 为空列表。
+        Là generator bất đồng bộ, sinh ra các sự kiện dạng bộ đôi:
+        - ("token", str): mẩu văn bản tăng thêm, vừa sinh vừa đẩy ra;
+        - ("message", dict): sau khi luồng kết thúc thì sinh một lần thông điệp đầy đủ,
+          dạng {"content": toàn văn, "tool_calls": [{"id", "name", "arguments"}, ...]},
+          không gọi công cụ thì tool_calls là danh sách rỗng.
 
-        调用方（如 chat SSE 端点）根据 tool_calls 是否为空决定继续工具循环还是结束。
+        Bên gọi (như điểm cuối SSE của chat) dựa vào tool_calls rỗng hay không để quyết
+        định chạy tiếp vòng lặp công cụ hay kết thúc.
         """
         create_kwargs: dict = {
             "model": self.model,
@@ -256,12 +257,12 @@ class AIClient:
         )
 
     async def list_models(self) -> list[str]:
-        """通过 OpenAI 兼容的 /v1/models 拉取可用模型 id 列表。"""
+        """Kéo danh sách id mô hình dùng được qua /v1/models tương thích OpenAI."""
         resp = await self.client.models.list()
         return sorted(m.id for m in resp.data)
 
     def _encode_image(self, image_path: str) -> str | None:
-        """将图片文件编码为 base64"""
+        """Mã hóa tệp ảnh thành base64"""
         path = Path(image_path)
         if not path.exists():
             logger.warning(f"图片不存在: {image_path}")

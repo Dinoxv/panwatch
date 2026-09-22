@@ -33,7 +33,7 @@ NEGATIVE_HINTS = (
 
 
 def _to_naive_local(dt: datetime) -> datetime:
-    """统一转为本地时区的 naive datetime，便于与 datetime.now() 比较。"""
+    """Đưa thống nhất về datetime naive theo múi giờ địa phương, cho dễ so với datetime.now()."""
     if dt.tzinfo is None:
         return dt
     return dt.astimezone().replace(tzinfo=None)

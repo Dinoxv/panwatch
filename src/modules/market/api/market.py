@@ -1,4 +1,4 @@
-"""市场指数 API - 公共数据，无需认证"""
+"""API chỉ số thị trường - dữ liệu công khai, không cần xác thực"""
 import asyncio
 import logging
 import time
@@ -43,15 +43,15 @@ _SPARK_TTL_S = 1800
 
 
 def clear_indices_cache() -> None:
-    """清空指数响应/spark 缓存(测试隔离用)。"""
+    """Xóa sạch đệm phản hồi/spark của chỉ số (dùng để cô lập khi test)."""
     _INDICES_CACHE.clear()
     _SPARK_CACHE.clear()
 
 
 def _spark_for(idx: dict) -> list[float]:
-    """近 20 日收盘价,供首页指数走势 sparkline 用(带 30min 独立缓存)。
+    """Giá đóng cửa 20 ngày gần nhất, cho sparkline diễn biến chỉ số ở trang chủ (có đệm riêng 30 phút).
 
-    fail-soft:市场码非法/取数异常/无映射一律吞掉,返回空列表,绝不影响 quote 主体。
+    fail-soft: mã thị trường sai/lấy dữ liệu lỗi/không có ánh xạ đều nuốt hết, trả danh sách rỗng, tuyệt đối không ảnh hưởng phần quote chính.
     """
     now = time.time()
     hit = _SPARK_CACHE.get(idx["symbol"])
@@ -70,7 +70,7 @@ def _spark_for(idx: dict) -> list[float]:
 
 @router.get("/indices")
 async def get_market_indices():
-    """获取主要市场指数（公共数据，无需认证）"""
+    """Lấy các chỉ số thị trường chính (dữ liệu công khai, không cần xác thực)"""
     now = time.time()
     cached = _INDICES_CACHE.get("indices")
     if cached and now - cached[0] < _INDICES_CACHE_TTL_S:

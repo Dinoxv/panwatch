@@ -62,7 +62,7 @@ def get_db():
 
 
 def init_db():
-    """初始化数据库，并容忍开发热重载期间的短暂跨进程锁。"""
+    """Khởi tạo cơ sở dữ liệu, và chịu được khóa liên tiến trình chớp nhoáng trong lúc nạp nóng khi phát triển."""
     for attempt in range(len(SQLITE_INIT_RETRY_DELAYS) + 1):
         try:
             _init_db_once()
@@ -94,7 +94,7 @@ def _init_db_once() -> None:
 
 
 def _is_sqlite_lock_error(exc: BaseException) -> bool:
-    """识别 SQLAlchemy 包装后的 SQLite 锁异常。"""
+    """Nhận diện ngoại lệ khóa SQLite sau khi SQLAlchemy bọc lại."""
     seen: set[int] = set()
     current: BaseException | None = exc
     while current is not None and id(current) not in seen:
@@ -123,7 +123,7 @@ def _has_table(conn, table: str) -> bool:
 
 
 def _backfill_sort_order(conn, table: str) -> None:
-    """只在确有待回填数据时申请 SQLite 写锁。"""
+    """Chỉ xin khóa ghi SQLite khi thật sự có dữ liệu cần điền ngược."""
     if not _has_column(conn, table, "sort_order"):
         return
     pending = conn.execute(
@@ -144,14 +144,15 @@ def _backfill_sort_order(conn, table: str) -> None:
 
 
 def _drop_dangling_ai_provider_fk(conn, table: str) -> None:
-    """删掉指向已不存在的 ai_providers 表的悬空外键列。
+    """Xóa các cột khóa ngoại treo lơ lửng trỏ tới bảng ai_providers đã không còn tồn tại.
 
-    背景: _migrate_old_providers 把 ai_providers 表删了,但
-    agent_configs.ai_provider_id / stock_agents.ai_provider_id 这两列上的 FK 没清。
-    SQLite 默认 PRAGMA foreign_keys 不开,所以历史 INSERT 没事;但某些路径下
-    (比如 INSERT ... RETURNING + SQLAlchemy 校验)会报 "no such table: ai_providers"。
+    Bối cảnh: _migrate_old_providers đã xóa bảng ai_providers, nhưng FK trên hai cột
+    agent_configs.ai_provider_id / stock_agents.ai_provider_id thì chưa dọn.
+    SQLite mặc định không bật PRAGMA foreign_keys, nên INSERT trong quá khứ không sao;
+    nhưng ở vài đường đi (ví dụ INSERT ... RETURNING + SQLAlchemy kiểm tra) sẽ báo
+    "no such table: ai_providers".
 
-    SQLite 3.35+ 支持 ALTER TABLE DROP COLUMN,直接 drop 即可。
+    SQLite 3.35+ hỗ trợ ALTER TABLE DROP COLUMN, nên drop thẳng là được.
     """
     if not _has_column(conn, table, "ai_provider_id"):
         return
@@ -197,7 +198,7 @@ def _backup_db_before_migration() -> None:
 
 
 def _migrate(engine):
-    """增量 schema 迁移（SQLite ALTER TABLE ADD COLUMN）"""
+    """Migration schema tăng dần (SQLite ALTER TABLE ADD COLUMN)"""
     migrations = [
         # Phase 1 (làm mô phỏng sát thực tế): giá cao nhất trong kỳ nắm giữ, dùng cho cắt lỗ động
         (
@@ -322,7 +323,7 @@ CREATE TABLE IF NOT EXISTS suggestion_feedback (
 
 
 def _migrate_old_providers(engine):
-    """如果存在旧的 ai_providers 表，迁移数据到 ai_services + ai_models"""
+    """Nếu còn bảng ai_providers cũ thì chuyển dữ liệu sang ai_services + ai_models"""
     with engine.connect() as conn:
         if not _has_table(conn, "ai_providers"):
             return
@@ -395,7 +396,7 @@ def _migrate_old_providers(engine):
 
 
 def _migrate_settings_to_models(engine):
-    """将旧的 app_settings 中的 AI/通知配置迁移为 AIService+AIModel / NotifyChannel 记录"""
+    """Chuyển cấu hình AI/thông báo trong app_settings cũ thành bản ghi AIService+AIModel / NotifyChannel"""
     with engine.connect() as conn:
         if not _has_table(conn, "app_settings"):
             return
@@ -463,8 +464,8 @@ def _migrate_settings_to_models(engine):
 
 def _migrate_positions_to_accounts(engine):
     """
-    将旧的 stocks 表中的持仓数据迁移到 accounts + positions 表
-    创建一个默认账户，并将有持仓的股票数据迁移过去
+    Chuyển dữ liệu vị thế trong bảng stocks cũ sang bảng accounts + positions
+    Tạo một tài khoản mặc định rồi chuyển dữ liệu các mã đang có vị thế sang đó
     """
     with engine.connect() as conn:
         # Kiểm tra đã có dữ liệu tài khoản chưa (tránh di trú lặp)

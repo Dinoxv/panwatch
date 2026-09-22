@@ -1,4 +1,4 @@
-"""新闻 API - 基于数据源配置"""
+"""API tin tức - dựa trên cấu hình nguồn dữ liệu"""
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -42,13 +42,13 @@ async def get_news(
     db: Session = Depends(get_db),
 ):
     """
-    获取新闻列表（基于数据源配置）
+    Lấy danh sách tin tức (dựa trên cấu hình nguồn dữ liệu)
 
-    - symbols: 股票代码过滤，逗号分隔，空则获取所有自选股相关新闻
-    - names: 股票名称过滤，逗号分隔（前端直接传递名称，更稳定）
-    - hours: 时间范围
-    - limit: 返回数量限制
-    - filter_related: 是否只显示与自选股相关的新闻
+    - symbols: lọc theo mã cổ phiếu, ngăn cách bằng dấu phẩy, để trống thì lấy tin liên quan tới mọi mã theo dõi
+    - names: lọc theo tên cổ phiếu, ngăn cách bằng dấu phẩy (frontend truyền thẳng tên, ổn định hơn)
+    - hours: khoảng thời gian
+    - limit: giới hạn số bản ghi trả về
+    - filter_related: có chỉ hiện tin liên quan tới mã theo dõi không
     """
     # Lấy toàn bộ cổ phiếu theo dõi (để khớp)
     all_stocks = db.query(Stock).all()
@@ -90,7 +90,7 @@ async def get_news(
     )
 
     def is_related(item: NewsItem) -> bool:
-        """判断新闻是否与自选股相关"""
+        """Xét xem tin có liên quan tới mã theo dõi không"""
         # Loại công bố thông tin thì đương nhiên gắn với cổ phiếu
         if item.source == "eastmoney":
             return True
@@ -136,7 +136,7 @@ async def get_news(
 
 @router.get("/sources")
 def get_news_sources(db: Session = Depends(get_db)):
-    """获取已配置的新闻数据源列表"""
+    """Lấy danh sách nguồn dữ liệu tin tức đã cấu hình"""
     data_sources = (
         db.query(DataSource)
         .filter(DataSource.type == "news")

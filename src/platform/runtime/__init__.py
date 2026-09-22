@@ -1,1 +1,1 @@
-"""进程运行期的横切技术配置，不包含任何产品业务规则。"""
+"""Cấu hình kỹ thuật cắt ngang lúc tiến trình chạy, không chứa quy tắc nghiệp vụ sản phẩm nào."""

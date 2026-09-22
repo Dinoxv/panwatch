@@ -1,4 +1,4 @@
-"""价格提醒调度器：独立于 Agent 调度。"""
+"""Bộ lập lịch cảnh báo giá: độc lập với lịch chạy của Agent."""
 
 from __future__ import annotations
 

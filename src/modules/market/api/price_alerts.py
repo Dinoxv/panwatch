@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 def _format_datetime(dt) -> str:
-    """格式化时间为当前时区的 ISO 格式（naive datetime 视为 UTC）。"""
+    """Định dạng thời gian sang ISO theo múi giờ hiện tại (datetime naive coi là UTC)."""
     if not dt:
         return ""
     tz_name = Settings().app_timezone or "UTC"
@@ -159,7 +159,7 @@ def delete_alert_rule(rule_id: int, db: Session = Depends(get_db)):
 
 @router.get("/hits/today")
 def list_today_hits(limit: int = 50, db: Session = Depends(get_db)):
-    """今日(本地时区)全部命中,跨规则聚合 —— 供首页"今日要紧事"。"""
+    """Toàn bộ lượt chạm hôm nay (múi giờ địa phương), gộp qua mọi quy tắc — cho phần "việc cần kíp hôm nay" ở trang chủ."""
     tz_name = Settings().app_timezone or "UTC"
     try:
         tzinfo = ZoneInfo(tz_name)

@@ -68,7 +68,7 @@ def _quote_to_response(symbol: str, market: MarketCode, quote: dict | None) -> d
 
 @router.get("/{symbol}")
 async def get_quote(symbol: str, market: str = "CN"):
-    """获取单只股票实时行情"""
+    """Lấy bảng giá thời gian thực của một mã"""
     market_code = _parse_market(market)
     rows = await asyncio.to_thread(md_quote_rows, [symbol], market_code.value)
     if not rows:
@@ -82,7 +82,7 @@ async def get_quote(symbol: str, market: str = "CN"):
 
 @router.post("/batch")
 async def get_quotes_batch(payload: QuoteBatchRequest):
-    """批量获取股票实时行情"""
+    """Lấy bảng giá thời gian thực của nhiều mã cùng lúc"""
     if not payload.items:
         return []
 

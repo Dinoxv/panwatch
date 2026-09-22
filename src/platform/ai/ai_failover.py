@@ -1,22 +1,26 @@
-"""AI 模型运行时 failover。
+"""Failover lúc chạy cho mô hình AI.
 
-对照数据源侧成熟的降级模式(marketdata engine / kline_collector 的 `_FAIL_UNTIL`
-负缓存冷却),给 AI 调用补齐"主模型失败自动切备选"的运行时能力:
+Đối chiếu với kiểu hạ cấp đã chín ở phía nguồn dữ liệu (đệm âm `_FAIL_UNTIL` để nghỉ
+nguội của marketdata engine / kline_collector), bù cho lời gọi AI năng lực "mô hình chính
+hỏng thì tự chuyển sang mô hình dự phòng" lúc chạy:
 
-- **候选模型链**:主模型 + 按优先级的备选。任一候选调用失败,按错误类别决定
-  「摘参重试同模型 / 降级下一候选 / 直接抛」。
-- **错误分类**(关键):
-  - 参数不兼容(如某些模型不接受 temperature)→ 摘掉 temperature 重试**同一模型**一次;
-  - 超时 / 5xx / 限流 / 配额 / 鉴权失效 / 服务挂 → **降级下一候选**,并把该候选记入冷却;
-  - prompt / 内容策略类错误 → **不重试直接抛**(换模型也会同样失败)。
-- **负缓存冷却**:照抄 `kline_collector._FAIL_UNTIL` —— 失败候选进冷却窗口,窗口内
-  直接跳过不再联网;窗口过期后自然再次尝试即"恢复探测"。
-- **可观测**:实际使用的模型记在 `used_model_label`(供 agent_runs 落库);发生切换时
-  打 warning 日志(带 trace_id)。
+- **Chuỗi mô hình ứng viên**: mô hình chính + các mô hình dự phòng theo thứ tự ưu tiên.
+  Ứng viên nào gọi hỏng thì tùy loại lỗi mà quyết định «bỏ tham số rồi thử lại chính mô
+  hình đó / hạ xuống ứng viên kế / ném thẳng».
+- **Phân loại lỗi** (then chốt):
+  - Tham số không tương thích (như vài mô hình không nhận temperature) → bỏ temperature rồi thử lại **chính mô hình đó** một lần;
+  - Hết giờ / 5xx / giới hạn tần suất / hết hạn mức / xác thực hỏng / dịch vụ chết → **hạ xuống ứng viên kế**, và cho ứng viên đó vào nghỉ nguội;
+  - Lỗi thuộc nhóm prompt / chính sách nội dung → **không thử lại, ném thẳng** (đổi mô hình cũng hỏng y vậy).
+- **Đệm âm để nghỉ nguội**: chép y `kline_collector._FAIL_UNTIL` — ứng viên hỏng vào cửa
+  sổ nghỉ nguội, trong cửa sổ đó bỏ qua thẳng không gọi mạng nữa; hết cửa sổ thì tự nhiên
+  thử lại, tức là "dò xem đã hồi chưa".
+- **Quan sát được**: mô hình thực sự dùng được ghi vào `used_model_label` (cho agent_runs
+  ghi xuống kho); lúc chuyển thì ghi nhật ký mức warning (kèm trace_id).
 
-`FailoverAIClient` 对外暴露与 `AIClient` 相同的 `chat / chat_multi / chat_with_tools /
-chat_stream` 方法签名,可原地替换单一 client;并透传 `base_url / api_key / model /
-total_tokens_used` 等属性,兼容 TradingAgents 等需要底层配置的调用方。
+`FailoverAIClient` phơi ra ngoài đúng chữ ký `chat / chat_multi / chat_with_tools /
+chat_stream` như `AIClient`, thay tại chỗ cho một client đơn được; và chuyển thẳng các
+thuộc tính `base_url / api_key / model / total_tokens_used`… để tương thích với những bên
+gọi cần cấu hình tầng dưới như TradingAgents.
 """
 
 from __future__ import annotations
@@ -52,7 +56,7 @@ _AI_FAIL_COOLDOWN_S = 60.0
 
 
 def clear_ai_failover_state() -> None:
-    """清空冷却状态(测试隔离用)。"""
+    """Xóa sạch trạng thái nghỉ nguội (dùng để cô lập khi test)."""
     _AI_FAIL_UNTIL.clear()
 
 
@@ -70,7 +74,7 @@ def _mark_ok(label: str) -> None:
 
 
 def _looks_like_param_error(exc: Exception) -> bool:
-    """判断 400/422 是否属于"参数不兼容"(可摘参重试)而非内容问题。"""
+    """Xét xem 400/422 thuộc nhóm "tham số không tương thích" (bỏ tham số rồi thử lại được) hay là vấn đề nội dung."""
     msg = str(exc).lower()
     keywords = (
         "temperature",
@@ -85,7 +89,7 @@ def _looks_like_param_error(exc: Exception) -> bool:
 
 
 def classify_ai_error(exc: Exception) -> str:
-    """把 AI 调用异常分流到三类:ERR_PARAM / ERR_SWITCH / ERR_FATAL。"""
+    """Phân luồng ngoại lệ của lời gọi AI về ba nhóm: ERR_PARAM / ERR_SWITCH / ERR_FATAL."""
     # Mạng / quá hạn / 5xx / giới hạn tốc độ / xác thực hết hiệu lực / thiếu quyền → đổi mô hình
     if isinstance(
         exc,
@@ -111,12 +115,12 @@ def classify_ai_error(exc: Exception) -> str:
 
 
 class FailoverAIClient:
-    """按候选链顺序尝试的 AI 客户端包装。
+    """Lớp bọc máy khách AI thử lần lượt theo chuỗi ứng viên.
 
     Args:
-        candidates: [(AIClient, 模型标签), ...],第 0 个为主模型。
-        on_switch: 可选回调 (from_label, exc);发生降级切换时调用,
-            供 chat SSE 端点把 failover 事件推给前端(可选)。
+        candidates: [(AIClient, nhãn mô hình), ...], phần tử thứ 0 là mô hình chính.
+        on_switch: callback tùy chọn (from_label, exc); gọi khi hạ cấp chuyển mô hình,
+            để điểm cuối SSE của chat đẩy sự kiện failover cho frontend (tùy chọn).
     """
 
     def __init__(
@@ -190,7 +194,7 @@ class FailoverAIClient:
                 logger.debug("on_switch 回调异常(已忽略)", exc_info=True)
 
     async def _run(self, method_name: str, *args, temperature, **kwargs):
-        """非流式方法的通用 failover 执行器。"""
+        """Bộ chạy failover dùng chung cho các phương thức không luồng."""
         last_exc: Exception | None = None
         for client, label in self._iter_candidates():
             method = getattr(client, method_name)
@@ -261,10 +265,11 @@ class FailoverAIClient:
         temperature: float | None = 0.4,
         tool_choice: str | None = None,
     ):
-        """流式 failover。
+        """Failover cho luồng.
 
-        注意:一旦已经产出过 token,再失败无法回滚(已推给前端),故 failover
-        只能安全覆盖"首个 token 之前"的失败;首包后异常直接透出。
+        Lưu ý: một khi đã sinh ra token thì hỏng sau đó không quay lui được (đã đẩy cho
+        frontend), nên failover chỉ phủ an toàn được các lỗi "trước token đầu tiên"; lỗi
+        sau gói đầu thì phơi thẳng ra.
         """
         last_exc: Exception | None = None
         for client, label in self._iter_candidates():
@@ -321,18 +326,20 @@ def build_failover_client(
     settings=None,
     max_fallbacks: int = 3,
 ) -> FailoverAIClient:
-    """根据主模型 + 库里其余模型构建候选链。
+    """Dựng chuỗi ứng viên từ mô hình chính + các mô hình còn lại trong kho.
 
     Args:
-        primary_model / primary_service: 上层四级/三级路由已选定的主模型(可为 detached
-            ORM 对象;仅读字段,不触发 lazy load)。二者任一为空时用环境变量作主候选。
-        proxy: HTTP 代理。
-        db: 可选的 Session;传入则复用,否则内部开一个只读会话查备选模型。
-        settings: 可选的 Settings(环境变量兜底用)。
-        max_fallbacks: 主模型之外最多挂几个备选。
+        primary_model / primary_service: mô hình chính mà định tuyến bốn cấp/ba cấp ở tầng
+            trên đã chọn (có thể là đối tượng ORM detached; chỉ đọc trường, không kích hoạt lazy load).
+            Một trong hai rỗng thì lấy biến môi trường làm ứng viên chính.
+        proxy: proxy HTTP.
+        db: Session tùy chọn; truyền vào thì dùng lại, không thì bên trong tự mở một phiên chỉ đọc để tra mô hình dự phòng.
+        settings: Settings tùy chọn (dùng để hứng bằng biến môi trường).
+        max_fallbacks: ngoài mô hình chính thì gắn thêm tối đa bao nhiêu mô hình dự phòng.
 
-    与四级路由自洽:主候选沿用上层已解析结果,备选按 `is_default` 优先、其余按 id
-    顺序补齐,天然复用现有 AIService/AIModel 配置体系,无需新增全局配置。
+    Tự nhất quán với định tuyến bốn cấp: ứng viên chính dùng lại kết quả tầng trên đã đọc,
+    các ứng viên dự phòng ưu tiên theo `is_default`, còn lại bù theo thứ tự id, tự nhiên
+    dùng lại hệ cấu hình AIService/AIModel sẵn có, không cần thêm cấu hình toàn cục mới.
     """
     from src.platform.runtime.config import Settings
 

@@ -239,7 +239,7 @@ class DataCollectorManager:
     async def collect_kline(
         self, symbol: str, market: str = "CN", days: int = 60
     ) -> CollectorResult:
-        """采集 K 线数据"""
+        """Thu thập dữ liệu nến"""
         from src.platform.marketdata.collectors.kline_collector import KlineCollector
         from src.platform.marketdata.models import MarketCode
 
@@ -285,7 +285,7 @@ class DataCollectorManager:
             return CollectorResult(success=False, error=str(e), duration_ms=duration_ms)
 
     async def collect_capital_flow(self, symbol: str) -> CollectorResult:
-        """采集资金流向"""
+        """Thu thập dòng tiền"""
         from src.platform.marketdata.collectors.capital_flow_collector import CapitalFlowCollector
 
         start_time = datetime.now()
@@ -331,7 +331,7 @@ class DataCollectorManager:
             return CollectorResult(success=False, error=str(e), duration_ms=duration_ms)
 
     async def collect_quote(self, symbols: list[str]) -> CollectorResult:
-        """采集实时行情"""
+        """Thu thập bảng giá thời gian thực"""
         from src.platform.marketdata.marketdata_client import md_stock_data
 
         start_time = datetime.now()
@@ -362,7 +362,7 @@ class DataCollectorManager:
             return CollectorResult(success=False, error=str(e), duration_ms=duration_ms)
 
     async def test_source(self, source: DataSource) -> CollectorResult:
-        """测试单个数据源"""
+        """Kiểm tra một nguồn dữ liệu"""
         test_symbols = source.test_symbols or list(DEFAULT_TEST_SYMBOLS)
 
         start_time = datetime.now()
@@ -431,7 +431,7 @@ class DataCollectorManager:
     async def _test_source_impl(
         self, source: DataSource, test_symbols: list[str]
     ) -> CollectorResult:
-        """测试数据源的具体实现"""
+        """Phần cài đặt cụ thể của việc kiểm tra nguồn dữ liệu"""
         if source.type == "news":
             return await self._test_news_source(source, test_symbols)
 
@@ -581,10 +581,11 @@ class DataCollectorManager:
     async def _test_kline_source(
         self, source: DataSource, test_symbols: list[str]
     ) -> CollectorResult:
-        """按 provider 测试 K 线源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn nến theo provider: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        测试需要的是"这个 provider 自己工作正常",不是"整条主备链有 fallback 能跑通",
-        所以用只含这一个 vendor 的 StaticConfigProvider 隔离测试指定源。
+        Kiểm tra là để biết "chính provider này chạy có ổn không", chứ không phải "cả chuỗi
+        chính-phụ có fallback nên vẫn chạy được", nên dùng StaticConfigProvider chỉ chứa
+        đúng vendor này để cô lập nguồn cần kiểm.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider, Symbol
 
@@ -638,7 +639,7 @@ class DataCollectorManager:
     async def _test_quote_source(
         self, source: DataSource, test_symbols: list[str]
     ) -> CollectorResult:
-        """按 provider 测试行情源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。"""
+        """Kiểm nguồn bảng giá theo provider: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng)."""
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
         from src.platform.marketdata.marketdata_client import _quote_to_row
@@ -680,11 +681,12 @@ class DataCollectorManager:
     async def _test_news_source(
         self, source: DataSource, test_symbols: list[str]
     ) -> CollectorResult:
-        """按 provider 测试新闻源:走 marketdata 包的单源 Engine(仅该 vendor,不聚合其它源)。
+        """Kiểm nguồn tin tức theo provider: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không gộp nguồn khác).
 
-        新闻是按 symbol 的数据;eastmoney_news 用股票名称搜索(效果远好于代码搜索),
-        所以这里取测试股票的名称映射一并传入。capture_errors 已在 test_source 外层
-        包着,失败时会自动透真因（含雪球 WAF 拦截）。
+        Tin tức là dữ liệu theo symbol; eastmoney_news tìm bằng tên cổ phiếu (hiệu quả hơn
+        hẳn tìm bằng mã), nên ở đây lấy luôn ánh xạ tên của mã kiểm thử để truyền vào.
+        capture_errors đã bọc bên ngoài test_source, hỏng thì tự phơi nguyên nhân thật
+        (gồm cả việc Xueqiu bị WAF chặn).
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -724,9 +726,9 @@ class DataCollectorManager:
         )
 
     async def _test_flash_news_source(self, source: DataSource) -> CollectorResult:
-        """按 provider 测试快讯源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn tin nhanh theo provider: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        快讯是市场级数据(7×24 电报),不按 symbols 过滤,所以不传 test_symbols。
+        Tin nhanh là dữ liệu cấp thị trường (bản tin 7×24), không lọc theo symbols, nên không truyền test_symbols.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -763,10 +765,11 @@ class DataCollectorManager:
         )
 
     async def _test_fundamentals_source(self, source: DataSource) -> CollectorResult:
-        """按 provider 测试基本面源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn cơ bản theo provider: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        基本面是按 symbol 的数据(与市场级 flash_news 不同),测试必须显式配置
-        test_symbols,不套用全局默认股票,配置缺失时直接给出明确 error。
+        Cơ bản là dữ liệu theo symbol (khác flash_news vốn ở cấp thị trường), nên kiểm tra
+        bắt buộc phải cấu hình test_symbols tường minh, không mượn mã mặc định toàn cục;
+        thiếu cấu hình thì báo error rõ ràng luôn.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -813,11 +816,12 @@ class DataCollectorManager:
         )
 
     async def _test_dragon_tiger_source(self, source: DataSource) -> CollectorResult:
-        """测试龙虎榜源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn bảng giao dịch khối lớn: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        龙虎榜是市场级数据(不按 symbols 过滤),但需要指定交易日。测试时优先取
-        source.config.test_date,未配置则用当前日期占位(仅用于验证连通性，
-        实抓以真实交易日为准）。
+        Bảng giao dịch khối lớn là dữ liệu cấp thị trường (không lọc theo symbols), nhưng
+        phải chỉ định phiên giao dịch. Khi kiểm tra thì ưu tiên lấy source.config.test_date,
+        chưa cấu hình thì lấy tạm ngày hiện tại (chỉ để kiểm tra có thông không, lúc lấy
+        thật vẫn theo phiên giao dịch thật).
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -862,9 +866,9 @@ class DataCollectorManager:
         )
 
     async def _test_margin_source(self, source: DataSource) -> CollectorResult:
-        """测试融资融券源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn giao dịch ký quỹ: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        融资融券是按 symbol 的数据,测试必须显式配置 test_symbols。
+        Giao dịch ký quỹ là dữ liệu theo symbol, kiểm tra bắt buộc phải cấu hình test_symbols tường minh.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -905,9 +909,9 @@ class DataCollectorManager:
         )
 
     async def _test_shareholders_source(self, source: DataSource) -> CollectorResult:
-        """测试股东户数源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn số tài khoản cổ đông: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        股东户数是按 symbol 的数据,测试必须显式配置 test_symbols。
+        Số tài khoản cổ đông là dữ liệu theo symbol, kiểm tra bắt buộc phải cấu hình test_symbols tường minh.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -952,9 +956,9 @@ class DataCollectorManager:
         )
 
     async def _test_dividend_source(self, source: DataSource) -> CollectorResult:
-        """测试分红源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn cổ tức: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        分红是按 symbol 的数据,测试必须显式配置 test_symbols。
+        Cổ tức là dữ liệu theo symbol, kiểm tra bắt buộc phải cấu hình test_symbols tường minh.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -995,9 +999,9 @@ class DataCollectorManager:
         )
 
     async def _test_northbound_source(self, source: DataSource) -> CollectorResult:
-        """测试北向资金源:走 marketdata 包的单源 Engine(仅该 vendor,不串备份链)。
+        """Kiểm nguồn dòng vốn bắc tiến: đi qua Engine một nguồn của gói marketdata (chỉ vendor đó, không xâu chuỗi dự phòng).
 
-        北向资金是市场级数据(7×24 资金流),不按 symbols 过滤,所以不传 test_symbols。
+        Dòng vốn bắc tiến là dữ liệu cấp thị trường (dòng tiền 7×24), không lọc theo symbols, nên không truyền test_symbols.
         """
         from marketdata import MarketData, SourceConfig, StaticConfigProvider
 
@@ -1043,7 +1047,7 @@ _manager: DataCollectorManager | None = None
 
 
 def get_collector_manager() -> DataCollectorManager:
-    """获取全局数据源管理器"""
+    """Lấy bộ quản lý nguồn dữ liệu toàn cục"""
     global _manager
     if _manager is None:
         _manager = DataCollectorManager()
