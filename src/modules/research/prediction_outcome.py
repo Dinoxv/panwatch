@@ -44,7 +44,7 @@ def _pick_close_on_or_before(klines: list, target: date) -> float | None:
 
 
 def _latest_kline_day_on_or_before(klines: list, target: date) -> date | None:
-    """找建议日可见的最后一个实际交易日，用作交易日计数起点。"""
+    """Tìm phiên giao dịch thực tế cuối cùng còn thấy được tính tới ngày khuyến nghị, dùng làm mốc bắt đầu đếm phiên."""
     found = None
     for k in klines or []:
         day = _parse_day(getattr(k, "date", None))

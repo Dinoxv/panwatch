@@ -1,4 +1,4 @@
-"""日志中心 API"""
+"""API trung tâm nhật ký"""
 import asyncio
 import logging
 import time
@@ -19,7 +19,7 @@ from src.platform.observability.log_handler import get_log_handler_stats
 
 
 def _format_datetime(dt) -> str:
-    """格式化时间为带时区的 ISO 格式"""
+    """Định dạng thời gian sang ISO kèm múi giờ"""
     if not dt:
         return ""
     if dt.tzinfo is None:
@@ -92,7 +92,7 @@ def _apply_log_filters(
     since: str = "",
     until: str = "",
 ):
-    """把查询过滤条件应用到 LogEntry query 上（列表与 SSE tail 共用）。"""
+    """Áp điều kiện lọc của truy vấn lên query LogEntry (danh sách và SSE tail dùng chung)."""
     if level:
         levels = [l.strip().upper() for l in level.split(",") if l.strip()]
         if levels:
@@ -160,7 +160,7 @@ def _apply_log_filters(
 
 
 def _to_log_response(item: LogEntry) -> LogEntryResponse:
-    """把 ORM 行转成响应模型（列表与 SSE tail 共用）。"""
+    """Đổi dòng ORM sang mô hình phản hồi (danh sách và SSE tail dùng chung)."""
     return LogEntryResponse(
         id=item.id,
         timestamp=_format_datetime(item.timestamp),
@@ -262,12 +262,12 @@ async def stream_logs(
     since: str = Query("", description="起始时间 ISO 格式"),
     last_event_id: int = Query(0, ge=0, description="断线前收到的最后日志 id"),
 ):
-    """日志 SSE tail：按过滤条件持续推送新增日志（替代前端 3s 轮询）。
+    """SSE tail cho nhật ký: đẩy liên tục nhật ký mới theo điều kiện lọc (thay lối hỏi vòng 3s của frontend).
 
-    - 事件 id 直接用日志行 id（天然单调递增），断线重连带 Last-Event-ID
-      （header 优先，query 兜底）即可从缺口处续推；
-    - 首次连接（无 Last-Event-ID）从当前最新 id 开始只推增量，
-      存量由既有 GET /api/logs 列表端点负责（保留不动，降级兜底）。
+    - id sự kiện dùng thẳng id của dòng nhật ký (vốn đã tăng đơn điệu), đứt rồi nối lại
+      mang theo Last-Event-ID (ưu tiên header, query để hứng) là đẩy tiếp từ chỗ hụt được;
+    - lần kết nối đầu (không có Last-Event-ID) bắt đầu từ id mới nhất và chỉ đẩy phần tăng thêm,
+      phần tồn kho do điểm cuối danh sách GET /api/logs sẵn có lo (giữ nguyên, làm lưới hứng khi hạ cấp).
     """
     from src.platform.events.sse import format_sse_comment, format_sse_event
     from src.platform.persistence.database import SessionLocal
@@ -276,7 +276,7 @@ async def stream_logs(
     resume_id = int(header_id) if header_id.isdigit() else last_event_id
 
     def _fetch_after(cursor: int) -> list[LogEntryResponse]:
-        """开独立会话查 id > cursor 的新日志（升序，限量防洪峰）。"""
+        """Mở phiên riêng để tra nhật ký mới có id > cursor (tăng dần, giới hạn số lượng để chống lũ)."""
         db = SessionLocal()
         try:
             query = _apply_log_filters(

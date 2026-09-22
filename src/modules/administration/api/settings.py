@@ -211,7 +211,7 @@ def get_version():
 
 @router.get("/update-check")
 def get_update_check(db: Session = Depends(get_db)):
-    """检查是否有可用新版本（带服务端缓存）。"""
+    """Kiểm tra xem có bản mới dùng được không (có đệm phía server)."""
     current = get_app_version()
     app_proxy = (
         db.query(AppSettings)

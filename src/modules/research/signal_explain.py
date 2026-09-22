@@ -1,10 +1,12 @@
-"""信号可解释化(Phase 3):rank_score → 1-10 AI Score + 正负因子拆解。
+"""Giải nghĩa tín hiệu (Phase 3): rank_score → điểm AI 1-10 + bóc tách yếu tố thuận lợi/bất lợi.
 
-对标 Danelfin 的 1-10 AI Score 与 green/red AI Factors:把 strategy_engine 已算出的
-score_breakdown(alpha/catalyst/quality/source_bonus 加分项,risk/crowd penalty 扣分项)
-拆成「正向(绿,提升)/ 负向(红,拖累)」两组,供机会页展示。
+Đối chiếu với điểm AI 1-10 và AI Factors xanh/đỏ của Danelfin: lấy score_breakdown mà
+strategy_engine đã tính (các mục cộng điểm alpha/catalyst/quality/source_bonus, các mục
+trừ điểm risk/crowd penalty) rồi tách thành hai nhóm «thuận lợi (xanh, nâng điểm) / bất
+lợi (đỏ, kéo điểm)», để trang cơ hội hiển thị.
 
-纯函数,不依赖 DB;在 API 层对 list_strategy_signals 的结果做后处理注入。
+Hàm thuần, không phụ thuộc DB; tiêm vào ở tầng API bằng cách hậu xử lý kết quả của
+list_strategy_signals.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ _EPS = 0.01
 
 
 def to_ai_score(rank_score) -> int:
-    """rank_score(0-100)→ 1-10 AI Score(clamp 到 [1,10])。"""
+    """rank_score (0-100) → điểm AI 1-10 (kẹp về [1,10])."""
     try:
         s = float(rank_score or 0.0)
     except (TypeError, ValueError):
@@ -37,7 +39,7 @@ def to_ai_score(rank_score) -> int:
 
 
 def explain_factors(score_breakdown) -> dict:
-    """拆成正向(绿)/负向(红)两组,各按贡献绝对值排序取前 5。"""
+    """Tách thành hai nhóm thuận lợi (xanh)/bất lợi (đỏ), mỗi nhóm xếp theo trị tuyệt đối mức đóng góp rồi lấy 5 mục đầu."""
     sb = score_breakdown if isinstance(score_breakdown, dict) else {}
     positive: list[dict] = []
     negative: list[dict] = []
@@ -70,7 +72,7 @@ def explain_factors(score_breakdown) -> dict:
 
 
 def enrich_signal(item: dict) -> dict:
-    """给一条信号 item 注入 ai_score + factor_explain(原地修改并返回)。"""
+    """Tiêm ai_score + factor_explain vào một item tín hiệu (sửa tại chỗ rồi trả về)."""
     if not isinstance(item, dict):
         return item
     item["ai_score"] = to_ai_score(item.get("rank_score"))

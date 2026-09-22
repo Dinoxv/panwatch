@@ -71,7 +71,7 @@ def _estimate_quality_score(coverage: dict) -> int:
 
 
 class ContextBuilder:
-    """统一构建 Agent 上下文（新闻分层 + 历史K线 + 账户约束 + 质量评分）"""
+    """Dựng ngữ cảnh Agent thống nhất (phân tầng tin tức + nến lịch sử + ràng buộc tài khoản + chấm điểm chất lượng)"""
 
     def __init__(self):
         self._kline_cache: dict[tuple[str, str, int], dict] = {}
@@ -219,13 +219,14 @@ class ContextBuilder:
 
     @staticmethod
     def _index_for_market(market) -> tuple[str, str]:
-        """市场 -> (指数代码, 中文标签)。未知市场回退到沪深300。"""
+        """Thị trường -> (mã chỉ số, nhãn hiển thị). Thị trường lạ thì lùi về CSI 300."""
         mkt = market.value if isinstance(market, MarketCode) else str(market or "")
         return _INDEX_BY_MARKET.get(mkt, _INDEX_BY_MARKET["CN"])
 
     def _fetch_index_context(self, symbol: str, market) -> dict:
-        """取指数多周期收益。指数 secid 规则与个股不同,用 get_index_klines 显式映射直取;
-        失败/不支持(如美股指数东财无K线)→ available False(fail-soft)。可被测试打桩。"""
+        """Lấy lợi nhuận nhiều chu kỳ của chỉ số. Quy tắc secid của chỉ số khác cổ phiếu riêng lẻ,
+        dùng get_index_klines ánh xạ tường minh rồi lấy thẳng; hỏng/không hỗ trợ (như chỉ số Mỹ
+        thì Đông Tài không có nến) → available False (fail-soft). Test đóng thế được."""
         try:
             from src.platform.marketdata.collectors.kline_collector import get_index_klines
             from src.modules.market.kline_context import _pct
@@ -245,7 +246,7 @@ class ContextBuilder:
             return {"available": False}
 
     def _get_index_context(self, market) -> dict | None:
-        """取某市场大盘指数上下文,每次构建内按市场缓存一次。"""
+        """Lấy ngữ cảnh chỉ số chung của một thị trường, mỗi lần dựng thì đệm một lần theo thị trường."""
         mkt = market.value if isinstance(market, MarketCode) else str(market or "")
         if mkt in self._index_cache:
             return self._index_cache[mkt]
@@ -265,7 +266,7 @@ class ContextBuilder:
         kline_history: dict,
         index_ctx: dict | None,
     ) -> dict | None:
-        """个股 vs 大盘的 5日/20日超额收益。任一侧数据缺失 → None(fail-soft)。"""
+        """Lợi nhuận vượt trội 5 ngày/20 ngày của mã so với thị trường chung. Thiếu dữ liệu bên nào → None (fail-soft)."""
         try:
             if not kline_history or not kline_history.get("available"):
                 return None
@@ -312,9 +313,9 @@ class ContextBuilder:
         importance_min: int = 2,
         max_chars: int = 1000,
     ) -> list[dict]:
-        """给最重要的 top_k 条公告(importance>=importance_min)附加 content_fulltext。
+        """Gắn content_fulltext cho top_k công bố quan trọng nhất (importance>=importance_min).
 
-        逐条 fail-soft:抓取失败/空 → 只保留标题(不加字段),绝不抛异常。
+        Fail-soft từng bản: lấy hỏng/rỗng → chỉ giữ tiêu đề (không thêm trường), tuyệt đối không ném lỗi.
         """
         if not events:
             return events
@@ -346,9 +347,9 @@ class ContextBuilder:
         top_k: int = 2,
         max_chars: int = 800,
     ) -> list[dict]:
-        """头部 top_k 条新闻保留更多已有正文(放宽到 max_chars),其余维持原样。
+        """top_k tin đầu giữ lại nhiều phần thân sẵn có hơn (nới lên max_chars), phần còn lại giữ nguyên.
 
-        不抓网络,只是放宽采集层 300 字截断 —— 没有正文的条目自然保持原样。
+        Không gọi mạng, chỉ nới mức cắt 300 chữ ở tầng thu thập — bản nào vốn không có phần thân thì tự nhiên giữ nguyên.
         """
         if not news:
             return news

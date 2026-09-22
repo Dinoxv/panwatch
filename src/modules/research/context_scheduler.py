@@ -1,4 +1,4 @@
-"""上下文维护调度器：后验评估 + 过期数据清理 + 机会自动刷新。"""
+"""Bộ lập lịch bảo trì ngữ cảnh: hậu kiểm + dọn dữ liệu hết hạn + tự làm mới cơ hội."""
 
 from __future__ import annotations
 
@@ -186,7 +186,7 @@ class ContextMaintenanceScheduler:
         }
 
     async def _refresh_opportunities_job(self):
-        """定时刷新机会池（候选 + 策略信号）。全市场休市日跳过。"""
+        """Làm mới kho cơ hội theo lịch (ứng viên + tín hiệu chiến lược). Ngày cả ba thị trường nghỉ thì bỏ qua."""
         from src.platform.scheduling.trading_calendar import any_market_trading_day
 
         if not any_market_trading_day():
@@ -219,7 +219,7 @@ class ContextMaintenanceScheduler:
             self._refreshing = False
 
     async def refresh_opportunities_once(self) -> dict:
-        """手动触发一次机会刷新。"""
+        """Kích hoạt tay một lượt làm mới cơ hội."""
         with kline_source("refresh_opportunities"):
             return await asyncio.to_thread(
                 refresh_strategy_signals,
@@ -240,10 +240,11 @@ class ContextMaintenanceScheduler:
         )
 
     async def _refresh_trading_calendar_job(self):
-        """每日刷新 A 股交易日历。
+        """Làm mới lịch giao dịch cổ phiếu A hằng ngày.
 
-        日历只覆盖到当年年底,长跑实例跨年后会超出覆盖范围而降级为"只判周末",
-        因此每天凌晨拉一次。安排在各类盘前通知之前,保证当天判断用的是新日历。
+        Lịch chỉ phủ tới cuối năm hiện tại, thực thể chạy dài qua năm mới sẽ vượt phạm vi
+        phủ và hạ xuống "chỉ xét cuối tuần", nên mỗi rạng sáng kéo một lần. Xếp trước các
+        thông báo trước phiên, để hôm đó xét bằng lịch mới.
         """
         from src.platform.scheduling.trading_calendar import refresh
 

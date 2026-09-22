@@ -1,4 +1,4 @@
-"""数据源管理 API"""
+"""API quản lý nguồn dữ liệu"""
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -87,9 +87,9 @@ _ENGINE_ATTACHED_TYPES = {
 
 
 def _is_orphan(type_: str, provider: str) -> bool:
-    """判定 (type, provider) 是否为孤儿数据源:不在包内引擎 vendor 集合、也不在当前 seed 列表里。
+    """Xét xem cặp (type, provider) có phải nguồn dữ liệu mồ côi không: không nằm trong tập vendor của engine trong gói, cũng không nằm trong danh sách seed hiện tại.
 
-    与 server.reconcile_data_sources 的孤儿判定保持一致(legal = 包内集合 | seed 集合)。
+    Giữ nhất quán với cách xét mồ côi của server.reconcile_data_sources (legal = tập trong gói | tập seed).
     """
     from marketdata import PACKAGE_VENDORS_BY_TYPE
     from server import _seed_providers_by_type
@@ -99,7 +99,7 @@ def _is_orphan(type_: str, provider: str) -> bool:
 
 
 def _to_response(source: DataSource, health_map: dict | None = None) -> dict:
-    """转换为响应格式。health_map: {provider: 指标快照};缺失则 health=None。"""
+    """Đổi sang định dạng phản hồi. health_map: {provider: ảnh chụp chỉ tiêu}; thiếu thì health=None."""
     health = (health_map or {}).get(source.provider)
     return {
         "id": source.id,
@@ -120,7 +120,7 @@ def _to_response(source: DataSource, health_map: dict | None = None) -> dict:
 
 @router.get("")
 def list_datasources(type: str | None = None, db: Session = Depends(get_db)):
-    """获取数据源列表，可按类型筛选"""
+    """Lấy danh sách nguồn dữ liệu, lọc được theo loại"""
     query = db.query(DataSource)
     if type:
         query = query.filter(DataSource.type == type)
@@ -132,13 +132,13 @@ def list_datasources(type: str | None = None, db: Session = Depends(get_db)):
 
 @router.get("/types")
 def get_datasource_types():
-    """获取数据源类型列表"""
+    """Lấy danh sách loại nguồn dữ liệu"""
     return [{"type": k, "label": v} for k, v in TYPE_LABELS.items()]
 
 
 @router.post("/reset-to-seed")
 def reset_datasources_to_seed(db: Session = Depends(get_db)):
-    """恢复内置数据源默认值:补齐/删除孤儿并重置测试股票,保留用户配置与凭证。"""
+    """Khôi phục giá trị mặc định của nguồn dữ liệu dựng sẵn: bù/xóa nguồn mồ côi và đặt lại mã kiểm thử, giữ cấu hình và chứng thực của người dùng."""
     from server import reconcile_data_sources
 
     summary = reconcile_data_sources(db, reset_test_symbols=True)
@@ -148,7 +148,7 @@ def reset_datasources_to_seed(db: Session = Depends(get_db)):
 
 @router.get("/{source_id}")
 def get_datasource(source_id: int, db: Session = Depends(get_db)):
-    """获取单个数据源"""
+    """Lấy một nguồn dữ liệu"""
     source = db.query(DataSource).filter(DataSource.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="数据源不存在")
@@ -157,7 +157,7 @@ def get_datasource(source_id: int, db: Session = Depends(get_db)):
 
 @router.post("")
 def create_datasource(data: DataSourceCreate, db: Session = Depends(get_db)):
-    """创建数据源"""
+    """Tạo nguồn dữ liệu"""
     source = DataSource(
         name=data.name,
         type=data.type,
@@ -179,7 +179,7 @@ def create_datasource(data: DataSourceCreate, db: Session = Depends(get_db)):
 def update_datasource(
     source_id: int, data: DataSourceUpdate, db: Session = Depends(get_db)
 ):
-    """更新数据源"""
+    """Cập nhật nguồn dữ liệu"""
     source = db.query(DataSource).filter(DataSource.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="数据源不存在")
@@ -195,7 +195,7 @@ def update_datasource(
 
 @router.delete("/{source_id}")
 def delete_datasource(source_id: int, db: Session = Depends(get_db)):
-    """删除数据源"""
+    """Xóa nguồn dữ liệu"""
     source = db.query(DataSource).filter(DataSource.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="数据源不存在")
@@ -208,7 +208,7 @@ def delete_datasource(source_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{source_id}/test")
 async def test_datasource(source_id: int, db: Session = Depends(get_db)):
-    """测试数据源连接"""
+    """Kiểm tra kết nối nguồn dữ liệu"""
     source = db.query(DataSource).filter(DataSource.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="数据源不存在")

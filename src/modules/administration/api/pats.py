@@ -1,7 +1,8 @@
-"""个人访问令牌(PAT)管理 API —— 供作者创建/查看/吊销 MCP 端点用的 PAT。
+"""API quản lý mã truy cập cá nhân (PAT) — PAT cho tác giả tạo/xem/thu hồi ở điểm cuối MCP.
 
-挂在需登录(JWT)的保护路由下:PAT 本身不能用来管理 PAT(防泄露后自我续期/升权),
-只有登录用户可操作。明文令牌仅在创建时返回一次。
+Gắn dưới nhánh route cần đăng nhập (JWT): bản thân PAT không dùng để quản lý PAT
+(tránh chuyện lộ rồi tự gia hạn/nâng quyền), chỉ người dùng đã đăng nhập mới thao tác được.
+Mã dạng chữ thường chỉ trả về đúng một lần lúc tạo.
 """
 
 import json
@@ -55,7 +56,7 @@ def _serialize(row: PersonalAccessToken) -> dict:
 
 @router.post("")
 def create_pat(body: CreatePatBody, db: Session = Depends(get_db)):
-    """创建 PAT，返回明文令牌(仅此一次)。"""
+    """Tạo PAT, trả về mã dạng chữ thường (chỉ lần này)."""
     scopes = body.scopes or [SCOPE_MCP_READ]
     invalid = [s for s in scopes if s not in _ALLOWED_SCOPES]
     if invalid:
@@ -86,7 +87,7 @@ def create_pat(body: CreatePatBody, db: Session = Depends(get_db)):
 
 @router.get("")
 def list_pats(db: Session = Depends(get_db)):
-    """列出所有 PAT(不含明文)。"""
+    """Liệt kê mọi PAT (không kèm mã chữ thường)."""
     rows = (
         db.query(PersonalAccessToken)
         .order_by(PersonalAccessToken.created_at.desc())
@@ -97,7 +98,7 @@ def list_pats(db: Session = Depends(get_db)):
 
 @router.delete("/{pat_id}")
 def revoke_pat(pat_id: int, db: Session = Depends(get_db)):
-    """吊销 PAT(软删除:置 revoked_at，MCP 端点随即拒绝该令牌)。"""
+    """Thu hồi PAT (xóa mềm: đặt revoked_at, điểm cuối MCP từ chối mã đó ngay)."""
     row = db.query(PersonalAccessToken).filter(PersonalAccessToken.id == pat_id).first()
     if not row:
         raise HTTPException(404, "PAT 不存在")
