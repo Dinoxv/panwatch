@@ -28,9 +28,9 @@ describe('AssistantConfigPanel', () => {
 
     render(<AssistantConfigPanel />)
 
-    expect((await screen.findByLabelText('上下文压缩模型') as HTMLSelectElement).value).toBe('6')
-    fireEvent.change(screen.getByLabelText('最大上下文 Token'), { target: { value: '16000' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存上下文配置' }))
+    expect((await screen.findByLabelText('Mô hình nén ngữ cảnh') as HTMLSelectElement).value).toBe('6')
+    fireEvent.change(screen.getByLabelText('Token ngữ cảnh tối đa'), { target: { value: '16000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu cấu hình ngữ cảnh' }))
 
     await waitFor(() => expect(update).toHaveBeenCalledWith({
       compression_model_id: 6,

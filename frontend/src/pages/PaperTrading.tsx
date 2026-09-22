@@ -353,7 +353,7 @@ export default function PaperTradingPage() {
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={loadData} disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline ml-1">刷新</span>
+            <span className="hidden sm:inline ml-1">Làm mới</span>
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={handleToggle}>
             <Power className="w-3.5 h-3.5" />

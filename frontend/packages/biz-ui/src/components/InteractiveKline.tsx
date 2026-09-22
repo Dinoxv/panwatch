@@ -577,7 +577,7 @@ export default function InteractiveKline(props: {
           </div>
           <Button variant="secondary" size="sm" className="h-8" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">刷新</span>
+            <span className="hidden sm:inline">Làm mới</span>
           </Button>
         </div>
       </div>

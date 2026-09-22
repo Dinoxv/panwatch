@@ -7,9 +7,9 @@ interface ContextUsageIndicatorProps {
 }
 
 const STATE_LABELS: Record<ContextUsage['state'], string> = {
-  normal: '上下文正常',
-  warning: '上下文偏大',
-  needs_compression: '需要压缩',
+  normal: 'Ngữ cảnh bình thường',
+  warning: 'Ngữ cảnh hơi lớn',
+  needs_compression: 'Cần nén bớt',
 }
 
 export function ContextUsageIndicator({ usage, onClick }: ContextUsageIndicatorProps) {
@@ -25,8 +25,8 @@ export function ContextUsageIndicator({ usage, onClick }: ContextUsageIndicatorP
       type="button"
       onClick={onClick}
       className={`inline-flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] transition-colors hover:bg-accent/60 ${stateClass}`}
-      aria-label="查看上下文用量"
-      title={`${STATE_LABELS[usage.state]}，估算输入 Token ${usage.total_tokens.toLocaleString()} / ${usage.budget_tokens.toLocaleString()}`}
+      aria-label="Xem mức dùng ngữ cảnh"
+      title={`${STATE_LABELS[usage.state]}, ước tính Token vào ${usage.total_tokens.toLocaleString()} / ${usage.budget_tokens.toLocaleString()}`}
     >
       <Gauge className="h-3.5 w-3.5 shrink-0" />
       <span className="tabular-nums">{usage.total_tokens.toLocaleString()} / {usage.budget_tokens.toLocaleString()}</span>

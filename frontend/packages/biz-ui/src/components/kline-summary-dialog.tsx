@@ -209,7 +209,7 @@ export function KlineSummaryDialog({
         ) : error ? (
           <div className="text-[12px] text-rose-500">{error}</div>
         ) : !effectiveSummary ? (
-          <div className="text-[12px] text-muted-foreground">暂无数据</div>
+          <div className="text-[12px] text-muted-foreground">Chưa có dữ liệu</div>
         ) : (
           <div className="space-y-3">
             {suggestion && (

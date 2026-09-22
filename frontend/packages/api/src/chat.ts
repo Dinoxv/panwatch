@@ -334,7 +334,7 @@ function dispatchAssistantEvent(
         id: d.approval_id || '',
         tool_title: d.presentation?.tool_title || call.name || d.name || '需要确认的工具操作',
         risk: call.risk || d.risk || 'write',
-        summary: d.presentation?.summary || call.summary || ('请求执行 ' + (call.name || d.name || '工具操作')),
+        summary: d.presentation?.summary || call.summary || ('Xin chạy ' + (call.name || d.name || '工具操作')),
         expires_at: d.expires_at || '',
         status: 'pending',
       })
@@ -360,7 +360,7 @@ function dispatchAssistantEvent(
       })
       break
     case 'error':
-      state.terminalError = d.message || '未知错误'
+      state.terminalError = d.message || 'Lỗi không rõ'
       callbacks.onError?.(state.terminalError)
       break
   }

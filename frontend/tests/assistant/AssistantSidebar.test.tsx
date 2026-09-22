@@ -22,7 +22,7 @@ describe('AssistantSidebar', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: '新研究' }))
+    await user.click(screen.getByRole('button', { name: 'Nghiên cứu mới' }))
     await user.click(screen.getByRole('button', { name: '贵州茅台走势' }))
 
     expect(onCreate).toHaveBeenCalledTimes(1)

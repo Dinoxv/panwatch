@@ -84,9 +84,9 @@ const ALERT_LABEL: Record<string, string> = {
 }
 
 const FEED_BADGE: Record<string, { label: string; cls: string }> = {
-  alert: { label: '提醒命中', cls: 'bg-rose-500/15 text-rose-500' },
+  alert: { label: 'Chạm cảnh báo', cls: 'bg-rose-500/15 text-rose-500' },
   holding: { label: 'Vị thế', cls: 'bg-emerald-500/15 text-emerald-500' },
-  watch: { label: '自选', cls: 'bg-accent text-muted-foreground' },
+  watch: { label: 'Theo dõi', cls: 'bg-accent text-muted-foreground' },
   risk: { label: 'Rủi ro', cls: 'bg-amber-500/15 text-amber-600' },
   opportunity: { label: 'Cơ hội', cls: 'bg-primary/10 text-primary' },
 }
@@ -530,7 +530,7 @@ export default function DashboardPage() {
                   <span className="flex items-center gap-1.5">
                     <span className="h-0 w-3.5 border-t-[1.5px] border-dashed border-muted-foreground/70" />
                     <span className="text-muted-foreground">
-                      {bench?.benchmark_label || '沪深300'} {benchReady ? pct(bench!.benchmark_return) : ''}
+                      {bench?.benchmark_label || 'CSI 300'} {benchReady ? pct(bench!.benchmark_return) : ''}
                     </span>
                   </span>
                 </div>
@@ -658,7 +658,7 @@ export default function DashboardPage() {
               className="text-[11px] text-muted-foreground hover:text-foreground"
               onClick={() => navigate('/opportunities')}
             >
-              进入机会页
+              Vào trang cơ hội
             </button>
           </div>
           {opportunities.length === 0 ? (

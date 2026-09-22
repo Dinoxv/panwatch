@@ -56,7 +56,7 @@ function approvalFromSnapshot(approval: {
     id: approval.id,
     tool_title: approval.presentation?.tool_title || approval.tool_name,
     risk: approval.risk,
-    summary: approval.presentation?.summary || ('请求执行 ' + approval.tool_name),
+    summary: approval.presentation?.summary || ('Xin chạy ' + approval.tool_name),
     expires_at: approval.expires_at,
     status: 'pending',
   }
@@ -64,14 +64,14 @@ function approvalFromSnapshot(approval: {
 
 // Tên công cụ → câu chữ hiển thị tiến trình
 const TOOL_LABELS: Record<string, string> = {
-  get_portfolio: '正在查询持仓…',
-  get_stock_quote: '正在查询行情…',
-  get_kline_summary: '正在分析 K 线…',
-  get_stock_news: '正在检索相关新闻…',
-  create_price_alert: '正在创建价格提醒…',
-  get_technical_analysis: '正在分析技术面…',
-  get_stock_suggestions: '正在查询 AI 建议…',
-  get_watchlist: '正在查询自选股…',
+  get_portfolio: 'Đang truy vấn danh mục…',
+  get_stock_quote: 'Đang truy vấn bảng giá…',
+  get_kline_summary: 'Đang phân tích đồ thị nến…',
+  get_stock_news: 'Đang tìm tin liên quan…',
+  create_price_alert: 'Đang đặt cảnh báo giá…',
+  get_technical_analysis: 'Đang phân tích kỹ thuật…',
+  get_stock_suggestions: 'Đang hỏi khuyến nghị AI…',
+  get_watchlist: 'Đang truy vấn danh mục theo dõi…',
 }
 
 /** Chịu lỗi khi dựng dần: khối mã chưa đóng trong văn bản dạng luồng được đóng tạm một cách lạc quan, tránh markdown làm vỡ bố cục */
@@ -205,7 +205,7 @@ export default function ChatWidget({
         if (!cancelled) setContextDetail(detail)
       })
       .catch(() => {
-        if (!cancelled) setContextError('无法读取上下文用量。')
+        if (!cancelled) setContextError('Không đọc được mức dùng ngữ cảnh.')
       })
       .finally(() => {
         if (!cancelled) setContextLoading(false)
@@ -232,7 +232,7 @@ export default function ChatWidget({
         },
       })
     } catch {
-      setContextError('上下文压缩失败，原始消息未改变。')
+      setContextError('Nén ngữ cảnh thất bại, tin nhắn gốc giữ nguyên.')
     } finally {
       setContextCompressing(false)
     }
@@ -342,7 +342,7 @@ export default function ChatWidget({
               if (!isCurrent()) return
               tokenBufRef.current = ''
               setStreamText('')
-              setStreamTool(TOOL_LABELS[name] || `正在调用 ${name}…`)
+              setStreamTool(TOOL_LABELS[name] || `Đang gọi ${name}…`)
             },
             onToolResult: () => undefined,
             onTrace: (event) => {
@@ -634,7 +634,7 @@ export default function ChatWidget({
           // Văn bản chuyển tiếp ở vòng gọi công cụ không phải câu trả lời cuối, nên xóa bộ đệm
           tokenBufRef.current = ''
           setStreamText('')
-          setStreamTool(TOOL_LABELS[name] || `正在调用 ${name}…`)
+          setStreamTool(TOOL_LABELS[name] || `Đang gọi ${name}…`)
         },
         onToolResult: () => {
           // Kết quả đã sẵn sàng, chờ mô hình dựa trên dữ liệu trả lời tiếp
@@ -704,7 +704,7 @@ export default function ChatWidget({
           const errMsg: ChatMessage = {
             id: Date.now() + 1,
             role: 'assistant',
-            content: `请求失败：${e2 instanceof Error ? e2.message : '未知错误'}`,
+            content: `请求失败：${e2 instanceof Error ? e2.message : 'Lỗi không rõ'}`,
             created_at: new Date().toISOString(),
           }
           setMessages((prev) => [...prev, errMsg])
@@ -752,7 +752,7 @@ export default function ChatWidget({
         onToolCallStart: ({ name }) => {
           tokenBufRef.current = ''
           setStreamText('')
-          setStreamTool(TOOL_LABELS[name] || `正在调用 ${name}…`)
+          setStreamTool(TOOL_LABELS[name] || `Đang gọi ${name}…`)
         },
         onToolResult: () => {
           // Kết quả công cụ đã về, chờ mô hình xuất tiếp câu trả lời cuối.
@@ -840,7 +840,7 @@ export default function ChatWidget({
         setMessages((previous) => [...previous, {
           id: Date.now() + 1,
           role: 'assistant',
-          content: error instanceof Error ? error.message : '未知错误',
+          content: error instanceof Error ? error.message : 'Lỗi không rõ',
           created_at: new Date().toISOString(),
         }])
       }
@@ -899,7 +899,7 @@ export default function ChatWidget({
             </div>
             <button
               type="button"
-              aria-label="关闭历史会话"
+              aria-label="Đóng lịch sử phiên"
               className="flex-1 bg-black/20"
               onClick={() => setHistoryOpen(false)}
             />
@@ -916,7 +916,7 @@ export default function ChatWidget({
               type="button"
               onClick={() => setHistoryOpen(true)}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground md:hidden"
-              aria-label="打开历史会话"
+              aria-label="Mở lịch sử phiên"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -925,12 +925,12 @@ export default function ChatWidget({
             <button
               onClick={beginNewResearch}
               className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="返回助手首页"
+              aria-label="Về trang trợ lý"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
           )}
-          <span className="text-[14px] font-semibold text-foreground">AI 助手</span>
+          <span className="text-[14px] font-semibold text-foreground">Trợ lý AI</span>
           {view === 'chat' && stockContext && (
             <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
               {stockContext.market}:{stockContext.symbol}
@@ -956,8 +956,8 @@ export default function ChatWidget({
               type="button"
               onClick={() => setPermissionsOpen(true)}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-              title="工具权限"
-              aria-label="工具权限"
+              title="Quyền công cụ"
+              aria-label="Quyền công cụ"
             >
               <Settings2 className="h-4 w-4" />
             </button>
@@ -993,12 +993,12 @@ export default function ChatWidget({
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-[13px] gap-3">
               <MessageCircle className="w-8 h-8 opacity-30" />
-              <p>暂无对话</p>
+              <p>Chưa có phiên nào</p>
               <button
                 onClick={createNewConversation}
                 className="text-[12px] px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                开始新对话
+                Mở phiên mới
               </button>
             </div>
           ) : (
@@ -1010,7 +1010,7 @@ export default function ChatWidget({
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] text-foreground truncate">
-                    {conv.title || '新对话'}
+                    {conv.title || 'Phiên mới'}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     {conv.stock_symbol ? `${conv.stock_market}:${conv.stock_symbol} · ` : ''}
@@ -1041,7 +1041,7 @@ export default function ChatWidget({
             {/* Suggested questions */}
             {messages.length === 0 && suggestedQuestions.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="text-[11px] text-muted-foreground">推荐问题</span>
+                <span className="text-[11px] text-muted-foreground">Câu hỏi gợi ý</span>
                 <div className="flex flex-wrap gap-2">
                   {suggestedQuestions.map((q) => (
                     <button
@@ -1059,7 +1059,7 @@ export default function ChatWidget({
             {messages.length === 0 && suggestedQuestions.length === 0 && !sending && (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-[13px] gap-2">
                 <MessageCircle className="w-6 h-6 opacity-30" />
-                <p>输入问题开始对话</p>
+                <p>Nhập câu hỏi để bắt đầu</p>
               </div>
             )}
             {messages.map((msg) => (
@@ -1105,11 +1105,11 @@ export default function ChatWidget({
               </div>
             )}
             {sending && plan && plan.steps.length > 0 && (
-              // 计划驱动(全面诊断持仓)的计划卡片:步骤 + 状态
+              // Thẻ kế hoạch của luồng do kế hoạch dẫn dắt (soi toàn diện danh mục): bước + trạng thái
               <div className="flex justify-start">
                 <div className="max-w-[85%] w-full rounded-xl px-3 py-2 text-[12px] bg-accent/40 border border-border/40">
                   <div className="font-medium text-foreground mb-1.5">
-                    诊断计划{plan.status === 'done' ? '（已完成）' : plan.status === 'planning' ? '（生成中…）' : ''}
+                    诊断计划{plan.status === 'done' ? '(đã xong)' : plan.status === 'planning' ? '(đang sinh…)' : ''}
                   </div>
                   <ol className="space-y-1">
                     {plan.steps.map((s) => (
@@ -1143,7 +1143,7 @@ export default function ChatWidget({
               </div>
             )}
             {sending && streamText && (
-              // 流式增量渲染（未闭合代码块乐观闭合）
+              // Dựng tăng dần theo luồng (khối mã chưa đóng thì đóng tạm cho mượt)
               <div className="flex justify-start">
                 <div className="max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed bg-accent/60 text-foreground">
                   <div className="prose prose-sm dark:prose-invert max-w-none overflow-x-auto [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-[15px] [&_h2]:text-[14px] [&_h3]:text-[13px] [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:text-[12px] [&_th]:border [&_th]:border-border/60 [&_th]:bg-background/30 [&_th]:px-2 [&_th]:py-1.5 [&_th]:font-semibold [&_td]:border [&_td]:border-border/60 [&_td]:px-2 [&_td]:py-1.5 [&_td]:align-top">
@@ -1157,7 +1157,7 @@ export default function ChatWidget({
                 <div
                   className="bg-accent/60 rounded-xl px-3 py-2 text-[13px] text-muted-foreground flex items-center gap-2"
                   role="status"
-                  aria-label={streamTool || '正在请求助手回复'}
+                  aria-label={streamTool || 'Đang chờ trợ lý trả lời'}
                 >
                   <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
                   {streamTool && <span>{streamTool}</span>}
@@ -1171,11 +1171,11 @@ export default function ChatWidget({
               type="button"
               onClick={scrollToBottom}
               className="absolute left-1/2 bottom-16 z-10 flex h-10 -translate-x-1/2 items-center gap-2 rounded-full border border-primary/30 bg-background/95 px-4 text-sm font-medium text-foreground shadow-xl shadow-black/20 backdrop-blur transition-all hover:-translate-x-1/2 hover:scale-105 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              aria-label="回到底部"
-              title="滚动到最新消息"
+              aria-label="Xuống cuối"
+              title="Cuộn tới tin mới nhất"
             >
               <ArrowDown className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">回到底部</span>
+              <span className="hidden sm:inline">Xuống cuối</span>
             </button>
           )}
 
@@ -1185,7 +1185,7 @@ export default function ChatWidget({
               ref={inputRef}
               type="text"
               className="flex-1 h-9 px-3 rounded-lg bg-accent/40 text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
-              placeholder="输入问题..."
+              placeholder="Nhập câu hỏi..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {

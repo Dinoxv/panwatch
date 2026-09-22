@@ -1056,7 +1056,7 @@ export default function SettingsPage() {
             </div>
             <Button variant="secondary" size="sm" className="h-8" onClick={loadFeedbackStats} disabled={fbLoading}>
               <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">刷新</span>
+              <span className="hidden sm:inline">Làm mới</span>
             </Button>
           </div>
 

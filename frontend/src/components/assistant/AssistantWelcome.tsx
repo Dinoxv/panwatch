@@ -7,9 +7,9 @@ interface AssistantWelcomeProps {
 }
 
 const QUICK_QUESTIONS = [
-  { label: '分析一只股票', question: '分析一只股票的基本面、行情和近期新闻', icon: Search },
-  { label: '诊断我的持仓', question: '诊断我的持仓风险和关键关注点', icon: Briefcase },
-  { label: '发现今日机会', question: '结合今天的市场行情，帮我寻找值得研究的机会', icon: Sparkles },
+  { label: 'Phân tích một mã', question: 'Phân tích cơ bản, bảng giá và tin tức gần đây của một mã', icon: Search },
+  { label: 'Soi danh mục của tôi', question: 'Soi rủi ro và điểm cần lưu ý trong danh mục của tôi', icon: Briefcase },
+  { label: 'Tìm cơ hội hôm nay', question: 'Dựa vào diễn biến thị trường hôm nay, giúp tôi tìm cơ hội đáng nghiên cứu', icon: Sparkles },
 ]
 
 /** First-run surface for the full-page assistant before a conversation exists. */
@@ -78,8 +78,8 @@ export function AssistantWelcome({ onSubmit, disabled = false }: AssistantWelcom
 
       <div className="mt-16 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
         {[
-          ['01', '从标的开始', '输入代码或公司名，生成综合、短线或事件驱动分析。'],
-          ['02', '从持仓开始', '调用你的实盘和模拟盘数据，识别集中度与风险敞口。'],
+          ['01', 'Bắt đầu từ một mã', 'Nhập mã hoặc tên công ty để dựng phân tích tổng hợp, lướt sóng hoặc theo sự kiện.'],
+          ['02', 'Bắt đầu từ danh mục', 'Gọi dữ liệu tài khoản thật và mô phỏng của bạn, nhận diện mức tập trung và khẩu độ rủi ro.'],
           ['03', '从问题开始', '让助手串联行情、K 线和新闻，给出下一步研究方向。'],
         ].map(([index, title, description]) => (
           <div key={index} className="rounded-2xl border border-border/60 bg-card/70 p-5">

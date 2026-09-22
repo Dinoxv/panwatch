@@ -123,7 +123,7 @@ export default function DiagnosticsShareCard({
         />
         {hasExcess && (
           <StatBox
-            label={`近期相对${benchmarkLabel || 'Thị trường chung'}`}
+            label={`Gần đây so với ${benchmarkLabel || 'Thị trường chung'}`}
             value={pct(excessReturn)}
             color={signColor(excessReturn)}
           />

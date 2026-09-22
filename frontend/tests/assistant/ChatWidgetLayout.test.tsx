@@ -116,7 +116,7 @@ describe('ChatWidget layout', () => {
   it('uses the sidebar new research entry instead of a duplicate header plus', async () => {
     render(<ChatWidget embedded />)
 
-    await waitFor(() => expect(screen.getByRole('button', { name: '新研究' })).toBeTruthy())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Nghiên cứu mới' })).toBeTruthy())
     expect(screen.queryByRole('button', { name: '新建对话' })).toBeNull()
   })
 
@@ -124,9 +124,9 @@ describe('ChatWidget layout', () => {
     const user = userEvent.setup()
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
-    await waitFor(() => expect(screen.getByPlaceholderText('输入问题...')).toBeTruthy())
+    await waitFor(() => expect(screen.getByPlaceholderText('Nhập câu hỏi...')).toBeTruthy())
 
     const shell = screen.getByTestId('assistant-shell')
     const messageList = screen.getByTestId('assistant-message-list')
@@ -141,7 +141,7 @@ describe('ChatWidget layout', () => {
 
   it('ignores a second send fired before the first request updates React state', async () => {
     render(<ChatWidget embedded />)
-    const quickQuestion = await screen.findByRole('button', { name: '诊断我的持仓' })
+    const quickQuestion = await screen.findByRole('button', { name: 'Soi danh mục của tôi' })
 
     fireEvent.click(quickQuestion)
     fireEvent.click(quickQuestion)
@@ -154,7 +154,7 @@ describe('ChatWidget layout', () => {
     const user = userEvent.setup()
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
     const messageList = await screen.findByTestId('assistant-message-list')
 
     Object.defineProperties(messageList, {
@@ -164,13 +164,13 @@ describe('ChatWidget layout', () => {
     })
     fireEvent.scroll(messageList)
 
-    const scrollButton = await screen.findByRole('button', { name: '回到底部' })
-    expect(scrollButton.textContent).toContain('回到底部')
+    const scrollButton = await screen.findByRole('button', { name: 'Xuống cuối' })
+    expect(scrollButton.textContent).toContain('Xuống cuối')
     expect(scrollButton.className).toContain('left-1/2')
     expect(scrollButton.className).toContain('h-10')
 
     await user.click(scrollButton)
-    expect(screen.queryByRole('button', { name: '回到底部' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Xuống cuối' })).toBeNull()
   })
 
   it('renders GFM table syntax as a semantic table in assistant answers', async () => {
@@ -185,7 +185,7 @@ describe('ChatWidget layout', () => {
     })
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
     const table = await screen.findByRole('table')
     expect(table).toBeTruthy()
@@ -204,7 +204,7 @@ describe('ChatWidget layout', () => {
     })
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
     await screen.findByText('已完成分析')
     expect(screen.getAllByTestId('assistant-trace')).toHaveLength(1)
@@ -223,7 +223,7 @@ describe('ChatWidget layout', () => {
     })
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
     await waitFor(() => expect(screen.queryByRole('button', { name: '重试执行' })).toBeNull())
     expect(screen.queryByText(/尚未执行/)).toBeNull()
@@ -234,9 +234,9 @@ describe('ChatWidget layout', () => {
     vi.mocked(chatApi.sendAssistantMessageStream).mockRejectedValueOnce(new Error('SSE unavailable'))
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
-    await waitFor(() => expect((screen.getByPlaceholderText('输入问题...') as HTMLInputElement).disabled).toBe(false))
+    await waitFor(() => expect((screen.getByPlaceholderText('Nhập câu hỏi...') as HTMLInputElement).disabled).toBe(false))
     expect(screen.queryByText(/请求未完成/)).toBeNull()
     expect(chatApi.sendMessage).not.toHaveBeenCalled()
   })
@@ -274,7 +274,7 @@ describe('ChatWidget layout', () => {
     })
 
     render(<ChatWidget embedded />)
-    await user.click(screen.getByRole('button', { name: '诊断我的持仓' }))
+    await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
     await screen.findByText('创建第一个提醒')
     await screen.findByText('创建第二个提醒')
 

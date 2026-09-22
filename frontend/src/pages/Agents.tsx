@@ -504,7 +504,7 @@ export default function AgentsPage() {
             {healthLoading ? (
               <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
             ) : (
-              <span className="text-[12px]">刷新</span>
+              <span className="text-[12px]">Làm mới</span>
             )}
           </Button>
         </div>

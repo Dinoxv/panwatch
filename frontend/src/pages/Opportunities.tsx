@@ -110,7 +110,7 @@ const actionBadgeClass = (action?: string) => {
 const displayActionLabel = (item: StrategySignalItem) => {
   const action = (item.action || '').toLowerCase()
   if (!item.is_holding_snapshot && action === 'hold') return 'Quan sát'
-  if (!item.is_holding_snapshot && action === 'add') return '建仓'
+  if (!item.is_holding_snapshot && action === 'add') return 'Mở vị thế'
   return item.action_label || item.action
 }
 
