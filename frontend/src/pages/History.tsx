@@ -26,11 +26,11 @@ interface HistoryRecord {
 }
 
 const AGENT_LABELS: Record<string, string> = {
-  daily_report: '收盘复盘',
-  premarket_outlook: '盘前分析',
-  intraday_monitor: '盘中监测',
-  news_digest: '新闻速递',
-  chart_analyst: '技术分析',
+  daily_report: 'Ôn lại sau phiên',
+  premarket_outlook: 'Phân tích trước phiên',
+  intraday_monitor: 'Theo dõi trong phiên',
+  news_digest: 'Tin nhanh',
+  chart_analyst: 'Phân tích kỹ thuật',
   tradingagents: 'TradingAgents 深度',
 }
 
@@ -124,10 +124,10 @@ export default function HistoryPage() {
     if (!confirm('确定删除这条记录吗？')) return
     try {
       await fetchAPI(`/history/${id}`, { method: 'DELETE' })
-      toast('已删除', 'success')
+      toast('Đã xóa', 'success')
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '删除失败', 'error')
+      toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error')
     }
   }
 
@@ -166,7 +166,7 @@ export default function HistoryPage() {
             <Clock className="w-4 h-4 md:w-5 md:h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg md:text-xl font-bold">分析历史</h1>
+            <h1 className="text-lg md:text-xl font-bold">Lịch sử phân tích</h1>
             <p className="text-[12px] md:text-[13px] text-muted-foreground">报告式阅读：目录 + 正文</p>
           </div>
           <div className="hidden md:flex px-2.5 py-1 rounded-full bg-background/70 border border-border/50 text-[11px] text-muted-foreground">

@@ -24,14 +24,14 @@ describe('agent tool permission settings', () => {
       />,
     )
 
-    expect((screen.getByLabelText('读取默认权限') as HTMLSelectElement).value).toBe('allow')
-    expect((screen.getByLabelText('修改默认权限') as HTMLSelectElement).value).toBe('ask')
-    expect((screen.getByLabelText('外部操作默认权限') as HTMLSelectElement).value).toBe('ask')
-    const destructiveDefault = screen.getByLabelText('破坏性操作默认权限') as HTMLSelectElement
+    expect((screen.getByLabelText('Quyền mặc định Đọc') as HTMLSelectElement).value).toBe('allow')
+    expect((screen.getByLabelText('Quyền mặc định Sửa') as HTMLSelectElement).value).toBe('ask')
+    expect((screen.getByLabelText('Quyền mặc định Thao tác ra ngoài') as HTMLSelectElement).value).toBe('ask')
+    const destructiveDefault = screen.getByLabelText('Quyền mặc định Thao tác phá hủy') as HTMLSelectElement
     expect(destructiveDefault.value).toBe('deny')
     expect([...destructiveDefault.options].some((option) => option.value === 'allow')).toBe(false)
 
-    fireEvent.change(screen.getByLabelText('修改默认权限'), { target: { value: 'allow' } })
+    fireEvent.change(screen.getByLabelText('Quyền mặc định Sửa'), { target: { value: 'allow' } })
     expect(onChange).toHaveBeenCalledWith({
       selector_kind: 'risk',
       selector_value: 'write',

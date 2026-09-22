@@ -51,22 +51,22 @@ const FLOW_PRESETS: Array<{ key: string, label: string, loggers: string[] }> = [
   { key: '', label: '全部链路', loggers: [] },
   {
     key: 'premarket_outlook',
-    label: '盘前分析',
+    label: 'Phân tích trước phiên',
     loggers: ['src.agents.premarket_outlook', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'daily_report',
-    label: '收盘复盘',
+    label: 'Ôn lại sau phiên',
     loggers: ['src.agents.daily_report', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'intraday_monitor',
-    label: '盘中监测',
+    label: 'Theo dõi trong phiên',
     loggers: ['src.agents.intraday_monitor', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
   {
     key: 'tradingagents',
-    label: '深度分析',
+    label: 'Phân tích chuyên sâu',
     // 'tradingagents' 子串同时匹配 PanWatch 适配层 (src.agents.tradingagents.*) 和上游 (tradingagents.*)
     loggers: ['tradingagents', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },

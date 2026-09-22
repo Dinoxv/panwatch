@@ -35,7 +35,7 @@ const INITIAL_FILTERS: FilterState = {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  buy: 'Mua vào', add: '加仓', sell: 'Bán ra', reduce: 'Hạ tỷ trọng', avoid: '回避', hold: 'Nắm giữ', watch: 'Quan sát',
+  buy: 'Mua vào', add: 'Gia tăng tỷ trọng', sell: 'Bán ra', reduce: 'Hạ tỷ trọng', avoid: 'Tránh ra', hold: 'Nắm giữ', watch: 'Quan sát',
 }
 
 function toApiFilters(filters: FilterState): AgentPredictionFilters {

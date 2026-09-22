@@ -7,8 +7,8 @@ export function isTerminalProgressStatus(status: string | null | undefined): sta
 }
 
 /**
- * SSE 关闭只代表这条连接结束，不等于任务结束。
- * not_found、running、timeout 和空状态都应该交给 polling 接力。
+ * SSE đóng chỉ có nghĩa là kết nối này kết thúc, không có nghĩa tác vụ kết thúc.
+ * not_found, running, timeout và trạng thái rỗng đều phải giao lại cho polling chạy tiếp.
  */
 export function shouldContinueProgressWatch(
   status: string | null | undefined,

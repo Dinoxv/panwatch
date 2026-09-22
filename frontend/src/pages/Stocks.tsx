@@ -985,7 +985,7 @@ export default function StocksPage() {
       setLastRefreshTime(new Date())
     } catch (e) {
       console.error('扫描失败:', e)
-      toast(e instanceof Error ? e.message : '扫描失败', 'error')
+      toast(e instanceof Error ? e.message : 'Quét thất bại', 'error')
     } finally {
       setScanning(false)
     }
@@ -1106,7 +1106,7 @@ export default function StocksPage() {
       // 价格提醒/关联配置会随股票删除，刷新一次避免 UI 残留。
       loadPortfolio()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '删除失败', 'error')
+      toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error')
     } finally {
       setRemovingWatchStock(false)
     }

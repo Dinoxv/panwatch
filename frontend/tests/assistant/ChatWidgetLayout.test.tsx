@@ -208,10 +208,10 @@ describe('ChatWidget layout', () => {
 
     await screen.findByText('已完成分析')
     expect(screen.getAllByTestId('assistant-trace')).toHaveLength(1)
-    expect(screen.queryByText('调用工具：get_portfolio')).toBeNull()
+    expect(screen.queryByText('Gọi công cụ: get_portfolio')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /执行记录/ }))
-    expect(screen.getByText('调用工具：get_portfolio')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /Nhật ký thực thi/ }))
+    expect(screen.getByText('Gọi công cụ: get_portfolio')).toBeTruthy()
   })
 
   it('does not render a generic retry card when a stream fails', async () => {
@@ -278,10 +278,10 @@ describe('ChatWidget layout', () => {
     await screen.findByText('创建第一个提醒')
     await screen.findByText('创建第二个提醒')
 
-    await user.click(screen.getAllByRole('button', { name: '本次允许' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Cho phép lần này' })[0])
 
-    await screen.findByText('已允许，已执行')
-    expect(screen.getAllByRole('button', { name: '本次允许' })).toHaveLength(1)
+    await screen.findByText('Đã cho phép, đã chạy')
+    expect(screen.getAllByRole('button', { name: 'Cho phép lần này' })).toHaveLength(1)
     expect(chatApi.decideAssistantApprovalStream).toHaveBeenCalledWith(
       'approval-1',
       'approved',

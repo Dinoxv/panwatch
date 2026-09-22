@@ -366,7 +366,7 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(null), 2000)
       load()
     } catch {
-      toast('保存失败', 'error')
+      toast('Lưu thất bại', 'error')
     } finally {
       setSaving(null)
     }
@@ -422,7 +422,7 @@ export default function SettingsPage() {
         }
       }
     } catch (e) {
-      toast(e instanceof Error ? e.message : '保存失败', 'error')
+      toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error')
     }
   }
 
@@ -483,7 +483,7 @@ export default function SettingsPage() {
       await fetchAPI(`/providers/services/${id}`, { method: 'DELETE' })
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '删除失败', 'error')
+      toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error')
     }
   }
 
@@ -509,7 +509,7 @@ export default function SettingsPage() {
       setModelDialogOpen(false)
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '保存失败', 'error')
+      toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error')
     }
   }
 
@@ -519,7 +519,7 @@ export default function SettingsPage() {
       await fetchAPI(`/providers/models/${id}`, { method: 'DELETE' })
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '删除失败', 'error')
+      toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error')
     }
   }
 
@@ -538,7 +538,7 @@ export default function SettingsPage() {
       await fetchAPI(`/providers/models/${id}/test`, { method: 'POST' })
       toast('模型测试成功', 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '测试失败', 'error')
+      toast(e instanceof Error ? e.message : 'Chạy thử thất bại', 'error')
     } finally {
       setTestingModel(null)
     }
@@ -576,7 +576,7 @@ export default function SettingsPage() {
       setChannelDialogOpen(false)
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '保存失败', 'error')
+      toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error')
     }
   }
 
@@ -595,7 +595,7 @@ export default function SettingsPage() {
       await fetchAPI(`/channels/${id}`, { method: 'DELETE' })
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '删除失败', 'error')
+      toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error')
     }
   }
 
@@ -623,7 +623,7 @@ export default function SettingsPage() {
       await fetchAPI(`/channels/${id}/test`, { method: 'POST' })
       toast('测试通知已发送', 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '测试失败', 'error')
+      toast(e instanceof Error ? e.message : 'Chạy thử thất bại', 'error')
     } finally {
       setTesting(null)
     }
@@ -651,7 +651,7 @@ export default function SettingsPage() {
   // 按“重要性”排序：常用优先，低频靠后
   const jumpItems: Array<{ id: string; label: string; hint?: string }> = [
     { id: 'sec-ai', label: 'AI', hint: `${services.length} 服务 / ${allModels.length} 模型` },
-    { id: 'sec-notify', label: '通知', hint: `${enabledChannels.length}/${channels.length} 启用` },
+    { id: 'sec-notify', label: 'Thông báo', hint: `${enabledChannels.length}/${channels.length} 启用` },
     { id: 'sec-system', label: 'Hệ thống', hint: health?.timezone ? `TZ ${health.timezone}` : undefined },
     { id: 'sec-pack', label: '配置包' },
     { id: 'sec-feedback', label: '反馈' },

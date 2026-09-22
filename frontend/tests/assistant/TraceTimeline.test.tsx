@@ -20,9 +20,9 @@ describe('TraceTimeline', () => {
     )
 
     expect(screen.getByTestId('assistant-trace')).toBeTruthy()
-    expect(screen.getByText(/已完成/)).toBeTruthy()
-    expect(screen.queryByText('上下文已压缩并准备')).toBeNull()
-    expect(screen.queryByText('调用工具：get_portfolio')).toBeNull()
+    expect(screen.getByText(/Đã xong/)).toBeTruthy()
+    expect(screen.queryByText('Ngữ cảnh đã nén và sẵn sàng')).toBeNull()
+    expect(screen.queryByText('Gọi công cụ: get_portfolio')).toBeNull()
     expect(screen.queryByText(/思考过程|chain of thought/i)).toBeNull()
   })
 
@@ -37,8 +37,8 @@ describe('TraceTimeline', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /执行记录/ }))
-    expect(screen.getByText('模型用量：输入 120，输出 30')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /Nhật ký thực thi/ }))
+    expect(screen.getByText('Mức dùng mô hình: vào 120, ra 30')).toBeTruthy()
   })
 
   it('expands the factual steps from the compact summary', async () => {
@@ -61,12 +61,12 @@ describe('TraceTimeline', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /执行记录/ }))
+    await user.click(screen.getByRole('button', { name: /Nhật ký thực thi/ }))
 
-    expect(screen.getByText('调用工具：get_portfolio')).toBeTruthy()
+    expect(screen.getByText('Gọi công cụ: get_portfolio')).toBeTruthy()
     expect(screen.getByText('{"market":"CN"}')).toBeTruthy()
     expect(screen.getByText('持仓查询完成')).toBeTruthy()
-    expect(screen.getByText('工具研究完成：选出 1 个')).toBeTruthy()
+    expect(screen.getByText('Rà công cụ xong: chọn được 1')).toBeTruthy()
   })
 
   it('distinguishes tool exposure and model-side search from execution', async () => {
@@ -96,10 +96,10 @@ describe('TraceTimeline', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /执行记录/ }))
+    await user.click(screen.getByRole('button', { name: /Nhật ký thực thi/ }))
 
-    expect(screen.getByText('工具目录已准备：1 个直达，0 个已加载')).toBeTruthy()
-    expect(screen.getByText('工具搜索完成：加载 1 个')).toBeTruthy()
-    expect(screen.getByText('调用工具：get_fundamentals')).toBeTruthy()
+    expect(screen.getByText('Danh mục công cụ đã sẵn sàng: 1 công cụ dùng thẳng, 0 công cụ đã nạp')).toBeTruthy()
+    expect(screen.getByText('Tìm công cụ xong: nạp 1')).toBeTruthy()
+    expect(screen.getByText('Gọi công cụ: get_fundamentals')).toBeTruthy()
   })
 })

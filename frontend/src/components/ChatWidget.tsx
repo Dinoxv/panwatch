@@ -704,7 +704,7 @@ export default function ChatWidget({
           const errMsg: ChatMessage = {
             id: Date.now() + 1,
             role: 'assistant',
-            content: `请求失败：${e2 instanceof Error ? e2.message : 'Lỗi không rõ'}`,
+            content: `Yêu cầu thất bại: ${e2 instanceof Error ? e2.message : 'Lỗi không rõ'}`,
             created_at: new Date().toISOString(),
           }
           setMessages((prev) => [...prev, errMsg])

@@ -129,8 +129,8 @@ interface StockItem {
 
 const AGENT_LABELS: Record<string, string> = {
   daily_report: '盘后日报',
-  premarket_outlook: '盘前分析',
-  news_digest: '新闻速递',
+  premarket_outlook: 'Phân tích trước phiên',
+  news_digest: 'Tin nhanh',
 }
 
 function formatNumber(value: number | null | undefined, digits = 2): string {
@@ -811,7 +811,7 @@ export default function StockInsightModal(props: {
     return {
       action: technicalScored.action,
       action_label: technicalScored.action_label,
-      signal: technicalScored.signal || '技术面中性',
+      signal: technicalScored.signal || 'Kỹ thuật trung tính',
       reason: topEvidence.length > 0 ? topEvidence.join('；') : '基于K线技术指标自动生成的基础建议',
       should_alert: technicalScored.action === 'buy' || technicalScored.action === 'add' || technicalScored.action === 'sell' || technicalScored.action === 'reduce',
       agent_name: 'technical_fallback',
@@ -935,7 +935,7 @@ export default function StockInsightModal(props: {
       latestShareSuggestion?.signal,
       pickFromJson('signal', 'summary', 'core_view'),
       technicalScored?.signal,
-      '技术面中性'
+      'Kỹ thuật trung tính'
     ) || '--'
     const reason = firstNonEmptyText(
       latestShareSuggestion?.reason,
@@ -1436,8 +1436,8 @@ export default function StockInsightModal(props: {
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">今开</div><div className={`font-mono ${levelColor(quote?.open_price)}`}>{formatNumber(quote?.open_price)}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">最高</div><div className={`font-mono ${levelColor(quote?.high_price)}`}>{formatNumber(quote?.high_price)}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">最低</div><div className={`font-mono ${levelColor(quote?.low_price)}`}>{formatNumber(quote?.low_price)}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">成交量</div><div className="font-mono">{formatCompactNumber(quote?.volume)}</div></div>
-                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">成交额</div><div className="font-mono">{formatCompactNumber(quote?.turnover)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Khối lượng khớp lệnh</div><div className="font-mono">{formatCompactNumber(quote?.volume)}</div></div>
+                      <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">Giá trị khớp lệnh</div><div className="font-mono">{formatCompactNumber(quote?.turnover)}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">振幅</div><div className="font-mono">{amplitudePct != null ? `${amplitudePct.toFixed(2)}%` : '--'}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">换手率</div><div className="font-mono">{quote?.turnover_rate != null ? `${Number(quote.turnover_rate).toFixed(2)}%` : '--'}</div></div>
                       <div className="rounded bg-accent/15 px-2 py-1.5"><div className="text-[10px] text-muted-foreground">市盈率</div><div className="font-mono">{quote?.pe_ratio != null ? Number(quote.pe_ratio).toFixed(2) : '--'}</div></div>

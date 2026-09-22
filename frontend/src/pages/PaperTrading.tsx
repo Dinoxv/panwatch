@@ -191,7 +191,7 @@ export default function PaperTradingPage() {
       toast(`扫描完成: 建仓 ${res.opened ?? 0} 笔, 平仓 ${res.closed ?? 0} 笔`, 'success')
       loadData()
     } catch {
-      toast('扫描失败', 'error')
+      toast('Quét thất bại', 'error')
     } finally {
       setScanning(false)
     }
@@ -247,7 +247,7 @@ export default function PaperTradingPage() {
       setConfigOpen(false)
       loadData()
     } catch {
-      toast('保存失败', 'error')
+      toast('Lưu thất bại', 'error')
     } finally {
       setCfgSaving(false)
     }
@@ -289,7 +289,7 @@ export default function PaperTradingPage() {
       toast('通知配置已保存', 'success')
       setNotifyOpen(false)
     } catch {
-      toast('保存失败', 'error')
+      toast('Lưu thất bại', 'error')
     } finally {
       setNotifySaving(false)
     }
@@ -344,7 +344,7 @@ export default function PaperTradingPage() {
           )}
           <Button variant="outline" size="sm" className="h-8" onClick={handleOpenNotify}>
             <Bell className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline ml-1">通知</span>
+            <span className="hidden sm:inline ml-1">Thông báo</span>
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={handleScan} disabled={scanning}>
             <Play className="w-3.5 h-3.5 mr-1" />
@@ -357,7 +357,7 @@ export default function PaperTradingPage() {
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={handleToggle}>
             <Power className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline ml-1">{account?.enabled ? '暂停' : '启动'}</span>
+            <span className="hidden sm:inline ml-1">{account?.enabled ? 'Tạm dừng' : '启动'}</span>
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-destructive hover:text-destructive" onClick={handleReset}>
             <RotateCcw className="w-3.5 h-3.5" />

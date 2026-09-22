@@ -190,7 +190,7 @@ export default function DataSourcesPage() {
           supports_batch: form.supports_batch, test_symbols: testSymbols, enabled: true }) })
       }
       setDialogOpen(false); load(); toast(editId ? '设置已保存' : '已新增数据源', 'success')
-    } catch (e) { toast(e instanceof Error ? e.message : '保存失败', 'error') }
+    } catch (e) { toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error') }
   }
 
   const toggleEnabled = async (source: DataSource) => {
@@ -212,7 +212,7 @@ export default function DataSourcesPage() {
       setTestResult(result)
       setTestResultOpen(true)
     } catch (e) {
-      toast(e instanceof Error ? e.message : '测试失败', 'error')
+      toast(e instanceof Error ? e.message : 'Chạy thử thất bại', 'error')
     } finally {
       setTesting(null)
     }
@@ -260,8 +260,8 @@ export default function DataSourcesPage() {
     if (!window.confirm(`确定删除数据源「${form.name}」?`)) return
     try {
       await fetchAPI(`/datasources/${editId}`, { method: 'DELETE' })
-      setDialogOpen(false); load(); toast('已删除', 'success')
-    } catch (e) { toast(e instanceof Error ? e.message : '删除失败', 'error') }
+      setDialogOpen(false); load(); toast('Đã xóa', 'success')
+    } catch (e) { toast(e instanceof Error ? e.message : 'Xóa thất bại', 'error') }
   }
 
   // 单个 type 的 section 渲染(结构与此前平铺版本完全一致,仅抽成函数以便按分类复用)
@@ -530,7 +530,7 @@ export default function DataSourcesPage() {
               <div className="flex-1">
                 <div className="text-[11px] text-muted-foreground">状态</div>
                 <div className={`text-[13px] font-medium ${testResult?.test_passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                  {testResult?.test_passed ? '测试成功' : '测试失败'}
+                  {testResult?.test_passed ? '测试成功' : 'Chạy thử thất bại'}
                 </div>
               </div>
               <div className="flex-1">

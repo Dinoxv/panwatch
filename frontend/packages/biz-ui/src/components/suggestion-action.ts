@@ -21,12 +21,12 @@ export const suggestionActionColors: Record<SuggestionAction, string> = {
 
 export const suggestionActionLabels: Record<SuggestionAction, string> = {
   buy: 'Mua vào',
-  add: '加仓',
-  reduce: '减仓',
+  add: 'Gia tăng tỷ trọng',
+  reduce: 'Hạ tỷ trọng',
   sell: 'Bán ra',
   hold: 'Nắm giữ',
   watch: 'Quan sát',
-  avoid: '回避',
+  avoid: 'Tránh ra',
   alert: 'Cảnh báo',
 }
 

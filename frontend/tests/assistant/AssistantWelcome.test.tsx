@@ -11,7 +11,7 @@ describe('AssistantWelcome', () => {
 
     render(<AssistantWelcome onSubmit={onSubmit} />)
 
-    expect(screen.getByRole('heading', { name: '今天想研究什么？' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Hôm nay muốn nghiên cứu gì?' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
     expect(onSubmit).toHaveBeenCalledWith('Soi rủi ro và điểm cần lưu ý trong danh mục của tôi')

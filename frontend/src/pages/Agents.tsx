@@ -75,17 +75,17 @@ interface AgentsHealth {
   }>
 }
 
-// 调度类型
+// Kiểu lịch chạy
 type ScheduleType = 'daily' | 'weekdays' | 'interval' | 'cron'
 
 interface ScheduleConfig {
   type: ScheduleType
-  time?: string      // HH:MM 格式
-  interval?: number  // 分钟数
-  cron?: string      // 自定义 cron
+  time?: string      // Định dạng HH:MM
+  interval?: number  // Số phút
+  cron?: string      // cron tự đặt
 }
 
-// cron 转友好配置
+// Đổi cron sang cấu hình dễ đọc
 function parseCronToConfig(cron: string): ScheduleConfig {
   if (!cron) return { type: 'daily', time: '15:30' }
 
@@ -94,13 +94,13 @@ function parseCronToConfig(cron: string): ScheduleConfig {
 
   const [minute, hour, , , dayOfWeek] = parts
 
-  // 检测间隔模式 */N
+  // Dò dạng khoảng cách */N
   if (minute.startsWith('*/')) {
     const interval = parseInt(minute.slice(2))
     if (!isNaN(interval)) return { type: 'interval', interval }
   }
 
-  // 检测每天或工作日
+  // Dò mỗi ngày hay chỉ ngày làm việc
   const m = parseInt(minute)
   const h = parseInt(hour)
   if (!isNaN(m) && !isNaN(h)) {
@@ -112,7 +112,7 @@ function parseCronToConfig(cron: string): ScheduleConfig {
   return { type: 'cron', cron }
 }
 
-// 友好配置转 cron
+// Đổi cấu hình dễ đọc sang cron
 function configToCron(config: ScheduleConfig): string {
   switch (config.type) {
     case 'daily': {
@@ -132,7 +132,7 @@ function configToCron(config: ScheduleConfig): string {
   }
 }
 
-// 友好显示调度
+// Hiển thị lịch chạy cho dễ đọc
 function formatSchedule(cron: string): string {
   const config = parseCronToConfig(cron)
   switch (config.type) {
@@ -167,9 +167,9 @@ export default function AgentsPage() {
 
   const [previews, setPreviews] = useState<Record<string, SchedulePreview | { error: string }>>({})
 
-  // 调度编辑弹窗
+  // Hộp thoại sửa lịch chạy
   const [scheduleDialogAgent, setScheduleDialogAgent] = useState<AgentConfig | null>(null)
-  // TradingAgents 深度配置弹窗(双模型 / 预算 / 超时 / 模拟盘对接)
+  // Hộp thoại cấu hình chuyên sâu TradingAgents (hai mô hình / ngân sách / hết giờ / nối mô phỏng)
   const [taConfigAgent, setTaConfigAgent] = useState<AgentConfig | null>(null)
   const [taConfigForm, setTaConfigForm] = useState<Record<string, unknown>>({})
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>({ type: 'daily', time: '15:30' })
@@ -212,7 +212,7 @@ export default function AgentsPage() {
       setServices(servicesData)
       setChannels(channelData)
 
-      // 预加载未来触发时间（避免“工作日/周末”语义误解）
+      // Nạp trước các mốc kích hoạt sắp tới (tránh hiểu nhầm nghĩa "ngày làm việc/cuối tuần")
       const previewPairs = await Promise.all(agentData.map(async a => {
         if (!a.schedule) return [a.name, { schedule: '', timezone: '', next_runs: [] }] as const
         try {
@@ -246,7 +246,7 @@ export default function AgentsPage() {
 
   useEffect(() => { load(); loadHealth() }, [])
 
-  // 调度编辑弹窗：实时预览未来触发时间（防止工作日/周末语义误解）
+  // Hộp thoại sửa lịch chạy: xem trước các mốc kích hoạt sắp tới theo thời gian thực (tránh hiểu nhầm nghĩa ngày làm việc/cuối tuần)
   useEffect(() => {
     if (!scheduleDialogAgent) {
       setSchedulePreview(null)
@@ -338,7 +338,7 @@ export default function AgentsPage() {
 
       const updated = await fetchAPI<StockConfig>(`/stocks/${stock.id}/agents`, {
         method: 'PUT',
-        // 保留该股票已有 Agent 的 schedule/模型/通知覆盖，仅切换当前 Agent 绑定状态
+        // Giữ nguyên schedule/mô hình/ghi đè thông báo của Agent đã có trên mã này, chỉ đổi trạng thái gắn Agent hiện tại
         body: JSON.stringify({
           agents: nextAgents.map(a => ({
             agent_name: a.agent_name,
@@ -442,7 +442,7 @@ export default function AgentsPage() {
     load()
   }
 
-  // 当 taConfigAgent 切换时,把它的 config 拷到表单
+  // Khi taConfigAgent đổi, chép config của nó vào biểu mẫu
   useEffect(() => {
     if (taConfigAgent) {
       setTaConfigForm({ ...(taConfigAgent.config || {}) })
@@ -460,7 +460,7 @@ export default function AgentsPage() {
       setTaConfigAgent(null)
       load()
     } catch (e) {
-      toast(e instanceof Error ? e.message : '保存失败', 'error')
+      toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error')
     }
   }
 
@@ -561,7 +561,7 @@ export default function AgentsPage() {
                     </div>
                     <p className="text-[13px] text-muted-foreground mt-2.5 ml-[22px] leading-relaxed">{agent.description}</p>
 
-                    {/* 执行周期 - 可点击编辑 */}
+                    {/* Chu kỳ chạy - bấm để sửa */}
                     <div className="flex items-center gap-2.5 mt-3.5 ml-[22px] flex-wrap">
                       <button
                         onClick={() => openScheduleDialog(agent)}
@@ -583,7 +583,7 @@ export default function AgentsPage() {
                       )}
                     </div>
 
-                    {/* 未来触发时间（按调度时区） */}
+                    {/* Mốc kích hoạt sắp tới (theo múi giờ của lịch chạy) */}
                     {'error' in (preview || {}) ? (
                       <div className="mt-2 ml-[22px] text-[11px] text-muted-foreground">
                         未来触发时间：{(preview as { error: string }).error}
@@ -690,7 +690,7 @@ export default function AgentsPage() {
                       onClick={() => toggleAgent(agent)}
                     >
                       <Power className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{agent.enabled ? '停用' : '启用'}</span>
+                      <span className="hidden sm:inline">{agent.enabled ? 'Tắt' : 'Bật'}</span>
                     </Button>
                   </div>
                 </div>
@@ -742,7 +742,7 @@ export default function AgentsPage() {
         </div>
       )}
 
-      {/* 调度设置弹窗 */}
+      {/* Hộp thoại thiết lập lịch chạy */}
       <Dialog open={!!scheduleDialogAgent} onOpenChange={open => !open && setScheduleDialogAgent(null)}>
         <DialogContent>
           <DialogHeader>
@@ -927,7 +927,7 @@ export default function AgentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* TradingAgents 深度配置弹窗 */}
+      {/* Hộp thoại cấu hình chuyên sâu TradingAgents */}
       <Dialog open={!!taConfigAgent} onOpenChange={open => !open && setTaConfigAgent(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>

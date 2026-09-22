@@ -16,16 +16,16 @@ interface AgentPermissionsPanelProps {
 }
 
 const RISK_LABELS: Record<ToolRisk, string> = {
-  read: '读取',
-  write: '修改',
-  external: '外部操作',
-  destructive: '破坏性操作',
+  read: 'Đọc',
+  write: 'Sửa',
+  external: 'Thao tác ra ngoài',
+  destructive: 'Thao tác phá hủy',
 }
 
 const MODE_LABELS: Record<PermissionMode, string> = {
-  allow: '直接允许',
-  ask: '每次询问',
-  deny: '禁止',
+  allow: 'Cho phép thẳng',
+  ask: 'Hỏi mỗi lần',
+  deny: 'Cấm',
 }
 
 function availableModes(tool: AgentToolPermission): PermissionMode[] {
@@ -42,9 +42,9 @@ export function AgentPermissionsPanel({ permissions, onChange, variant = 'card' 
   const content = (
     <>
       <div className="mb-4">
-        <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">助手工具权限</h3>
+        <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">Quyền công cụ của trợ lý</h3>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          仅影响助手可见和可执行的工具；破坏性操作始终禁止，需确认的工具不能设为直接允许。
+          Chỉ ảnh hưởng những công cụ trợ lý thấy và chạy được; thao tác phá hủy luôn bị cấm, công cụ cần xác nhận không đặt thành cho phép thẳng được.
         </p>
       </div>
       <div className={`grid gap-2 ${variant === 'drawer' ? 'grid-cols-2' : 'sm:grid-cols-2 xl:grid-cols-4'}`}>
@@ -55,7 +55,7 @@ export function AgentPermissionsPanel({ permissions, onChange, variant = 'card' 
           >
             <span className="min-w-0 shrink truncate whitespace-nowrap">{RISK_LABELS[item.risk]}</span>
             <select
-              aria-label={`${RISK_LABELS[item.risk]}默认权限`}
+              aria-label={`Quyền mặc định ${RISK_LABELS[item.risk]}`}
               value={item.mode}
               onChange={(event) => onChange({
                 selector_kind: 'risk',
@@ -74,13 +74,13 @@ export function AgentPermissionsPanel({ permissions, onChange, variant = 'card' 
       </div>
       <div className="mt-4 space-y-2">
         {permissions.tools.length === 0 ? (
-          <p className="py-2 text-[12px] text-muted-foreground">当前没有已注册的可配置工具。</p>
+          <p className="py-2 text-[12px] text-muted-foreground">Hiện chưa có công cụ nào đã đăng ký mà cấu hình được.</p>
         ) : permissions.tools.map((tool) => (
           <div key={tool.name} className="flex items-center justify-between gap-3 rounded-xl bg-accent/30 px-3 py-2.5">
             <div className="min-w-0">
               <p className="text-[12px] font-medium text-foreground">{tool.title}</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {tool.name} · {RISK_LABELS[tool.risk]}{tool.confirmation_required ? ' · 需确认' : ''}
+                {tool.name} · {RISK_LABELS[tool.risk]}{tool.confirmation_required ? ' · cần xác nhận' : ''}
               </p>
             </div>
             <select

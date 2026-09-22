@@ -36,10 +36,10 @@ const marketLabel = (m?: string) => {
 }
 
 const sourceAgentLabelMap: Record<string, string> = {
-  premarket_outlook: '盘前分析',
-  intraday_monitor: '盘中监测',
-  daily_report: '收盘复盘',
-  news_digest: '新闻速递',
+  premarket_outlook: 'Phân tích trước phiên',
+  intraday_monitor: 'Theo dõi trong phiên',
+  daily_report: 'Ôn lại sau phiên',
+  news_digest: 'Tin nhanh',
   market_scan: '市场扫描',
 }
 

@@ -23,11 +23,11 @@ describe('ApprovalCard', () => {
     )
 
     expect(screen.getByText('为贵州茅台创建价格提醒')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: '本次允许' }))
+    await user.click(screen.getByRole('button', { name: 'Cho phép lần này' }))
 
     expect(onDecision).toHaveBeenCalledTimes(1)
     expect(onDecision).toHaveBeenCalledWith('approved')
-    expect((screen.getByRole('button', { name: '拒绝' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: 'Từ chối' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('keeps a decided card visible with its execution status', () => {
@@ -45,8 +45,8 @@ describe('ApprovalCard', () => {
       />,
     )
 
-    expect(screen.getByText('已允许，已执行')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: '本次允许' })).toBeNull()
+    expect(screen.getByText('Đã cho phép, đã chạy')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Cho phép lần này' })).toBeNull()
   })
 
   it('shows a rejected card as a terminal decision without actions', () => {
@@ -64,8 +64,8 @@ describe('ApprovalCard', () => {
       />,
     )
 
-    const status = screen.getByText('已拒绝，不会执行')
+    const status = screen.getByText('Đã từ chối, sẽ không chạy')
     expect(status.className).toContain('text-destructive')
-    expect(screen.queryByRole('button', { name: '拒绝' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).toBeNull()
   })
 })

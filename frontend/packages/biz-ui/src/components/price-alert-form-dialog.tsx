@@ -59,11 +59,11 @@ interface ChannelOption {
 }
 
 const TYPE_LABEL: Record<ConditionType, string> = {
-  price: '价格',
-  change_pct: '涨跌幅%',
-  turnover: '成交额',
-  volume: '成交量',
-  volume_ratio: '量比',
+  price: 'Giá',
+  change_pct: 'Biên độ %',
+  turnover: 'Giá trị khớp lệnh',
+  volume: 'Khối lượng khớp lệnh',
+  volume_ratio: 'Tỷ lệ khối lượng',
 }
 
 const buildDefaultForm = (stockId = 0): PriceAlertFormState => ({
@@ -466,7 +466,7 @@ export default function PriceAlertFormDialog(props: {
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" onClick={() => props.onOpenChange(false)}>取消</Button>
             <Button onClick={submit} disabled={props.submitting}>
-              {props.submitting ? '保存中...' : (props.submitLabel || '保存规则')}
+              {props.submitting ? '保存中...' : (props.submitLabel || 'Lưu quy tắc')}
             </Button>
           </div>
         </div>
