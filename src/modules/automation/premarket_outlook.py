@@ -490,8 +490,8 @@ class PremarketOutlookAgent(BaseAgent):
 
     def _parse_suggestions(self, content: str, watchlist: list) -> dict[str, dict]:
         """
-        从 AI 响应中解析个股建议
-        返回: {symbol: {action, action_label, reason, should_alert}}
+        Bóc khuyến nghị từng mã từ phản hồi của AI.
+        Trả về: {symbol: {action, action_label, reason, should_alert}}
         """
         suggestions: dict[str, dict] = {}
         if not content or not watchlist:
@@ -643,7 +643,7 @@ class PremarketOutlookAgent(BaseAgent):
         return suggestions
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """调用 AI 分析并保存到历史/建议池"""
+        """Gọi AI phân tích rồi lưu vào lịch sử và kho khuyến nghị."""
         trace_id = str(data.get("run_trace_id") or datetime.now().strftime("%m%d%H%M%S%f")[-10:])
         start_ts = time.monotonic()
         logger.info(

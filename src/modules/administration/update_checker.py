@@ -1,4 +1,4 @@
-"""应用升级检测模块（基于 Docker Hub tag）。"""
+"""Module dò bản nâng cấp của ứng dụng (dựa trên tag trên Docker Hub)."""
 
 from __future__ import annotations
 

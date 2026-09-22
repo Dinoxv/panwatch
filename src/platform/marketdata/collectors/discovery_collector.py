@@ -25,7 +25,7 @@ class HotBoard:
 
 
 def get_market_data():
-    """惰性导入,避免模块加载时的循环依赖(便于测试 monkeypatch)。"""
+    """Import lười, tránh phụ thuộc vòng lúc nạp module (cũng tiện monkeypatch khi kiểm thử)."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()

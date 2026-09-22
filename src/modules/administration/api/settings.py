@@ -18,7 +18,7 @@ VERSION_FILE = Path(__file__).resolve().parents[4] / "VERSION"
 
 
 def get_app_version() -> str:
-    """获取应用版本号"""
+    """Lấy số phiên bản ứng dụng."""
     # Ưu tiên đọc từ biến môi trường
     version = os.getenv("APP_VERSION")
     if version:
@@ -62,7 +62,7 @@ SETTING_KEYS = list(SETTING_DESCRIPTIONS.keys())
 
 
 def _get_env_defaults() -> dict[str, str]:
-    """从 .env / 环境变量读取当前值作为默认"""
+    """Đọc giá trị hiện tại từ .env / biến môi trường để làm mặc định."""
     s = Settings()
     return {
         "http_proxy": s.http_proxy,
@@ -112,9 +112,9 @@ def _avatar_dir() -> str:
 
 @router.get("/avatar")
 def get_avatar(db: Session = Depends(get_db)):
-    """读取用户头像:DB 存文件名,图片本体在 data/avatars/,读取后以 data URL 返回。
+    """Đọc ảnh đại diện người dùng: cơ sở dữ liệu lưu tên tệp, ảnh thật nằm ở data/avatars/, đọc xong trả về dạng data URL.
 
-    GET /avatar 无同名 GET /{key},不存在路由抢匹配问题。
+    GET /avatar không trùng tên với GET /{key} nào nên không có chuyện hai route tranh nhau khớp.
     """
     row = db.query(AppSettings).filter(AppSettings.key == AVATAR_KEY).first()
     fname = (row.value if row and row.value else "").strip()
@@ -134,9 +134,9 @@ def get_avatar(db: Session = Depends(get_db)):
 
 @router.put("/avatar")
 def set_avatar(update: SettingUpdate, db: Session = Depends(get_db)):
-    """保存/清空用户头像:把 data URL 落成 data/avatars/avatar.* 文件,DB 仅记文件名。
+    """Lưu / xóa ảnh đại diện người dùng: ghi data URL thành tệp data/avatars/avatar.*, cơ sở dữ liệu chỉ ghi tên tệp.
 
-    需在 /{key} 之前注册以优先匹配。传空字符串即清空(删文件 + 清记录)。
+    Phải đăng ký trước /{key} để được khớp ưu tiên. Truyền chuỗi rỗng là xóa (xóa tệp + xóa bản ghi).
     """
     row = db.query(AppSettings).filter(AppSettings.key == AVATAR_KEY).first()
     old = (row.value if row else "") or ""
@@ -205,7 +205,7 @@ def update_setting(key: str, update: SettingUpdate, db: Session = Depends(get_db
 
 @router.get("/version")
 def get_version():
-    """获取应用版本号"""
+    """Lấy số phiên bản ứng dụng."""
     return {"version": get_app_version()}
 
 

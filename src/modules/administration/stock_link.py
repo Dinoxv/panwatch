@@ -1,6 +1,6 @@
-"""股票外部链接生成工具：根据股票代码、市场和用户选择的平台生成行情页 URL。
+"""Công cụ sinh liên kết ngoài cho cổ phiếu: dựng URL trang giá theo mã, thị trường và nền tảng người dùng chọn.
 
-全局设置 key: stock_link_platform (默认 xueqiu)
+Khóa cài đặt toàn cục: stock_link_platform (mặc định xueqiu)
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ SETTING_KEY = "stock_link_platform"
 
 
 def get_platform() -> str:
-    """从 AppSettings 读取当前配置的平台代码。"""
+    """Đọc mã nền tảng đang cấu hình từ AppSettings."""
     db = SessionLocal()
     try:
         row = db.query(AppSettings).filter(AppSettings.key == SETTING_KEY).first()
@@ -32,12 +32,12 @@ def get_platform() -> str:
 
 
 def stock_url(symbol: str, market: str, platform: str = "") -> str:
-    """生成股票行情页 URL。
+    """Sinh URL trang giá của cổ phiếu.
 
     Args:
-        symbol: 股票代码，如 "002837", "AAPL", "00883"
-        market: 市场代码，如 "CN", "US", "HK"
-        platform: 平台代码，为空时从全局设置读取
+        symbol: mã cổ phiếu, ví dụ "002837", "AAPL", "00883"
+        market: mã thị trường, ví dụ "CN", "US", "HK"
+        platform: mã nền tảng, để rỗng thì đọc từ cài đặt toàn cục
     """
     if not platform:
         platform = get_platform()
@@ -52,7 +52,7 @@ def stock_url(symbol: str, market: str, platform: str = "") -> str:
 
 
 def stock_link_markdown(symbol: str, market: str, platform: str = "") -> str:
-    """生成 Markdown 格式的股票链接: [002837.CN](https://xueqiu.com/S/SZ002837)"""
+    """Sinh liên kết cổ phiếu dạng Markdown: [002837.CN](https://xueqiu.com/S/SZ002837)"""
     code = f"{symbol}.{market}"
     url = stock_url(symbol, market, platform)
     return f"[{code}]({url})"

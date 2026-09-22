@@ -283,8 +283,8 @@ class NewsDigestAgent(BaseAgent):
 
     def _parse_suggestions(self, content: str, watchlist: list) -> dict[str, dict]:
         """
-        从 AI 响应中解析个股建议
-        返回: {symbol: {action, action_label, reason, should_alert}}
+        Bóc khuyến nghị từng mã từ phản hồi của AI.
+        Trả về: {symbol: {action, action_label, reason, should_alert}}
         """
         suggestions: dict[str, dict] = {}
         if not content or not watchlist:

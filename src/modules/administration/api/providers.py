@@ -257,7 +257,7 @@ def _batch_add_models_once(service_id: int, body: BatchModelCreate, db: Session)
 def batch_add_models(
     service_id: int, body: BatchModelCreate, db: Session = Depends(get_db)
 ):
-    """批量写入模型；本地 SQLite 短暂争用时重试并快速返回可读错误。"""
+    """Ghi mô hình hàng loạt; SQLite cục bộ tranh chấp tạm thời thì thử lại rồi trả nhanh một lỗi đọc được."""
     for attempt in range(3):
         try:
             return _batch_add_models_once(service_id, body, db)

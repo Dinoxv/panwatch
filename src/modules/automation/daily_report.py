@@ -40,7 +40,7 @@ _CN_INDEX_TENCENT_SYMBOLS = ["sh000001", "sz399001", "sz399006"]
 
 
 def get_market_data():
-    """惰性 import,避免包未装/循环 import 影响本模块加载。"""
+    """Import lười, tránh việc gói chưa cài / import vòng làm hỏng quá trình nạp module này."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()
@@ -401,8 +401,8 @@ class DailyReportAgent(BaseAgent):
 
     def _parse_suggestions(self, content: str, watchlist: list) -> dict[str, dict]:
         """
-        从 AI 响应中解析个股建议
-        返回: {symbol: {action, action_label, reason, should_alert}}
+        Bóc khuyến nghị từng mã từ phản hồi của AI.
+        Trả về: {symbol: {action, action_label, reason, should_alert}}
         """
         suggestions: dict[str, dict] = {}
         if not content or not watchlist:
@@ -566,7 +566,7 @@ class DailyReportAgent(BaseAgent):
         return suggestions
 
     async def analyze(self, context: AgentContext, data: dict) -> AnalysisResult:
-        """调用 AI 分析并保存到历史/建议池"""
+        """Gọi AI phân tích rồi lưu vào lịch sử và kho khuyến nghị."""
         system_prompt, user_content = self.build_prompt(data, context)
         content = await context.ai_client.chat(system_prompt, user_content)
 

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_market_data():
-    """惰性 import,避免包未装/循环 import 影响本模块加载。"""
+    """Import lười, tránh việc gói chưa cài / import vòng làm hỏng quá trình nạp module này."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
     return _g()
 

@@ -34,7 +34,7 @@ def _clear_caches():
 
 
 class _FakeMarketData:
-    """假的 marketdata.MarketData,只实现 klines(),记录调用次数。"""
+    """marketdata.MarketData giả, chỉ cài đặt klines() và đếm số lần được gọi."""
 
     def __init__(self, fetch):
         self._fetch = fetch

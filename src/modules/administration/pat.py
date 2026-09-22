@@ -1,16 +1,21 @@
-"""个人访问令牌(PAT)工具。
+"""Công cụ cho mã truy cập cá nhân (PAT).
 
-MCP 端点专用的独立鉴权体系,与登录 JWT 分流(参考 BeeCount-Cloud 模式):
+Hệ xác thực riêng dành cho endpoint MCP, tách khỏi JWT đăng nhập (tham khảo mô hình
+của BeeCount-Cloud):
 
-- 明文前缀 ``pwmcp_``(便于用户与 secret scanner 识别,类比 GitHub ``ghp_``);
-- 创建时仅返回一次明文,库里只存 sha256(``token_hash``);
-- 校验用 ``hmac.compare_digest`` 常数时间比较,防 timing attack;
-- 不用 bcrypt/PBKDF2 —— token 本身已是 256bit 随机熵,不像密码需抗暴破,
-  且 MCP 每次 tool call 都要校验一次,sha256 + 常数时间比较又快又够安全。
+- Bản rõ mang tiền tố ``pwmcp_`` (để người dùng và bộ quét secret nhận ra, tương tự
+  ``ghp_`` của GitHub);
+- Chỉ trả bản rõ đúng một lần lúc tạo, trong cơ sở dữ liệu chỉ lưu sha256 (``token_hash``);
+- Kiểm tra bằng ``hmac.compare_digest`` để so sánh trong thời gian hằng định, chống
+  tấn công đo thời gian;
+- Không dùng bcrypt/PBKDF2 — bản thân token đã có 256 bit entropy ngẫu nhiên nên không
+  cần chống dò như mật khẩu, mà MCP lại phải kiểm tra ở mỗi lời gọi công cụ, nên sha256
+  cộng so sánh thời gian hằng định vừa nhanh vừa đủ an toàn.
 
-分流保证(PAT 只能进 MCP 端点):
-- 普通 API 走 JWT(auth.get_current_user),PAT(pwmcp_ 前缀)不是合法 JWT → 被拒;
-- MCP 端点走 PAT 校验,非 pwmcp_ 前缀的 JWT → 被拒。
+Bảo đảm tách luồng (PAT chỉ vào được endpoint MCP):
+- API thường đi qua JWT (auth.get_current_user), PAT (tiền tố pwmcp_) không phải JWT
+  hợp lệ → bị từ chối;
+- Endpoint MCP kiểm tra PAT, JWT không mang tiền tố pwmcp_ → bị từ chối.
 """
 
 import hashlib
@@ -26,15 +31,15 @@ SCOPE_MCP_READ = "mcp:read"
 
 
 def hash_token(token: str) -> str:
-    """sha256 十六进制摘要。"""
+    """Tóm tắt sha256 dạng thập lục phân."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def generate_pat() -> tuple[str, str, str]:
-    """生成一个 PAT。
+    """Sinh một PAT.
 
     Returns:
-        (plaintext, token_hash, display_prefix) —— plaintext 只在创建时返回一次。
+        (plaintext, token_hash, display_prefix) — plaintext chỉ được trả về đúng một lần lúc tạo.
     """
     raw = secrets.token_urlsafe(PAT_RANDOM_BYTES)
     plaintext = f"{PAT_PREFIX}{raw}"
@@ -42,10 +47,10 @@ def generate_pat() -> tuple[str, str, str]:
 
 
 def looks_like_pat(token: str) -> bool:
-    """按前缀判断是否 PAT(用于鉴权路由分流,避免每个请求两遍解码)。"""
+    """Nhận biết PAT qua tiền tố (để tách luồng xác thực, khỏi phải giải mã hai lần ở mỗi request)."""
     return bool(token) and token.startswith(PAT_PREFIX)
 
 
 def verify_pat_hash(provided_token: str, stored_hash: str) -> bool:
-    """常数时间比较 PAT 的 sha256,防 timing attack。"""
+    """So sánh sha256 của PAT trong thời gian hằng định, chống tấn công đo thời gian."""
     return hmac.compare_digest(hash_token(provided_token), stored_hash)
