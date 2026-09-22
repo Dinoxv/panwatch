@@ -26,7 +26,7 @@ class _StockHK:
 
 
 # ============================================================
-# 1. 市场判定
+# 1. Xác định thị trường
 # ============================================================
 
 def test_is_a_share_6_digits():
@@ -52,7 +52,7 @@ def test_is_panwatch_routable_covers_a_and_hk():
 
 
 # ============================================================
-# 2. 港股 ticker 格式转换
+# 2. Chuyển đổi định dạng mã cổ phiếu Hồng Kông
 # ============================================================
 
 def test_hk_symbol_to_yfinance_strips_leading_zero():
@@ -67,7 +67,7 @@ def test_hk_symbol_to_yfinance_tencent():
 
 def test_hk_symbol_to_yfinance_already_4_digits_padded():
     """4 位数字也加 .HK 后缀"""
-    assert hk_symbol_to_yfinance("0700") == "0700"  # 非 5 位不转
+    assert hk_symbol_to_yfinance("0700") == "0700"  # Không phải 5 chữ số thì không chuyển
 
 
 def test_hk_symbol_to_yfinance_skips_non_hk():
@@ -76,7 +76,7 @@ def test_hk_symbol_to_yfinance_skips_non_hk():
 
 
 # ============================================================
-# 3. yfinance 响应判定
+# 3. Đánh giá phản hồi của yfinance
 # ============================================================
 
 def test_yfinance_no_data_detected():
@@ -90,7 +90,7 @@ def test_yfinance_empty_response_detected():
     """空字符串/极短 → 无数据"""
     assert _yfinance_response_has_data("") is False
     assert _yfinance_response_has_data("   ") is False
-    assert _yfinance_response_has_data("date,open,high") is False  # 仅表头
+    assert _yfinance_response_has_data("date,open,high") is False  # Chỉ có dòng tiêu đề
 
 
 def test_yfinance_real_data_detected():

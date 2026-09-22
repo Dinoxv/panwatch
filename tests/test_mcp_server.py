@@ -34,7 +34,7 @@ def client_and_session(monkeypatch):
         finally:
             db.close()
 
-    # 审计日志写库也指向内存库,避免污染真实库
+    # Nhật ký kiểm toán cũng ghi vào cơ sở dữ liệu trong bộ nhớ, tránh làm bẩn cơ sở dữ liệu thật
     monkeypatch.setattr(mcp_api, "SessionLocal", TestSession)
 
     app = FastAPI()
@@ -144,7 +144,7 @@ def test_tools_call_and_audit_log(client_and_session):
     assert res["content"][0]["type"] == "text"
     assert isinstance(res["content"][0]["text"], str)
 
-    # 审计日志落库
+    # Nhật ký kiểm toán đã được lưu
     from src.platform.persistence.models import MCPCallLog
 
     db = TestSession()

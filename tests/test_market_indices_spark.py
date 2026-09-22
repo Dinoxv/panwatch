@@ -45,7 +45,7 @@ def test_spark_injected_for_each_index(monkeypatch):
     assert len(out) == len(mkt.MARKET_INDICES)
     for item in out:
         assert item["spark"] == [100 + i for i in range(20)]
-    # 近20日收盘:days=20 原样透传
+    # Đóng cửa 20 phiên gần nhất: days=20 chuyển thẳng nguyên trạng
     assert all(d == 20 for d in captured_days.values())
 
 
@@ -74,11 +74,11 @@ def test_spark_failsoft_on_error_or_unmapped(monkeypatch):
 
     out = asyncio.run(mkt.get_market_indices())
 
-    # quote 主体不受影响:上证指数仍返回正确行情
+    # Phần quote chính không bị ảnh hưởng: Chỉ số Thượng Hải vẫn trả đúng dữ liệu giá
     sh = next(i for i in out if i["symbol"] == "000001")
     assert sh["current_price"] == 3200.0
     assert sh["spark"] == []
-    # 未映射/取数失败的指数(如美股)同样 spark=[] 且仍在结果里
+    # Chỉ số chưa ánh xạ / lấy dữ liệu thất bại (ví dụ chỉ số Mỹ) cũng có spark=[] và vẫn nằm trong kết quả
     assert all(i["spark"] == [] for i in out)
     assert len(out) == len(mkt.MARKET_INDICES)
 
@@ -115,4 +115,4 @@ def test_indices_response_cached_60s(monkeypatch):
 
     assert out1 == out2
     assert call_count["quotes"] == 1
-    assert call_count["klines"] == len(mkt.MARKET_INDICES)  # 只在第一次调用时逐指数拉取一次
+    assert call_count["klines"] == len(mkt.MARKET_INDICES)  # Chỉ lấy lần lượt từng chỉ số đúng một lần ở lời gọi đầu tiên

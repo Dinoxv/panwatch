@@ -78,6 +78,6 @@ def test_reset_to_seed_endpoint_deletes_orphan_and_returns_summary():
     db2 = Session()
     remaining = {(s.type, s.provider) for s in db2.query(DataSource).all()}
     assert ("news", "cls") not in remaining
-    # 缺失的默认(如东财K线)应被补回
+    # Các mặc định còn thiếu (ví dụ nến EastMoney) phải được bù lại
     assert ("kline", "eastmoney") in remaining
     db2.close()

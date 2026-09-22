@@ -25,7 +25,7 @@ def test_m120_adds_agent_prediction_evaluation_columns(tmp_path):
                 text("PRAGMA table_info(agent_prediction_outcomes)")
             )
         }
-    # Windows 会因连接池保留 sqlite 文件句柄而无法清理临时目录。
+    # Trên Windows, pool kết nối giữ handle tệp sqlite nên không dọn được thư mục tạm.
     engine.dispose()
 
     assert {"prediction_group_id", "horizon_unit"} <= columns

@@ -304,12 +304,12 @@ def test_get_cashflow_does_not_match_capital_flow_branch():
         result = _serve_from_panwatch("get_cashflow", "600519", {})
     # Nhánh dòng tiền sẽ trả "No capital flow data" — không được xuất hiện
     assert "No capital flow data" not in result
-    # 应该是现金流量表
+    # Phải là báo cáo lưu chuyển tiền tệ
     assert "Cash Flow" in result
 
 
 # ============================================================
-# 7. get_income_statement → 真实利润表
+# 7. get_income_statement → báo cáo kết quả kinh doanh thật
 # ============================================================
 
 def test_get_income_statement_returns_real_revenue_and_profit():
@@ -317,14 +317,14 @@ def test_get_income_statement_returns_real_revenue_and_profit():
     with panwatch_data_context(_full_ctx()):
         result = _serve_from_panwatch("get_income_statement", "600519", {})
     assert "Income Statement" in result
-    # 营收 1800 亿
+    # Doanh thu 1800 trăm triệu
     assert "1800.00 亿" in result or "500.00 亿" in result
     # Biên lợi nhuận gộp 91%
     assert "91.00%" in result or "91.50%" in result
 
 
 # ============================================================
-# 8. Stock metadata header — 公司名永远在,LLM 不会瞎编
+# 8. Phần đầu siêu dữ liệu cổ phiếu — tên công ty luôn có mặt nên LLM không bịa bừa
 # ============================================================
 
 def test_all_tools_include_stock_metadata_header():

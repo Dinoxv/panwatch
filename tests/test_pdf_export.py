@@ -30,7 +30,7 @@ def test_render_pdf_returns_valid_bytes_with_chinese():
     assert len(data) > 1500
 
     if not _WEASY:
-        return  # xhtml2pdf 回退:中文走 STSong-Light CID,不进文本层;仅 WeasyPrint 路径保证可复制中文
+        return  # Dự phòng xhtml2pdf: tiếng Trung đi qua CID STSong-Light nên không vào lớp văn bản; chỉ đường WeasyPrint mới bảo đảm tiếng Trung sao chép được
 
     from pypdf import PdfReader
 
@@ -95,7 +95,7 @@ def test_pdf_endpoint_returns_full_detail_content():
         db.add(AnalysisHistory(
             agent_name="tradingagents", stock_symbol="601238",
             analysis_date="2026-06-20", title="【深度】广汽集团(601238):持有",
-            content="# 摘要\n\n**持有**",  # content 是精简版,不含下面这些
+            content="# 摘要\n\n**持有**",  # content là bản rút gọn, không chứa các phần dưới đây
             raw_data={
                 "suggestion": {"action_label": "持有", "confidence": 5.0},
                 "final_decision": "PM决策正文",
@@ -112,13 +112,13 @@ def test_pdf_endpoint_returns_full_detail_content():
         assert "attachment" in resp.headers["content-disposition"]
 
         if not _WEASY:
-            return  # 中文文本层仅 WeasyPrint 路径可提取;content 组装由 test_assemble_* 覆盖
+            return  # Lớp văn bản tiếng Trung chỉ trích xuất được ở đường WeasyPrint; phần ghép content đã được test_assemble_* phủ
 
         from pypdf import PdfReader
 
         reader = PdfReader(io.BytesIO(bytes(resp.body)))
         txt = "\n".join((p.extract_text() or "") for p in reader.pages)
-        # content 摘要里没有的「分析师全文 / 辩论全文」确实进了 PDF
+        # Phần «toàn văn chuyên viên phân tích / toàn văn tranh luận» vốn không có trong tóm tắt content thì thật sự đã vào PDF
         assert "技术面分析正文UNIQUE" in txt
         assert "多头观点UNIQUE" in txt
     finally:

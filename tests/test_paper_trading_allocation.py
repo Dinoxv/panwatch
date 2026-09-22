@@ -65,7 +65,7 @@ class TestAllocationsFromExcluded(unittest.TestCase):
 class TestComputeMarketCash(unittest.TestCase):
     def test_basic(self):
         """子池现金 — 初始×比例 + 已实现 − 持仓成本"""
-        # 100万×50% + 5000 − 300000 = 205000
+        # 1.000.000 × 50% + 5.000 − 300.000 = 205.000
         self.assertAlmostEqual(
             compute_market_cash(1_000_000, 0.5, 5000, 300000), 205000.0
         )
@@ -76,7 +76,7 @@ class TestComputeMarketCash(unittest.TestCase):
 
     def test_over_allocated_negative(self):
         """子池现金 — 持仓超出额度时返回负（无新仓空间）"""
-        # 100万×10% − 20万持仓 = -10万
+        # 1.000.000 × 10% − 200.000 vị thế = -100.000
         self.assertLess(compute_market_cash(1_000_000, 0.1, 0, 200000), 0)
 
 

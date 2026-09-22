@@ -34,7 +34,7 @@ def _result(decision_raw: str, final_decision_text: str = "") -> dict:
 
 
 # ============================================================
-# 5 档评级 → 3 档 action + 中文标签
+# Thang 5 bậc → action 3 bậc + nhãn hiển thị
 # ============================================================
 
 def test_buy_rating_maps_to_buy():
@@ -64,7 +64,7 @@ def test_underweight_rating_maps_to_sell_with_zh_label():
     assert r.raw_data["suggestion"]["action"] == "sell"
     assert r.raw_data["suggestion"]["action_label"] == "减持"
     assert r.raw_data["suggestion"]["rating_raw"] == "underweight"
-    # 应触发提醒(不是 hold)
+    # Phải kích hoạt cảnh báo (không phải hold)
     assert r.raw_data["suggestion"]["should_alert"] is True
 
 
@@ -75,7 +75,7 @@ def test_sell_rating_maps_to_sell():
 
 
 # ============================================================
-# Fallback:propagate() 没返回 5 档,从文本里抽
+# Dự phòng: propagate() không trả thang 5 bậc thì bóc từ văn bản
 # ============================================================
 
 def test_decision_text_with_rating_label():
@@ -116,7 +116,7 @@ def test_review_signal_is_preserved_as_manual_review():
         ta_result=_result("REVIEW", final_decision_text="上游无法解析最终评级"),
     )
     suggestion = r.raw_data["suggestion"]
-    assert suggestion["action"] == "hold"  # 保持现有前端 3 档 API
+    assert suggestion["action"] == "hold"  # Giữ nguyên API 3 bậc hiện có của giao diện
     assert suggestion["action_label"] == "待人工复核"
     assert suggestion["rating_raw"] == "review"
     assert suggestion["should_alert"] is True
@@ -147,11 +147,11 @@ def test_decision_unrecognized_then_text_has_underweight():
 
 
 # ============================================================
-# 正文与上游 decision 冲突:正文为准(生产 bug 回归)
-# 上游 propagate 二次提炼出 "HOLD",但 PM 正文白纸黑字写"卖出/买入",
-# 必须以正文为准。真实中文 PM 正文用全角标点(：),早期正则只认半角(:)
-# 导致"最终交易决策：Buy"匹配不到、仍回退到失真的 decision=HOLD 显示"持有"。
-# 这里全角/半角都覆盖。
+# Phần thân mâu thuẫn với decision của thượng nguồn: lấy phần thân làm chuẩn (test hồi quy cho lỗi từng gặp ở môi trường thật)
+# propagate của thượng nguồn chắt lọc lần hai ra "HOLD", nhưng phần thân của PM ghi rành rành "卖出 / 买入",
+# nên bắt buộc lấy phần thân làm chuẩn. Bản PM tiếng Trung thật dùng dấu toàn chiều rộng (：), regex bản đầu chỉ nhận nửa chiều rộng (:)
+# nên "最终交易决策：Buy" không khớp được và vẫn lùi về decision=HOLD đã méo, hiển thị thành "持有".
+# Ở đây phủ cả toàn chiều rộng lẫn nửa chiều rộng.
 # ============================================================
 
 def test_fullwidth_colon_buy_overrides_hold():
@@ -184,9 +184,9 @@ def test_halfwidth_colon_still_works():
 
 def test_parse_rating_label_covers_both_colons():
     """_parse_rating_label 全角(：)半角(:)冒号都能解析"""
-    assert _parse_rating_label("最终交易决策：Buy") == "buy"   # 全角
+    assert _parse_rating_label("最终交易决策：Buy") == "buy"   # Toàn chiều rộng
     assert _parse_rating_label("最终交易决策: Buy") == "buy"   # Ký tự nửa chiều rộng
-    assert _parse_rating_label("评级：卖出") == "sell"          # 全角中文
+    assert _parse_rating_label("评级：卖出") == "sell"          # Tiếng Trung, dấu toàn chiều rộng
     assert _parse_rating_label("评级: Sell") == "sell"         # Ký tự nửa chiều rộng
     assert _parse_rating_label("FINAL TRANSACTION PROPOSAL: **BUY**") == "buy"
 
@@ -210,7 +210,7 @@ def test_text_label_not_confused_by_distractor_words():
 
 
 # ============================================================
-# Markdown 渲染:5 档评级标签写进 markdown 头部
+# Kết xuất Markdown: nhãn xếp hạng 5 bậc được ghi vào phần đầu markdown
 # ============================================================
 
 def test_markdown_shows_5_tier_rating_in_header():
@@ -220,23 +220,23 @@ def test_markdown_shows_5_tier_rating_in_header():
         ta_result=_result("Underweight", final_decision_text="Rating: Underweight\n\nReason: ..."),
     )
     assert "减持" in r.content
-    # 既要有 action_label,也要有 rating note
+    # Phải có cả action_label lẫn ghi chú xếp hạng
     assert r.content.count("减持") >= 1
 
 
 # ============================================================
-# raw_data 里同时保留 3 档(decision) + 5 档(rating)
+# raw_data giữ đồng thời cả 3 bậc (decision) và 5 bậc (rating)
 # ============================================================
 
 def test_raw_data_has_both_decision_and_rating():
     """前端兼容:既要有 3 档 decision 给老代码,也要有 5 档 rating 给新展示"""
     r = map_state_to_result(stock=_stock(), ta_result=_result("Overweight"))
-    assert r.raw_data["decision"] == "buy"  # 3 档
-    assert r.raw_data["rating"] == "overweight"  # 5 档
+    assert r.raw_data["decision"] == "buy"  # 3 bậc
+    assert r.raw_data["rating"] == "overweight"  # 5 bậc
 
 
 # ============================================================
-# 静态 mapping 完整性
+# Tính đầy đủ của bảng ánh xạ tĩnh
 # ============================================================
 
 def test_all_5_ratings_have_label():
@@ -251,7 +251,7 @@ def test_action_map_only_uses_3_actions():
 
 
 # ============================================================
-# Markdown 完整性:9 个 Agent 的产出都体现
+# Tính đầy đủ của Markdown: sản phẩm của cả 9 Agent đều được thể hiện
 # ============================================================
 
 def _full_state():
@@ -282,9 +282,9 @@ def test_markdown_contains_decision_chain():
     assert "研究主管裁决" in content
     assert "倾向谨慎持有" in content
     assert "风控辩论裁决" in content
-    # 不再把分析师概览塞进主体(早先截 300 字会把财务表格截在表头)
+    # Không nhét phần tổng quan của chuyên viên phân tích vào thân nữa (bản trước cắt 300 chữ làm bảng tài chính bị cắt ngay ở dòng tiêu đề)
     assert "4 位分析师观点概览" not in content
-    # 完整分析师报告在 raw_data,前端 tab 渲染
+    # Báo cáo đầy đủ của chuyên viên phân tích nằm ở raw_data, giao diện dựng trong tab
     reports = r.raw_data["analyst_reports"]
     assert reports["market"] and reports["social"] and reports["news"] and reports["fundamentals"]
 
@@ -297,16 +297,16 @@ def test_analyst_reports_full_not_truncated():
         ta_result={"decision": "Hold", "final_state": state, "cost_usd": 0.05},
     )
     reports = r.raw_data["analyst_reports"]
-    # 完整等于原始报告,无任何截断
+    # Bản đầy đủ đúng bằng báo cáo gốc, không cắt bớt gì
     assert reports["market"] == state["market_report"]
     assert reports["fundamentals"] == state["fundamentals_report"]
-    assert len(reports["market"]) > 300  # 远超旧的 300 字概览上限
+    assert len(reports["market"]) > 300  # Vượt xa trần 300 chữ của phần tổng quan cũ
 
 
 def test_empty_analyst_kept_empty_in_raw_data():
     """某位分析师没产出 → raw_data 里为空串(前端 tab 跳过该 tab)"""
     state = _full_state()
-    state["social_report"] = ""  # 情绪分析师没跑
+    state["social_report"] = ""  # Chuyên viên phân tích tâm lý không chạy
     r = map_state_to_result(
         stock=_stock(),
         ta_result={"decision": "Hold", "final_state": state, "cost_usd": 0.05},
@@ -328,7 +328,7 @@ def test_markdown_skips_judge_when_no_debate():
 
 
 # ============================================================
-# 情绪分析师字段(上游 sentiment_report) + 通知完整内容
+# Trường của chuyên viên phân tích tâm lý (sentiment_report của thượng nguồn) + nội dung thông báo đầy đủ
 # ============================================================
 
 def test_sentiment_report_maps_to_social():
@@ -358,25 +358,25 @@ def test_notify_content_only_final_decision():
         "risk_debate_state": {"history": "风控三方辩论正文", "judge_decision": "风控团队结论:仓位可控"},
     }
     r = map_state_to_result(stock=_stock(), ta_result={"decision": "Buy", "final_state": state, "cost_usd": 0.01})
-    # 通知体单独设置(不再回退 content)
+    # Thân thông báo được đặt riêng (không còn lùi về content)
     assert r.notify_content is not None
     nc = r.notify_content
-    # 含最终决策核心(决策摘要 + PM 决策书正文)
+    # Chứa phần cốt lõi của quyết định cuối (tóm tắt quyết định + phần thân bản quyết định của PM)
     assert "最终决策" in nc
     assert "买入" in nc
     assert "基本面拐点确认" in nc
-    # 不含交易员计划 / 裁决 / 风控 / 分析师明细的具体内容
+    # Không chứa nội dung chi tiết của kế hoạch trader / phán quyết / quản trị rủi ro / chuyên viên phân tích
     assert "分三批建仓" not in nc
     assert "倾向看多" not in nc
     assert "仓位可控" not in nc
     assert state["market_report"] not in nc
-    # content(完整)仍含决策链(供详情页/历史)
+    # content (bản đầy đủ) vẫn chứa chuỗi quyết định (cho trang chi tiết / lịch sử)
     assert "PM 最终决策书" in r.content
     assert "交易员执行计划" in r.content
 
 
 # ============================================================
-# 置信度 A+B:优先抓 PM 显式数字(含全角冒号),抓不到按评级推导
+# Độ tin cậy theo phương án A+B: ưu tiên bắt con số tường minh của PM (kể cả dấu hai chấm toàn chiều rộng), không bắt được thì suy từ xếp hạng
 # ============================================================
 
 def test_confidence_extracted_fullwidth_colon():

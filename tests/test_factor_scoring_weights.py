@@ -43,16 +43,16 @@ def test_factor_weight_boost_adds_one_raw_factor():
     base = _bd(row, {"alpha_score": 1.0})
     boosted = _bd(row, {"alpha_score": 2.0})
 
-    # 快照存 raw 因子分(IC 测在 raw 上),不随权重变化
+    # Ảnh chụp lưu điểm nhân tố thô (IC đo trên bản thô), không đổi theo trọng số
     assert boosted["alpha_score"] == base["alpha_score"]
     assert base["alpha_score"] > 0
-    # 加权只体现在合成的 raw_score 上
+    # Trọng số chỉ thể hiện ở raw_score sau khi tổng hợp
     assert abs((boosted["raw_score"] - base["raw_score"]) - base["alpha_score"]) < 1e-6
 
 
 def test_penalty_weight_increases_deduction():
     """惩罚因子权重升高 → 扣分更多 → raw_score 更低。"""
-    # 制造非零 risk_penalty:status 非 active(+2.5)
+    # Tạo risk_penalty khác 0: status không phải active (+2,5)
     row = _candidate(status="inactive")
     base = _bd(row, {"risk_penalty": 1.0})
     heavier = _bd(row, {"risk_penalty": 2.0})

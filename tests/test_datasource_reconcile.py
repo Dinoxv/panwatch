@@ -29,7 +29,7 @@ def test_reconcile_deletes_orphans_keeps_user_custom_and_fills_missing_defaults(
     """对账:删孤儿(news/cls、kline/tushare),保留用户自定义 quote/tencent(config/priority 原样),补回缺失默认。"""
     db = _make_session()
 
-    # 孤儿 1:news/cls —— 既不在 marketdata 包内引擎集合,也不在当前 seed 列表里
+    # Bản ghi mồ côi 1: news/cls — vừa không thuộc tập engine trong gói marketdata, vừa không nằm trong danh sách khởi tạo hiện tại
     db.add(
         DataSource(
             name="财联社电报",
@@ -42,7 +42,7 @@ def test_reconcile_deletes_orphans_keeps_user_custom_and_fills_missing_defaults(
             test_symbols=[],
         )
     )
-    # 孤儿 2:kline/tushare —— Step3 已从 seed 里删除,包内也没有对应 vendor
+    # Bản ghi mồ côi 2: kline/tushare — Bước 3 đã xóa khỏi danh sách khởi tạo, trong gói cũng không có vendor tương ứng
     db.add(
         DataSource(
             name="Tushare K线",
@@ -55,7 +55,7 @@ def test_reconcile_deletes_orphans_keeps_user_custom_and_fills_missing_defaults(
             test_symbols=["600519"],
         )
     )
-    # 有效自定义:quote/tencent 是合法 seed 默认,但用户改过 config/priority —— 应原样保留
+    # Tùy chỉnh hợp lệ: quote/tencent là mặc định khởi tạo hợp lệ nhưng người dùng đã sửa config/priority — phải giữ nguyên
     db.add(
         DataSource(
             name="腾讯行情",
@@ -69,25 +69,25 @@ def test_reconcile_deletes_orphans_keeps_user_custom_and_fills_missing_defaults(
         )
     )
     db.commit()
-    # 故意不插入某个 seed 默认(例如东方财富 K线),验证 reconcile 会补回
+    # Cố tình không chèn một mặc định khởi tạo nào đó (ví dụ nến EastMoney) để kiểm chứng reconcile sẽ bù lại
 
     result = server.reconcile_data_sources(db)
 
     remaining = {(s.type, s.provider): s for s in db.query(DataSource).all()}
 
-    # 孤儿被删
+    # Bản ghi mồ côi bị xóa
     assert ("news", "cls") not in remaining
     assert ("kline", "tushare") not in remaining
 
-    # 用户自定义配置原样保留
+    # Cấu hình do người dùng tùy chỉnh được giữ nguyên
     kept = remaining[("quote", "tencent")]
     assert kept.config == {"foo": 1}
     assert kept.priority == 99
 
-    # 缺失的默认被补回
+    # Các mặc định còn thiếu được bù lại
     assert ("kline", "eastmoney") in remaining
 
-    # summary 里能看到删除记录
+    # Trong summary thấy được bản ghi đã xóa
     deleted_pairs = {(d["type"], d["provider"]) for d in result["deleted"]}
     assert ("news", "cls") in deleted_pairs
     assert ("kline", "tushare") in deleted_pairs

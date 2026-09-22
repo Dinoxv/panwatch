@@ -11,8 +11,8 @@ import pytest
 from src.platform.scheduling import trading_calendar as tc
 from src.platform.marketdata.models import MARKETS, MarketCode
 
-# 2026 年真实日历切片:8/8 周六、8/9 周日休市;8/10 周一开市;
-# 10/1~10/8 国庆休市(其中 10/1 是周四 —— 工作日却休市,只靠周末判断抓不到)。
+# Lát cắt lịch thật năm 2026: 8/8 thứ Bảy, 8/9 Chủ nhật nghỉ; 8/10 thứ Hai mở cửa;
+# 10/1~10/8 nghỉ Quốc khánh (trong đó 10/1 rơi vào thứ Năm — ngày làm việc mà vẫn nghỉ, chỉ xét cuối tuần thì không bắt được).
 _FAKE_CN_DATES = frozenset(
     {
         date(2026, 8, 3),
@@ -56,7 +56,7 @@ def loaded_calendar(monkeypatch):
 def test_cuoi_tuan_khong_phai_phien_khong_can_lich():
     """周末即使没有日历也判为非交易日(零依赖、永远准确)。"""
     assert tc.is_trading_day(MarketCode.CN, date(2026, 8, 8)) is False  # Thứ Bảy
-    assert tc.is_trading_day(MarketCode.CN, date(2026, 8, 9)) is False  # 周日
+    assert tc.is_trading_day(MarketCode.CN, date(2026, 8, 9)) is False  # Chủ nhật
     assert tc.is_trading_day(MarketCode.HK, date(2026, 8, 8)) is False
     assert tc.is_trading_day(MarketCode.US, date(2026, 8, 9)) is False
 
@@ -70,24 +70,24 @@ def test_ngay_nghi_le_khong_phai_phien_giao_dich(loaded_calendar):
     """国庆(10/1 周四)靠日历识别为休市 —— 周末判断抓不到这一类。"""
     assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 1)) is False
     assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 2)) is False
-    assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 9)) is True  # 节后首个交易日
+    assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 9)) is True  # Phiên giao dịch đầu tiên sau kỳ nghỉ
 
 
 def test_thieu_lich_ha_cap_chi_xet_cuoi_tuan():
     """拿不到日历时工作日一律视为交易日 —— 宁可多跑,不可漏发一整天。"""
     assert tc._CN_TRADING_DATES is None
-    assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 1)) is True  # 降级:识别不出国庆
-    assert tc.is_trading_day(MarketCode.CN, date(2026, 8, 8)) is False  # 但周末照样拦住
+    assert tc.is_trading_day(MarketCode.CN, date(2026, 10, 1)) is True  # Hạ cấp: không nhận ra kỳ nghỉ Quốc khánh
+    assert tc.is_trading_day(MarketCode.CN, date(2026, 8, 8)) is False  # nhưng cuối tuần vẫn chặn được như thường
 
 
 def test_ngoai_pham_vi_lich_ha_cap_chi_xet_cuoi_tuan(loaded_calendar):
     """查询日期超出日历区间(如跨年未刷新)时降级,不误判交易日为休市。"""
-    assert tc.is_trading_day(MarketCode.CN, date(2027, 3, 1)) is True  # 2027-03-01 是周一
+    assert tc.is_trading_day(MarketCode.CN, date(2027, 3, 1)) is True  # 2027-03-01 là thứ Hai
 
 
 def test_hk_us_khong_co_lich_chi_xet_cuoi_tuan(loaded_calendar):
     """A 股日历不套用到港美股(节假日不同),它们只判周末。"""
-    # 10/1 对港股/美股不是中国法定假日,不应被 A 股日历误伤
+    # 10/1 không phải ngày nghỉ lễ Trung Quốc đối với cổ phiếu Hồng Kông / Mỹ, không được để lịch của thị trường A làm ảnh hưởng oan
     assert tc.is_trading_day(MarketCode.US, date(2026, 10, 1)) is True
     assert tc.is_trading_day(MarketCode.HK, date(2026, 10, 1)) is True
 
@@ -103,7 +103,7 @@ def test_any_market_trading_day(loaded_calendar):
     """周末三市场全休 → False;工作日至少一个开市 → True。"""
     assert tc.any_market_trading_day(date(2026, 8, 8)) is False  # Thứ Bảy
     assert tc.any_market_trading_day(date(2026, 8, 10)) is True  # Thứ Hai
-    # A股国庆休市但美股开市 → 仍为 True
+    # Cổ phiếu A nghỉ Quốc khánh nhưng cổ phiếu Mỹ vẫn mở → kết quả vẫn là True
     assert tc.any_market_trading_day(date(2026, 10, 1)) is True
 
 
@@ -127,7 +127,7 @@ def test_lam_moi_bat_dong_bo_khong_chan(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# is_trading_time 复用交易日历(一处修复,全线受益)
+# is_trading_time dùng lại lịch giao dịch (sửa một chỗ, cả hệ được hưởng)
 # ---------------------------------------------------------------------------
 
 
@@ -153,7 +153,7 @@ def test_ngoai_gio_trong_phien_tra_ve_false(loaded_calendar):
 
 
 # ---------------------------------------------------------------------------
-# 模拟盘定时通知的非交易日守卫(用户报告的 bug)
+# Cổng chặn ngày không giao dịch cho thông báo định kỳ của mô phỏng (lỗi do người dùng báo)
 # ---------------------------------------------------------------------------
 
 
@@ -196,7 +196,7 @@ def test_ngay_nghi_le_khong_gui_ke_hoach_va_tom_tat(monkeypatch, loaded_calendar
     from src.modules.paper_trading.paper_trading_scheduler import PaperTradingScheduler
 
     calls = _patch_notifiers(monkeypatch)
-    # 10/3 是周六:三市场全休 → 必须跳过
+    # 10/3 là thứ Bảy: cả ba thị trường đều nghỉ → bắt buộc bỏ qua
     holiday = datetime(2026, 10, 3, 9, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
     monkeypatch.setattr(tc, "_now_in_market_tz", lambda code: holiday)
 
@@ -223,7 +223,7 @@ def test_phien_giao_dich_van_gui_ke_hoach_va_tom_tat(monkeypatch, loaded_calenda
 
 
 # ---------------------------------------------------------------------------
-# 机会刷新的非交易日守卫(周末重算全市场只是白烧资源)
+# Cổng chặn ngày không giao dịch cho việc làm mới cơ hội (cuối tuần tính lại cả thị trường chỉ tổ đốt tài nguyên)
 # ---------------------------------------------------------------------------
 
 

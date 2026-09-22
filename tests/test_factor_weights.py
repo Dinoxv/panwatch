@@ -55,7 +55,7 @@ def test_get_factor_weights_reads_stored_value():
         db.commit()
         w = get_factor_weights("CN", db=db)
         assert w["alpha_score"] == 1.3
-        # 其余因子仍补齐为默认 1.0
+        # Các nhân tố còn lại vẫn được bù về mặc định 1,0
         assert w["catalyst_score"] == 1.0
     finally:
         db.close()

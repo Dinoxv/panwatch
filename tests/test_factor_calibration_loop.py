@@ -42,7 +42,7 @@ def test_calibrate_all_markets_closes_loop_into_scoring():
     db = _mem_db()
     try:
         d = (date.today() - timedelta(days=30)).strftime("%Y-%m-%d")
-        for i in range(1, 7):  # CN:alpha 与 ret 完全正相关
+        for i in range(1, 7):  # CN: alpha tương quan dương hoàn toàn với ret
             _seed_pair(db, i, market="CN", snapshot_date=d, alpha=float(i), ret=float(i))
         db.commit()
 
@@ -50,7 +50,7 @@ def test_calibrate_all_markets_closes_loop_into_scoring():
         assert set(res) == {"CN", "HK", "US"}
 
         w = get_factor_weights("CN", db=db)
-        assert w["alpha_score"] > 1.0  # IC 闭环把权重抬高
+        assert w["alpha_score"] > 1.0  # Vòng khép kín IC nâng trọng số lên
 
         row = EntryCandidate(
             score=80.0, action="watch", status="active", plan_quality=80,

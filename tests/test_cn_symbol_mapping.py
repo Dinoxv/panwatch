@@ -31,8 +31,8 @@ class TestCnSymbolMapping(unittest.TestCase):
         self.assertEqual(Symbol.parse("000738", market="CN").to_eastmoney_secid(), "0.000738")
         self.assertEqual(Symbol.parse("600519", market="CN").to_eastmoney_secid(), "1.600519")
 
-    # 雪球新闻 symbol 前缀映射测试已随 XueqiuNewsCollector 收口进 marketdata 包，
-    # 对应用例见 packages/marketdata/tests/test_news.py::test_xueqiu_symbol_id_prefix_rules。
+    # Test ánh xạ tiền tố symbol cho tin Xueqiu đã chuyển vào gói marketdata cùng với XueqiuNewsCollector,
+    # test tương ứng xem packages/marketdata/tests/test_news.py::test_xueqiu_symbol_id_prefix_rules.
 
     def test_screenshot_urls(self):
         """截图 URL — 新浪/雪球/东方财富"""

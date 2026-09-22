@@ -41,7 +41,7 @@ def _seed(s):
     s.flush()
     s.add(M.Position(account_id=acc.id, stock_id=mt.id, cost_price=1700, quantity=100))
     s.add(M.Position(account_id=acc.id, stock_id=pa.id, cost_price=10, quantity=1000))
-    rule = M.PriceAlertRule(stock_id=mt.id, name="茅台破位", enabled=True)  # 仅茅台有提醒
+    rule = M.PriceAlertRule(stock_id=mt.id, name="茅台破位", enabled=True)  # Chỉ 茅台 có cảnh báo
     s.add(rule)
     s.flush()
     s.commit()

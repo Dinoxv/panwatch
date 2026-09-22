@@ -54,7 +54,7 @@ def test_failed_fetch_is_negative_cached(monkeypatch):
 
     col = kc.KlineCollector(MarketCode.CN)
     assert col.get_klines("600519") == []
-    assert col.get_klines("600519") == []  # 冷却窗口内,应直接短路
+    assert col.get_klines("600519") == []  # Trong cửa sổ chờ thì phải cắt mạch luôn
     assert fake.calls == 1, f"失败后应负缓存,实际联网 {fake.calls} 次"
 
 
@@ -105,6 +105,6 @@ def test_insufficient_result_negative_cached(monkeypatch):
     monkeypatch.setattr(kc, "get_market_data", lambda: fake)
 
     col = kc.KlineCollector(MarketCode.HK)
-    col.get_klines("06082", days=120)  # 拿到 30 < need(120) → 冷却 + 缓存部分
-    col.get_klines("06082", days=120)  # 冷却内,服务缓存,不再联网
+    col.get_klines("06082", days=120)  # Lấy được 30 < need (120) → vào thời gian chờ + đệm phần đã có
+    col.get_klines("06082", days=120)  # Trong thời gian chờ thì phục vụ từ bộ đệm, không gọi mạng nữa
     assert fake.calls == 1, f"不足 need 时也应负缓存,实际联网 {fake.calls} 次"
