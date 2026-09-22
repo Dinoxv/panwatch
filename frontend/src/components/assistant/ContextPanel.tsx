@@ -62,7 +62,7 @@ export function ContextPanel({ detail, loading, compressing, error, onCompress, 
           <div className="mt-3 flex items-center justify-between gap-3">
             <span className="font-medium tabular-nums">{usageLabel(detail.usage)}：{detail.usage.total_tokens.toLocaleString()} / {detail.usage.budget_tokens.toLocaleString()}</span>
             <span className={detail.status === 'needs_compression' ? 'text-rose-600' : detail.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'}>
-              {detail.status === 'needs_compression' ? '需要压缩' : detail.status === 'warning' ? '接近上限' : '正常'} · {usagePercent(detail.usage)}%
+              {detail.status === 'needs_compression' ? '需要压缩' : detail.status === 'warning' ? '接近上限' : 'Bình thường'} · {usagePercent(detail.usage)}%
             </span>
           </div>
           <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">

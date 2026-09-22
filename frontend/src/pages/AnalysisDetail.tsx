@@ -155,7 +155,7 @@ export default function AnalysisDetailPage() {
   const rawData = (result?.raw_data || {}) as Partial<DeepAnalysisResult['raw_data']>
   const sug = rawData.suggestion
   const reviewRequired = sug?.review_required === true || sug?.rating_raw === 'review'
-  const decisionLabel = reviewRequired ? '待人工复核' : sug?.action_label
+  const decisionLabel = reviewRequired ? 'Chờ người rà soát' : sug?.action_label
   const decisionColor = reviewRequired ? 'text-orange-500' : (sug ? DECISION_COLOR[sug.action] || '' : '')
   const sections = buildAnalysisSections(rawData)
   const stats = history?.stats
@@ -451,7 +451,7 @@ export default function AnalysisDetailPage() {
                 {sug.confidence != null && (
                   <div className="mt-2.5">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
-                      <span>置信度</span>
+                      <span>Độ tin cậy</span>
                       <span className="font-medium text-foreground">{sug.confidence.toFixed(1)} / 10</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">

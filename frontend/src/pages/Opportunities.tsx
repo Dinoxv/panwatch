@@ -30,9 +30,9 @@ type GroupedSignal = {
 }
 
 const marketLabel = (m?: string) => {
-  if (m === 'HK') return '港股'
-  if (m === 'US') return '美股'
-  return 'A股'
+  if (m === 'HK') return 'Cổ phiếu HK'
+  if (m === 'US') return 'Cổ phiếu Mỹ'
+  return 'Cổ phiếu A'
 }
 
 const sourceAgentLabelMap: Record<string, string> = {
@@ -109,7 +109,7 @@ const actionBadgeClass = (action?: string) => {
 
 const displayActionLabel = (item: StrategySignalItem) => {
   const action = (item.action || '').toLowerCase()
-  if (!item.is_holding_snapshot && action === 'hold') return '观望'
+  if (!item.is_holding_snapshot && action === 'hold') return 'Quan sát'
   if (!item.is_holding_snapshot && action === 'add') return '建仓'
   return item.action_label || item.action
 }
@@ -170,7 +170,7 @@ const toSignalFromCandidate = (row: EntryCandidateItem): StrategySignalItem => {
     confidence: row.confidence ?? null,
     status: row.status || 'inactive',
     action: row.action || 'watch',
-    action_label: row.action_label || '观望',
+    action_label: row.action_label || 'Quan sát',
     signal: row.signal || '',
     reason: row.reason || '',
     evidence: row.evidence || [],
@@ -351,7 +351,7 @@ export default function OpportunitiesPage() {
         setError('暂无机会快照，请点击“刷新”生成一次')
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载失败')
+      setError(e instanceof Error ? e.message : 'Tải thất bại')
       setItems([])
     } finally {
       setLoading(false)
@@ -630,9 +630,9 @@ export default function OpportunitiesPage() {
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">全部市场</SelectItem>
-              <SelectItem value="CN">A股</SelectItem>
-              <SelectItem value="HK">港股</SelectItem>
-              <SelectItem value="US">美股</SelectItem>
+              <SelectItem value="CN">Cổ phiếu A</SelectItem>
+              <SelectItem value="HK">Cổ phiếu HK</SelectItem>
+              <SelectItem value="US">Cổ phiếu Mỹ</SelectItem>
             </SelectContent>
           </Select>
           <Select value={source} onValueChange={(v) => setSource(v as SourceFilter)}>

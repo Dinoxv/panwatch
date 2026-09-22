@@ -31,36 +31,36 @@ const {
 } = routePages
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: '首页' },
-  { to: '/portfolio', icon: List, label: '持仓' },
-  { to: '/opportunities', icon: Sparkles, label: '机会' },
-  { to: '/paper-trading', icon: Activity, label: '模拟盘' },
-  { to: '/assistant', icon: MessageCircle, label: '助手' },
-  { to: '/alerts', icon: BellRing, label: '提醒' },
+  { to: '/', icon: LayoutDashboard, label: 'Trang chủ' },
+  { to: '/portfolio', icon: List, label: 'Vị thế' },
+  { to: '/opportunities', icon: Sparkles, label: 'Cơ hội' },
+  { to: '/paper-trading', icon: Activity, label: 'Mô phỏng' },
+  { to: '/assistant', icon: MessageCircle, label: 'Trợ lý' },
+  { to: '/alerts', icon: BellRing, label: 'Cảnh báo' },
   { to: '/agents', icon: Bot, label: 'Agent' },
-  { to: '/evaluations', icon: ClipboardCheck, label: '验证中心' },
-  { to: '/history', icon: Clock, label: '历史' },
-  { to: '/datasources', icon: Database, label: '数据源' },
-  { to: '/settings', icon: Settings, label: '设置' },
+  { to: '/evaluations', icon: ClipboardCheck, label: 'Kiểm chứng' },
+  { to: '/history', icon: Clock, label: 'Lịch sử' },
+  { to: '/datasources', icon: Database, label: 'Nguồn dữ liệu' },
+  { to: '/settings', icon: Settings, label: 'Cài đặt' },
 ]
 const desktopPrimaryNavItems = navItems.slice(0, 5)
 const desktopMoreNavItems = navItems.slice(5)
 const mobilePrimaryNavItems = navItems.slice(0, 5)
 const mobileMoreNavItems = navItems.slice(5)
 
-// 认证守卫组件
+// Thành phần canh gác xác thực
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking')
   const location = useLocation()
 
   useEffect(() => {
-    // 检查本地 token
+    // Kiểm tra token lưu ở máy
     if (isAuthenticated()) {
       setAuthState('authenticated')
       return
     }
 
-    // 没有 token，需要去登录页（设置密码或登录）
+    // Không có token, phải sang trang đăng nhập (đặt mật khẩu hoặc đăng nhập)
     setAuthState('unauthenticated')
   }, [])
 
@@ -117,7 +117,7 @@ function App() {
       .catch(() => {})
   }, [version])
 
-  // 登录页面不显示导航
+  // Trang đăng nhập không hiện thanh điều hướng
   if (location.pathname === '/login') {
     return (
       <RouteErrorBoundary>
@@ -185,19 +185,19 @@ function App() {
               })}
             </nav>
 
-            {/* action wrapper:GitHub + 日志 + 头像(头像下拉含更多导航/主题色/退出) */}
+            {/* Vùng thao tác: GitHub + nhật ký + ảnh đại diện (menu ảnh đại diện có thêm điều hướng / màu giao diện / đăng xuất) */}
             <div className="flex items-center gap-1.5 px-1.5 py-1 rounded-2xl bg-accent/20 border border-border/40">
               <button
                 onClick={() => window.open(repoUrl, '_blank', 'noopener,noreferrer')}
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-all"
-                title="GitHub 项目"
+                title="Dự án trên GitHub"
               >
                 <Github className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setLogsOpen(true)}
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-all"
-                title="查看日志"
+                title="Xem nhật ký"
               >
                 <ScrollText className="w-4 h-4" />
               </button>
@@ -227,14 +227,14 @@ function App() {
               <button
                 onClick={() => window.open(repoUrl, '_blank', 'noopener,noreferrer')}
                 className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-all"
-                title="GitHub 项目"
+                title="Dự án trên GitHub"
               >
                 <Github className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setLogsOpen(true)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-all"
-                title="查看日志"
+                title="Xem nhật ký"
               >
                 <ScrollText className="w-4 h-4" />
               </button>
@@ -305,7 +305,7 @@ function App() {
       <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>发现新版本</DialogTitle>
+            <DialogTitle>Có phiên bản mới</DialogTitle>
             <DialogDescription>
               当前版本 v{version}，可升级到 v{upgradeInfo?.latest}。
             </DialogDescription>

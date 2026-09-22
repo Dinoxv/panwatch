@@ -652,7 +652,7 @@ export default function SettingsPage() {
   const jumpItems: Array<{ id: string; label: string; hint?: string }> = [
     { id: 'sec-ai', label: 'AI', hint: `${services.length} 服务 / ${allModels.length} 模型` },
     { id: 'sec-notify', label: '通知', hint: `${enabledChannels.length}/${channels.length} 启用` },
-    { id: 'sec-system', label: '系统', hint: health?.timezone ? `TZ ${health.timezone}` : undefined },
+    { id: 'sec-system', label: 'Hệ thống', hint: health?.timezone ? `TZ ${health.timezone}` : undefined },
     { id: 'sec-pack', label: '配置包' },
     { id: 'sec-feedback', label: '反馈' },
     { id: 'sec-pat', label: 'MCP 令牌' },
@@ -832,7 +832,7 @@ export default function SettingsPage() {
         <section id="sec-notify" className="card p-4 md:p-6 lg:col-span-5">
           <div className="flex items-start justify-between mb-4 md:mb-5 gap-3">
             <div>
-              <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">通知渠道</h3>
+              <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">Kênh thông báo</h3>
               <p className="text-[11px] text-muted-foreground mt-1">推送到 Telegram/Bark 等渠道</p>
             </div>
             <Button size="sm" className="h-8" onClick={() => openChannelDialog()}>
@@ -890,7 +890,7 @@ export default function SettingsPage() {
           <section id="sec-system" className="card p-4 md:p-6 lg:col-span-12">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4 md:mb-5">
               <div>
-                <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">系统</h3>
+                <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground">Hệ thống</h3>
                 <p className="text-[11px] text-muted-foreground mt-1">偏好与高级选项。修改后立即生效。</p>
               </div>
               <div className="flex items-center gap-2">

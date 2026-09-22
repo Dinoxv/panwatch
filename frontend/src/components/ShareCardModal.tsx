@@ -11,39 +11,42 @@ interface ShareCardModalProps {
 }
 
 /**
- * 五档评级 → 展示标签 + A股配色(红涨绿跌)。
- * 复用 technical-badge / suggestion-action 的归一化:买入/增持=红(看多)、卖出/减持=绿(看空)、持有=琥珀(中性)。
- * 这里用自包含的显式十六进制色,保证导出 PNG 在任何主题(亮/暗)下都正确。
+ * Thang 5 bậc → nhãn hiển thị + bảng màu thị trường A (đỏ tăng, xanh giảm).
+ * Tái dùng phép chuẩn hóa của technical-badge / suggestion-action: mua vào và
+ * tăng tỷ trọng = đỏ (nhìn lên), bán ra và hạ tỷ trọng = xanh (nhìn xuống),
+ * nắm giữ = hổ phách (trung tính).
+ * Ở đây dùng mã màu thập lục phân tường minh và tự chứa, để ảnh PNG xuất ra
+ * vẫn đúng màu ở mọi giao diện (sáng hoặc tối).
  */
 const RATING_VISUAL: Record<
   string,
   { label: string; color: string; soft: string; gradFrom: string; gradTo: string }
 > = {
-  // 看多(红)
-  buy: { label: '买入', color: '#e11d48', soft: '#fff1f2', gradFrom: '#fb7185', gradTo: '#e11d48' },
-  add: { label: '增持', color: '#e11d48', soft: '#fff1f2', gradFrom: '#fda4af', gradTo: '#e11d48' },
-  // 中性(琥珀)
-  hold: { label: '持有', color: '#d97706', soft: '#fffbeb', gradFrom: '#fbbf24', gradTo: '#d97706' },
-  // 看空(绿)
-  reduce: { label: '减持', color: '#059669', soft: '#ecfdf5', gradFrom: '#34d399', gradTo: '#059669' },
-  sell: { label: '卖出', color: '#059669', soft: '#ecfdf5', gradFrom: '#6ee7b7', gradTo: '#059669' },
+  // Nhìn lên (đỏ)
+  buy: { label: 'Mua vào', color: '#e11d48', soft: '#fff1f2', gradFrom: '#fb7185', gradTo: '#e11d48' },
+  add: { label: 'Tăng tỷ trọng', color: '#e11d48', soft: '#fff1f2', gradFrom: '#fda4af', gradTo: '#e11d48' },
+  // Trung tính (hổ phách)
+  hold: { label: 'Nắm giữ', color: '#d97706', soft: '#fffbeb', gradFrom: '#fbbf24', gradTo: '#d97706' },
+  // Nhìn xuống (xanh)
+  reduce: { label: 'Hạ tỷ trọng', color: '#059669', soft: '#ecfdf5', gradFrom: '#34d399', gradTo: '#059669' },
+  sell: { label: 'Bán ra', color: '#059669', soft: '#ecfdf5', gradFrom: '#6ee7b7', gradTo: '#059669' },
 }
 const RATING_FALLBACK = {
-  label: '观望',
+  label: 'Quan sát',
   color: '#475569',
   soft: '#f8fafc',
   gradFrom: '#94a3b8',
   gradTo: '#475569',
 }
 const REVIEW_VISUAL = {
-  label: '待人工复核',
+  label: 'Chờ người rà soát',
   color: '#c2410c',
   soft: '#fff7ed',
   gradFrom: '#fb923c',
   gradTo: '#c2410c',
 }
 
-/** 把后端可能存在的五档原值(overweight/underweight)映射到归一化器认得的词。 */
+/** Ánh xạ các giá trị gốc thang 5 bậc mà máy chủ có thể trả về (overweight/underweight) sang từ mà bộ chuẩn hóa nhận ra. */
 function mapRatingRaw(raw?: string): string | undefined {
   if (!raw) return undefined
   const r = raw.toLowerCase().trim()
@@ -53,20 +56,22 @@ function mapRatingRaw(raw?: string): string | undefined {
 }
 
 /**
- * 从标题解析股票名+代码:去掉开头的【深度】等方括号标记,去掉结尾的「:评级」。
- * 例:「【深度】广汽集团(601238):持有」→「广汽集团(601238)」
+ * Bóc tên và mã cổ phiếu từ tiêu đề: bỏ nhãn trong ngoặc vuông ở đầu như
+ * 【深度】, bỏ phần «: xếp hạng» ở cuối.
+ * Ví dụ: 「【深度】广汽集团(601238):持有」 → 「广汽集团(601238)」
  */
 function parseStockName(title: string, symbol: string): string {
   let s = (title || '').trim()
-  s = s.replace(/^【[^】]*】\s*/, '') // 去掉开头第一个【...】标记
-  s = s.replace(/[:：]\s*[^:：]*$/, '') // 去掉结尾「:xxx」(评级)
+  s = s.replace(/^【[^】]*】\s*/, '') // Bỏ nhãn 【...】 đầu tiên ở đầu chuỗi
+  s = s.replace(/[:：]\s*[^:：]*$/, '') // Bỏ phần 「:xxx」 ở cuối (xếp hạng)
   s = s.trim()
   return s || symbol
 }
 
 /**
- * 清洗结论为单段:去 markdown 加粗 **,再去开头的「Action: x Reasoning:」前缀。
- * 多余空白压成单空格,便于 line-clamp 展示。
+ * Làm sạch kết luận thành một đoạn: bỏ dấu ** in đậm của markdown, rồi bỏ tiền
+ * tố 「Action: x Reasoning:」 ở đầu.
+ * Khoảng trắng thừa nén về một dấu cách, để line-clamp hiển thị gọn.
  */
 function cleanConclusion(text: string): string {
   let s = (text || '').replace(/\*\*/g, '')
@@ -77,7 +82,7 @@ function cleanConclusion(text: string): string {
 
 export default function ShareCardModal({ open, onClose, result, symbol, date }: ShareCardModalProps) {
   const sug = result.raw_data?.suggestion
-  // 评级来源:优先后端五档原值，否则用 action，再叠加中文 action_label 兜底。
+  // Nguồn xếp hạng: ưu tiên giá trị gốc thang 5 bậc từ máy chủ, không có thì dùng action, cuối cùng mới lấy action_label làm dự phòng.
   const ratingRaw = mapRatingRaw(sug?.rating_raw)
   const normalized = normalizeSuggestionAction(ratingRaw || sug?.action, sug?.action_label)
   const reviewRequired = sug?.review_required === true || sug?.rating_raw === 'review'
@@ -90,8 +95,8 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
   const confPct = Math.max(0, Math.min(100, (confidence ?? 0) * 10))
 
   return (
-    <ShareCardDialog open={open} onClose={onClose} filename={`${stockName}-${date}-分析卡片`}>
-      {/* Header:股票名+代码 / 日期 */}
+    <ShareCardDialog open={open} onClose={onClose} filename={`${stockName}-${date}-the-phan-tich`}>
+      {/* Phần đầu: tên và mã cổ phiếu / ngày */}
       <div
         style={{
           display: 'flex',
@@ -106,7 +111,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
         <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>{date}</div>
       </div>
 
-      {/* Hero:大评级 + 置信度条 + 成本 */}
+      {/* Khối đầu: xếp hạng lớn + thanh độ tin cậy + chi phí */}
       <div
         style={{
           marginTop: 20,
@@ -142,7 +147,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
           </div>
         </div>
 
-        {/* 置信度条 */}
+        {/* Thanh độ tin cậy */}
         <div style={{ marginTop: 18 }}>
           <div
             style={{
@@ -153,7 +158,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
               marginBottom: 6,
             }}
           >
-            <span>置信度</span>
+            <span>Độ tin cậy</span>
             <span style={{ fontWeight: 700 }}>
               {confidence != null ? confidence.toFixed(1) : '-'} / 10
             </span>
@@ -181,7 +186,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
         </div>
       </div>
 
-      {/* 结论段落:最多约 5 行 */}
+      {/* Đoạn kết luận: tối đa khoảng 5 dòng */}
       {conclusion && (
         <div
           style={{
@@ -199,7 +204,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
         </div>
       )}
 
-      {/* TA 卡专属副标(9-Agent),置于外壳分割线/页脚之上 */}
+      {/* Phụ đề riêng của thẻ TA (9-Agent), đặt phía trên đường phân cách và chân thẻ */}
       <div style={{ marginTop: 22, fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>
         AI 投研团队(9-Agent)深度分析
       </div>

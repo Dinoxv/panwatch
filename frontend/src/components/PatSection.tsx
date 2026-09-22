@@ -6,10 +6,10 @@ import { Button } from '@panwatch/base-ui/components/ui/button'
 import { useToast } from '@panwatch/base-ui/components/ui/toast'
 
 /**
- * MCP 访问令牌(PAT)管理。
+ * Quản lý mã truy cập MCP (PAT).
  *
- * 令牌用于 Claude 等 MCP client 连接 PanWatch 的 MCP 端点(/mcp)。
- * 明文仅创建时返回一次;列表只显示前缀。
+ * Mã dùng cho các MCP client như Claude kết nối tới endpoint MCP của PanWatch
+ * (/mcp). Bản rõ chỉ trả về đúng một lần lúc tạo; danh sách chỉ hiện tiền tố.
  */
 export default function PatSection() {
   const { toast } = useToast()
@@ -25,7 +25,7 @@ export default function PatSection() {
       const res = await patsApi.list()
       setItems(res.items || [])
     } catch (e) {
-      toast(e instanceof Error ? e.message : '加载令牌失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tải mã truy cập thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -35,7 +35,7 @@ export default function PatSection() {
 
   const create = async () => {
     if (!name.trim()) {
-      toast('请填写令牌用途备注', 'error')
+      toast('Hãy điền ghi chú mục đích của mã', 'error')
       return
     }
     setCreating(true)
@@ -44,9 +44,9 @@ export default function PatSection() {
       setNewToken(res.token)
       setName('')
       await load()
-      toast('令牌已创建,明文仅显示这一次,请立即保存', 'success')
+      toast('Đã tạo mã. Bản rõ chỉ hiện lần này, hãy lưu lại ngay', 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '创建失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tạo thất bại', 'error')
     } finally {
       setCreating(false)
     }
@@ -56,15 +56,15 @@ export default function PatSection() {
     try {
       await patsApi.revoke(id)
       await load()
-      toast('令牌已吊销', 'success')
+      toast('Đã thu hồi mã', 'success')
     } catch (e) {
-      toast(e instanceof Error ? e.message : '吊销失败', 'error')
+      toast(e instanceof Error ? e.message : 'Thu hồi thất bại', 'error')
     }
   }
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text)
-    toast('已复制到剪贴板', 'success')
+    toast('Đã sao chép vào bộ nhớ tạm', 'success')
   }
 
   return (
@@ -72,28 +72,28 @@ export default function PatSection() {
       <div className="flex items-start justify-between mb-4 gap-3">
         <div>
           <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground flex items-center gap-1.5">
-            <KeyRound className="w-3.5 h-3.5" /> MCP 访问令牌
+            <KeyRound className="w-3.5 h-3.5" /> Mã truy cập MCP
           </h3>
           <p className="text-[11px] text-muted-foreground mt-1">
-            供 Claude 等 MCP 客户端连接本站 MCP 端点(<span className="font-mono">/mcp</span>),只读行情与持仓。明文仅创建时显示一次。
+            供 Claude 等 MCP 客户端连接本站 MCP 端点(<span className="font-mono">/mcp</span>), chỉ đọc dữ liệu giá và vị thế. Bản rõ chỉ hiện một lần lúc tạo.
           </p>
         </div>
       </div>
 
-      {/* 新建 */}
+      {/* Tạo mới */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <Input
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="令牌用途备注,如 Claude Desktop"
+          placeholder="Ghi chú mục đích của mã, ví dụ Claude Desktop"
           className="sm:max-w-xs"
         />
         <Button size="sm" className="h-9" onClick={create} disabled={creating}>
-          <Plus className="w-3.5 h-3.5" /> 创建令牌
+          <Plus className="w-3.5 h-3.5" /> Tạo mã
         </Button>
       </div>
 
-      {/* 一次性明文展示 */}
+      {/* Hiển thị bản rõ đúng một lần */}
       {newToken ? (
         <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/20 p-3">
           <div className="text-[11px] text-amber-700 dark:text-amber-400 mb-1.5">
@@ -102,18 +102,18 @@ export default function PatSection() {
           <div className="flex items-center gap-2">
             <code className="flex-1 min-w-0 truncate rounded bg-background/70 px-2 py-1 font-mono text-[12px]">{newToken}</code>
             <Button variant="secondary" size="sm" className="h-8" onClick={() => copy(newToken)}>
-              <Copy className="w-3.5 h-3.5" /> 复制
+              <Copy className="w-3.5 h-3.5" /> Sao chép
             </Button>
-            <Button variant="ghost" size="sm" className="h-8" onClick={() => setNewToken(null)}>知道了</Button>
+            <Button variant="ghost" size="sm" className="h-8" onClick={() => setNewToken(null)}>Đã hiểu</Button>
           </div>
         </div>
       ) : null}
 
-      {/* 列表 */}
+      {/* Danh sách */}
       {loading ? (
-        <div className="text-[12px] text-muted-foreground">加载中…</div>
+        <div className="text-[12px] text-muted-foreground">Đang tải…</div>
       ) : items.length === 0 ? (
-        <div className="text-[12px] text-muted-foreground">还没有令牌。</div>
+        <div className="text-[12px] text-muted-foreground">Chưa có mã nào.</div>
       ) : (
         <div className="space-y-2">
           {items.map(it => (
@@ -123,22 +123,22 @@ export default function PatSection() {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-medium text-foreground truncate">{it.name || '未命名'}</span>
+                  <span className="text-[12px] font-medium text-foreground truncate">{it.name || 'Chưa đặt tên'}</span>
                   <code className="font-mono text-[11px] text-muted-foreground">{it.prefix}…</code>
                   {it.revoked ? (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600">已吊销</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600">Đã thu hồi</span>
                   ) : (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">有效</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">Còn hiệu lực</span>
                   )}
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-0.5">
-                  {it.last_used_at ? `最近使用 ${it.last_used_at.slice(0, 10)}` : '从未使用'}
-                  {it.expires_at ? ` · 过期 ${it.expires_at.slice(0, 10)}` : ' · 永不过期'}
+                  {it.last_used_at ? `Dùng gần nhất ${it.last_used_at.slice(0, 10)}` : 'Chưa dùng lần nào'}
+                  {it.expires_at ? ` · Hết hạn ${it.expires_at.slice(0, 10)}` : ' · Không hết hạn'}
                 </div>
               </div>
               {!it.revoked ? (
                 <Button variant="ghost" size="sm" className="h-8 text-rose-600" onClick={() => revoke(it.id)}>
-                  <Trash2 className="w-3.5 h-3.5" /> 吊销
+                  <Trash2 className="w-3.5 h-3.5" /> Thu hồi
                 </Button>
               ) : null}
             </div>

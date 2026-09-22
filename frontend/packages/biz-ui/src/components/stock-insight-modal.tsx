@@ -665,7 +665,7 @@ export default function StockInsightModal(props: {
     try {
       await Promise.allSettled([loadQuote(), loadKline(), loadMiniKline(), loadHoldingAgg()])
     } catch (e) {
-      toast(e instanceof Error ? e.message : '加载失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tải thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -677,7 +677,7 @@ export default function StockInsightModal(props: {
     try {
       await Promise.allSettled([loadQuote(), loadKline(), loadMiniKline(), loadSuggestions(), loadNews(), loadAnnouncements(), loadHoldingAgg(), loadReports()])
     } catch (e) {
-      toast(e instanceof Error ? e.message : '加载失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tải thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -1036,7 +1036,7 @@ export default function StockInsightModal(props: {
   <text x="76" y="466" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">理由</text>
   <text x="180" y="466" fill="#cbd5e1" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(reason, 52))}</text>
 
-  <text x="76" y="520" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">风险</text>
+  <text x="76" y="520" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Rủi ro</text>
   <text x="180" y="520" fill="#cbd5e1" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(risks, 52))}</text>
 
   <text x="76" y="560" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">技术</text>

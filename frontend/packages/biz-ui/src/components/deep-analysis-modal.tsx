@@ -710,7 +710,7 @@ function DoneView({
   const rawData = (result?.raw_data || {}) as Partial<DeepAnalysisResult['raw_data']>
   const sug = rawData.suggestion || {
     action: 'hold' as const,
-    action_label: '持有',
+    action_label: 'Nắm giữ',
     signal: '',
     reason: '',
     should_alert: false,

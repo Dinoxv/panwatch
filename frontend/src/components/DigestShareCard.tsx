@@ -33,10 +33,10 @@ function pct(v?: number | null): string {
 /** 各类型的徽标:文字 + 配色(emoji 作图标,纯文本可被 PNG 正确渲染,无外部图片)。 */
 const TYPE_BADGE: Record<string, { label: string; icon: string; color: string; bg: string }> = {
   alert: { label: '提醒命中', icon: '🔔', color: '#e11d48', bg: '#fff1f2' },
-  holding: { label: '持仓', icon: '📊', color: '#059669', bg: '#ecfdf5' },
+  holding: { label: 'Vị thế', icon: '📊', color: '#059669', bg: '#ecfdf5' },
   watch: { label: '自选', icon: '👀', color: '#475569', bg: '#f1f5f9' },
-  risk: { label: '风险', icon: '⚠️', color: '#d97706', bg: '#fffbeb' },
-  opportunity: { label: '机会', icon: '✨', color: '#6366f1', bg: '#eef2ff' },
+  risk: { label: 'Rủi ro', icon: '⚠️', color: '#d97706', bg: '#fffbeb' },
+  opportunity: { label: 'Cơ hội', icon: '✨', color: '#6366f1', bg: '#eef2ff' },
 }
 const FALLBACK_BADGE = { label: '要点', icon: '•', color: '#475569', bg: '#f1f5f9' }
 

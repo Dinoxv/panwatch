@@ -128,7 +128,7 @@ export default function ShareCardDialog({
           </div>
         </div>
 
-        {/* 操作区 */}
+        {/* Vùng thao tác */}
         <div className="mt-4 flex items-center justify-end gap-3">
           <Button variant="outline" size="sm" className="h-9" onClick={onClose} disabled={busy}>
             关闭

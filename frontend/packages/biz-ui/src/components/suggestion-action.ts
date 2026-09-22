@@ -20,14 +20,14 @@ export const suggestionActionColors: Record<SuggestionAction, string> = {
 }
 
 export const suggestionActionLabels: Record<SuggestionAction, string> = {
-  buy: '买入',
+  buy: 'Mua vào',
   add: '加仓',
   reduce: '减仓',
-  sell: '卖出',
-  hold: '持有',
-  watch: '观望',
+  sell: 'Bán ra',
+  hold: 'Nắm giữ',
+  watch: 'Quan sát',
   avoid: '回避',
-  alert: '提醒',
+  alert: 'Cảnh báo',
 }
 
 export function normalizeSuggestionAction(action?: string, label?: string): SuggestionAction | null {
@@ -55,7 +55,7 @@ export function resolveSuggestionAction(action?: string, label?: string): Sugges
   return normalizeSuggestionAction(action, label) || 'watch'
 }
 
-export function resolveSuggestionLabel(action?: string, label?: string, fallback = '观望'): string {
+export function resolveSuggestionLabel(action?: string, label?: string, fallback = 'Quan sát'): string {
   const normalized = normalizeSuggestionAction(action, label)
   if (normalized) return suggestionActionLabels[normalized] || fallback
   return String(label || '').trim() || fallback

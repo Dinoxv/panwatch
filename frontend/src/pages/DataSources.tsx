@@ -349,7 +349,7 @@ export default function DataSourcesPage() {
                       )}
                     </Button>
                     <Switch checked={source.enabled} onCheckedChange={() => toggleEnabled(source)} />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDialog(source)} title="设置">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDialog(source)} title="Cài đặt">
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -373,7 +373,7 @@ export default function DataSourcesPage() {
     <div>
       <div className="mb-4 md:mb-8 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight">数据源</h1>
+          <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight">Nguồn dữ liệu</h1>
           <p className="text-[12px] md:text-[13px] text-muted-foreground mt-0.5 md:mt-1">管理新闻、K线、资金流向和行情数据来源</p>
         </div>
         <Button variant="outline" size="sm" className="h-8 text-[12px] flex-shrink-0" onClick={resetToSeed} disabled={resetting}>

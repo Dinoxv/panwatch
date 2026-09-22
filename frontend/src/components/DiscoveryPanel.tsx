@@ -104,7 +104,7 @@ export default function DiscoveryPanel({ monitorStocks, onOpenStock }: Props) {
       }
     } catch (e) {
       if (!silent) {
-        setDiscoverError(e instanceof Error ? e.message : '加载失败')
+        setDiscoverError(e instanceof Error ? e.message : 'Tải thất bại')
         if (tab === 'boards') setHotBoards([])
         else setHotStocks([])
       }
@@ -190,9 +190,9 @@ export default function DiscoveryPanel({ monitorStocks, onOpenStock }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="CN">A股</SelectItem>
-                <SelectItem value="HK">港股</SelectItem>
-                <SelectItem value="US">美股</SelectItem>
+                <SelectItem value="CN">Cổ phiếu A</SelectItem>
+                <SelectItem value="HK">Cổ phiếu HK</SelectItem>
+                <SelectItem value="US">Cổ phiếu Mỹ</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -270,7 +270,7 @@ export default function DiscoveryPanel({ monitorStocks, onOpenStock }: Props) {
           ) : discoverTab === 'boards' ? (
             hotBoards.length === 0 ? (
               <div className="py-6 text-center text-[12px] text-muted-foreground">
-                {discoverError || (discoverMarket === 'CN' ? '暂无数据' : `${discoverMarket === 'HK' ? '港股' : '美股'}暂不提供板块榜，已支持热门股票`)}
+                {discoverError || (discoverMarket === 'CN' ? '暂无数据' : `${discoverMarket === 'HK' ? 'Cổ phiếu HK' : 'Cổ phiếu Mỹ'}暂不提供板块榜，已支持热门股票`)}
                 {discoverMarket !== 'CN' && (
                   <div className="mt-2">
                     <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => setDiscoverTab('stocks')}>

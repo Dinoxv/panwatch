@@ -85,10 +85,10 @@ const ALERT_LABEL: Record<string, string> = {
 
 const FEED_BADGE: Record<string, { label: string; cls: string }> = {
   alert: { label: '提醒命中', cls: 'bg-rose-500/15 text-rose-500' },
-  holding: { label: '持仓', cls: 'bg-emerald-500/15 text-emerald-500' },
+  holding: { label: 'Vị thế', cls: 'bg-emerald-500/15 text-emerald-500' },
   watch: { label: '自选', cls: 'bg-accent text-muted-foreground' },
-  risk: { label: '风险', cls: 'bg-amber-500/15 text-amber-600' },
-  opportunity: { label: '机会', cls: 'bg-primary/10 text-primary' },
+  risk: { label: 'Rủi ro', cls: 'bg-amber-500/15 text-amber-600' },
+  opportunity: { label: 'Cơ hội', cls: 'bg-primary/10 text-primary' },
 }
 
 // 市场分布 stacked 条配色:CN 用品牌色,US/HK 用差异化色区分
@@ -353,7 +353,7 @@ export default function DashboardPage() {
       <div className="card mb-3 p-4">
         {!hasHoldings ? (
           <div className="py-4 text-center text-[12px] text-muted-foreground">
-            {loading ? '加载中…' : '暂无持仓,添加持仓后这里展示今日盈亏与组合走势'}
+            {loading ? 'Đang tải…' : '暂无持仓,添加持仓后这里展示今日盈亏与组合走势'}
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -490,7 +490,7 @@ export default function DashboardPage() {
         <div className="card p-4 lg:col-span-5">
           <div className="mb-2 flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">组合体检</h2>
+            <h2 className="text-sm font-semibold">Khám danh mục</h2>
             {benchReady && (
               <button
                 type="button"
@@ -516,7 +516,7 @@ export default function DashboardPage() {
           </div>
           {!hasHoldings ? (
             <div className="py-6 text-center text-[12px] text-muted-foreground">
-              {loading ? '加载中…' : '暂无持仓,添加持仓后这里给风险与相对大盘表现'}
+              {loading ? 'Đang tải…' : '暂无持仓,添加持仓后这里给风险与相对大盘表现'}
             </div>
           ) : (
             <div className="space-y-3 text-[12px]">
@@ -662,7 +662,7 @@ export default function DashboardPage() {
             </button>
           </div>
           {opportunities.length === 0 ? (
-            <div className="py-6 text-center text-[12px] text-muted-foreground">{loading ? '加载中…' : '暂无活跃机会信号'}</div>
+            <div className="py-6 text-center text-[12px] text-muted-foreground">{loading ? 'Đang tải…' : '暂无活跃机会信号'}</div>
           ) : (
             <div className="divide-y divide-border/40">
               {opportunities.slice(0, 3).map((o) => {

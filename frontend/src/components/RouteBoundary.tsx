@@ -27,15 +27,15 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('页面模块加载失败:', error, info)
+    console.error('Tải module trang thất bại: ', error, info)
   }
 
   render() {
     if (this.state.error) {
       return (
         <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-2xl border border-destructive/20 bg-card/30 px-6 text-center">
-          <p className="text-sm font-medium text-foreground">页面加载失败</p>
-          <p className="max-w-md text-xs text-muted-foreground">请重试；如果问题持续存在，可能是浏览器缓存了旧版本页面。</p>
+          <p className="text-sm font-medium text-foreground">Tải trang thất bại</p>
+          <p className="max-w-md text-xs text-muted-foreground">Hãy thử lại; nếu vẫn lỗi thì có thể trình duyệt đang giữ bản trang cũ trong bộ đệm.</p>
           <button
             type="button"
             className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"

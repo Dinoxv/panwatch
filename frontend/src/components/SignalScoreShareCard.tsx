@@ -12,7 +12,7 @@ const UP = '#e11d48'
 const NEUTRAL = '#d97706'
 const SLATE = '#475569'
 
-const MARKET_LABEL: Record<string, string> = { CN: 'A股', HK: '港股', US: '美股' }
+const MARKET_LABEL: Record<string, string> = { CN: 'Cổ phiếu A', HK: 'Cổ phiếu HK', US: 'Cổ phiếu Mỹ' }
 const marketLabel = (m?: string) => (m ? MARKET_LABEL[m] || m : '')
 
 /**
@@ -21,8 +21,8 @@ const marketLabel = (m?: string) => (m ? MARKET_LABEL[m] || m : '')
  */
 function actionVisual(item: StrategySignalItem): { label: string; color: string } {
   const key = (item.action || '').toLowerCase()
-  let label = item.action_label || item.action || '观望'
-  if (!item.is_holding_snapshot && key === 'hold') label = '观望'
+  let label = item.action_label || item.action || 'Quan sát'
+  if (!item.is_holding_snapshot && key === 'hold') label = 'Quan sát'
   if (!item.is_holding_snapshot && key === 'add') label = '建仓'
   if (key === 'buy' || key === 'add') return { label, color: UP }
   if (key === 'hold') return { label, color: NEUTRAL }

@@ -415,7 +415,7 @@ export default function AgentsPage() {
       const data = await fetchAPI<AgentRun[]>(`/agents/${agentName}/history?limit=5`)
       setRuns(prev => ({ ...prev, [agentName]: data }))
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '加载失败'
+      const msg = e instanceof Error ? e.message : 'Tải thất bại'
       setRuns(prev => ({ ...prev, [agentName]: { error: msg } }))
     } finally {
       setRunsLoading(prev => ({ ...prev, [agentName]: false }))
@@ -706,7 +706,7 @@ export default function AgentsPage() {
                     {(() => {
                       const data = runs[agent.name]
                       if (!data) {
-                        return <div className="mt-2 text-[11px] text-muted-foreground">加载中…</div>
+                        return <div className="mt-2 text-[11px] text-muted-foreground">Đang tải…</div>
                       }
                       if ('error' in data) {
                         return <div className="mt-2 text-[11px] text-muted-foreground">{data.error}</div>

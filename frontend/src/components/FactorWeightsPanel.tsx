@@ -4,17 +4,17 @@ import { factorsApi, type FactorWeight } from '@panwatch/api'
 import { Switch } from '@panwatch/base-ui/components/ui/switch'
 
 const FACTOR_LABELS: Record<string, string> = {
-  alpha_score: '选股α',
-  catalyst_score: '催化',
-  quality_score: '计划质量',
-  risk_penalty: '风险',
-  crowd_penalty: '拥挤度',
+  alpha_score: 'Alpha chọn mã',
+  catalyst_score: 'Chất xúc tác',
+  quality_score: 'Chất lượng kế hoạch',
+  risk_penalty: 'Rủi ro',
+  crowd_penalty: 'Mức chen lấn',
 }
 
 const MARKET_LABELS: Record<string, string> = {
-  CN: 'A股',
-  HK: '港股',
-  US: '美股',
+  CN: 'Cổ phiếu A',
+  HK: 'Cổ phiếu HK',
+  US: 'Cổ phiếu Mỹ',
 }
 
 const MARKET_ORDER: Record<string, number> = { CN: 0, HK: 1, US: 2 }
@@ -43,7 +43,7 @@ export default function FactorWeightsPanel() {
       const res = await factorsApi.list()
       setItems(res.items || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载失败')
+      setError(e instanceof Error ? e.message : 'Tải thất bại')
       setItems([])
     } finally {
       setLoading(false)
@@ -72,7 +72,7 @@ export default function FactorWeightsPanel() {
         await factorsApi.update(item.factor_code, item.market, patch)
         await load()
       } catch (e) {
-        setError(e instanceof Error ? e.message : '更新失败')
+        setError(e instanceof Error ? e.message : 'Cập nhật thất bại')
       } finally {
         setSaving(null)
       }
@@ -103,20 +103,20 @@ export default function FactorWeightsPanel() {
           <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
       ) : sortedItems.length === 0 ? (
-        <div className="text-[12px] text-muted-foreground text-center py-6">暂无因子权重数据</div>
+        <div className="text-[12px] text-muted-foreground text-center py-6">Chưa có dữ liệu trọng số nhân tố</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
             <thead>
               <tr className="text-left text-[11px] text-muted-foreground border-b border-border/50">
-                <th className="py-2 pr-3 font-medium">因子</th>
-                <th className="py-2 pr-3 font-medium">市场</th>
-                <th className="py-2 pr-3 font-medium text-right">权重</th>
-                <th className="py-2 pr-3 font-medium text-right">最近IC</th>
-                <th className="py-2 pr-3 font-medium text-right">最近IR</th>
-                <th className="py-2 pr-3 font-medium text-right">样本</th>
-                <th className="py-2 pr-3 font-medium text-center">锁定</th>
-                <th className="py-2 font-medium text-center">自动标定</th>
+                <th className="py-2 pr-3 font-medium">Nhân tố</th>
+                <th className="py-2 pr-3 font-medium">Thị trường</th>
+                <th className="py-2 pr-3 font-medium text-right">Trọng số</th>
+                <th className="py-2 pr-3 font-medium text-right">IC gần nhất</th>
+                <th className="py-2 pr-3 font-medium text-right">IR gần nhất</th>
+                <th className="py-2 pr-3 font-medium text-right">Mẫu</th>
+                <th className="py-2 pr-3 font-medium text-center">Khóa</th>
+                <th className="py-2 font-medium text-center">Hiệu chỉnh tự động</th>
               </tr>
             </thead>
             <tbody>

@@ -37,7 +37,7 @@ interface ChatWidgetProps {
   conversationIdFromUrl?: number | null
   /** Keep the route in sync when a user opens, creates, or leaves a session. */
   onConversationChange?: (conversationId: number | null, options?: ConversationChangeOptions) => void
-  /** Stock context handed off by the application shell when a page opens “问 AI”. */
+  /** Stock context handed off by the application shell when a page opens “Hỏi AI”. */
   initialStockContext?: StockContext | null
 }
 
@@ -62,7 +62,7 @@ function approvalFromSnapshot(approval: {
   }
 }
 
-// 工具名 → 过程可视化文案
+// Tên công cụ → câu chữ hiển thị tiến trình
 const TOOL_LABELS: Record<string, string> = {
   get_portfolio: '正在查询持仓…',
   get_stock_quote: '正在查询行情…',
@@ -74,7 +74,7 @@ const TOOL_LABELS: Record<string, string> = {
   get_watchlist: '正在查询自选股…',
 }
 
-/** 增量渲染容错：流式文本里未闭合的代码围栏先乐观闭合，避免 markdown 渲染爆版式 */
+/** Chịu lỗi khi dựng dần: khối mã chưa đóng trong văn bản dạng luồng được đóng tạm một cách lạc quan, tránh markdown làm vỡ bố cục */
 function safeStreamMarkdown(text: string): string {
   const fences = (text.match(/```/g) || []).length
   return fences % 2 === 1 ? `${text}\n\`\`\`` : text
@@ -96,10 +96,10 @@ export default function ChatWidget({
   const [view, setView] = useState<'list' | 'chat'>('list')
   const [stockContext, setStockContext] = useState<StockContext | null>(null)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
-  // 流式回复的增量状态
+  // Trạng thái phần bổ sung của phản hồi dạng luồng
   const [streamText, setStreamText] = useState('')
   const [streamTool, setStreamTool] = useState<string | null>(null)
-  // 计划驱动(全面诊断持仓)的计划卡片状态
+  // Trạng thái thẻ kế hoạch của chế độ dẫn dắt theo kế hoạch (chẩn đoán toàn diện vị thế)
   const [plan, setPlan] = useState<{
     status: string
     steps: { id: number; title: string; status: string }[]
@@ -141,7 +141,7 @@ export default function ChatWidget({
     resetFollowing,
   } = useChatAutoScroll()
 
-  // token 用 rAF 批量刷新，避免每个分片都触发渲染
+  // token dồn lô và làm mới bằng rAF, tránh mỗi mảnh đều kích hoạt dựng lại
   const pushToken = useCallback((t: string) => {
     tokenBufRef.current += t
     if (rafRef.current == null) {
@@ -247,7 +247,7 @@ export default function ChatWidget({
     }
   }, [])
 
-  // The application shell owns cross-page “问 AI” routing.  Keeping the
+  // The application shell owns cross-page “Hỏi AI” routing.  Keeping the
   // handoff as a prop means it is not lost while this page is unmounted.
   useEffect(() => {
     if (!embedded || !initialStockContext?.symbol) return
@@ -584,7 +584,7 @@ export default function ChatWidget({
     let streamError = ''
 
     try {
-      // 优先走 SSE 流式（token 流 + 工具过程可视）
+      // Ưu tiên đi theo luồng SSE (dòng token + hiển thị tiến trình công cụ)
       const stream = embedded ? chatApi.sendAssistantMessageStream : chatApi.sendMessageStream
       await stream(convId, content, {
         onRunStarted: ({ taskId: nextTaskId, contextUsage }) => {
@@ -631,13 +631,13 @@ export default function ChatWidget({
         },
         onToolCallStart: ({ name }) => {
           receivedAny = true
-          // 工具调用轮的过渡性文本不是最终回答，清空缓冲
+          // Văn bản chuyển tiếp ở vòng gọi công cụ không phải câu trả lời cuối, nên xóa bộ đệm
           tokenBufRef.current = ''
           setStreamText('')
           setStreamTool(TOOL_LABELS[name] || `正在调用 ${name}…`)
         },
         onToolResult: () => {
-          // 结果已就绪，等待模型基于数据继续回答
+          // Kết quả đã sẵn sàng, chờ mô hình dựa trên dữ liệu trả lời tiếp
         },
         onPlan: (p) => {
           receivedAny = true
@@ -693,7 +693,7 @@ export default function ChatWidget({
           }])
         }
       } else if (!receivedAny && !embedded) {
-        // 流式完全不可用（旧后端/代理不支持等）→ 降级非流式端点
+        // Luồng hoàn toàn không dùng được (máy chủ đời cũ / proxy không hỗ trợ...) → hạ cấp sang endpoint không dùng luồng
         try {
           const reply = await chatApi.sendMessage(convId, content)
           setMessages((prev) => [...prev, reply])
@@ -710,9 +710,9 @@ export default function ChatWidget({
           setMessages((prev) => [...prev, errMsg])
         }
       } else if (embedded) {
-        // 新助手不再追加“请求未完成”错误气泡；用户可直接重新提交。
+        // Trợ lý bản mới không thêm bong bóng lỗi “yêu cầu chưa hoàn tất” nữa; người dùng cứ gửi lại là được.
       } else {
-        // 已收到部分事件但流中断：生成在服务端继续并落库，稍后拉取最终消息
+        // Đã nhận một phần sự kiện nhưng luồng đứt: việc sinh nội dung vẫn tiếp tục và được lưu ở máy chủ, lát nữa lấy tin nhắn cuối về
         await new Promise((r) => setTimeout(r, 1500))
         await loadMessages(convId)
       }
@@ -755,7 +755,7 @@ export default function ChatWidget({
           setStreamTool(TOOL_LABELS[name] || `正在调用 ${name}…`)
         },
         onToolResult: () => {
-          // 工具结果到达后，等待模型继续输出最终回答。
+          // Kết quả công cụ đã về, chờ mô hình xuất tiếp câu trả lời cuối.
         },
         onTrace: appendTrace,
         onApprovalRequired: (nextApproval) => {

@@ -129,14 +129,14 @@ export function buildKlineSuggestion(s: KlineSummaryData, holding?: boolean): Kl
 
   const actionLabel = (a: Action): string => {
     switch (a) {
-      case 'buy': return '买入'
+      case 'buy': return 'Mua vào'
       case 'add': return '加仓'
       case 'reduce': return '减仓'
-      case 'sell': return '卖出'
-      case 'hold': return '持有'
-      case 'watch': return '观望'
+      case 'sell': return 'Bán ra'
+      case 'hold': return 'Nắm giữ'
+      case 'watch': return 'Quan sát'
       case 'avoid': return '回避'
-      default: return '观望'
+      default: return 'Quan sát'
     }
   }
 

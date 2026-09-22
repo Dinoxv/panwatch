@@ -204,7 +204,7 @@ export function SuggestionBadge({
               />
               {isAI && showTechnicalCompanion && (
                 <TechnicalBadge
-                  label={tech ? tech.action_label : '观望'}
+                  label={tech ? tech.action_label : 'Quan sát'}
                   tone={technicalToneFromSuggestionAction(tech?.action, tech?.action_label)}
                   size="lg"
                   onClick={(e) => { e.stopPropagation(); setKlineDialogOpen(true) }}
@@ -429,7 +429,7 @@ export function SuggestionBadge({
               const tech = kline ? buildKlineSuggestion(kline as any, hasPosition) : null
               return (
                 <TechnicalBadge
-                  label={tech ? tech.action_label : '观望'}
+                  label={tech ? tech.action_label : 'Quan sát'}
                   tone={technicalToneFromSuggestionAction(tech?.action, tech?.action_label)}
                   size="md"
                   onClick={(e) => { e.stopPropagation(); setKlineDialogOpen(true) }}

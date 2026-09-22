@@ -232,7 +232,7 @@ export default function StockPriceAlertPanel(props: {
   }
 
   const removeRule = async (r: AlertRule) => {
-    if (!window.confirm(`确认删除规则「${r.name || '提醒'}」？`)) return
+    if (!window.confirm(`确认删除规则「${r.name || 'Cảnh báo'}」？`)) return
     try {
       await fetchAPI(`/price-alerts/${r.id}`, { method: 'DELETE' })
       await load()

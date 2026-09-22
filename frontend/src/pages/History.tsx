@@ -91,7 +91,7 @@ export default function HistoryPage() {
       const data = await fetchAPI<HistoryRecord[]>(`/history?${params.toString()}`)
       setRecords(data || [])
     } catch (e) {
-      toast(e instanceof Error ? e.message : '加载失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tải thất bại', 'error')
     } finally {
       setLoading(false)
     }

@@ -154,7 +154,7 @@ export default function PaperTradingPage() {
       setEquityCurve(metrics.equity_curve)
       setStrategyPerf(metrics.strategy_performance || [])
     } catch {
-      toast('加载失败', 'error')
+      toast('Tải thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -327,7 +327,7 @@ export default function PaperTradingPage() {
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
             <Activity className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-lg font-bold">模拟盘</h1>
+          <h1 className="text-lg font-bold">Mô phỏng</h1>
           {account && (
             <span className={`text-xs px-2 py-0.5 rounded-full ${account.enabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
               {account.enabled ? '运行中' : '已暂停'}
@@ -372,7 +372,7 @@ export default function PaperTradingPage() {
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground text-xs">交易市场:</span>
             {(['ALL', 'CN', 'HK', 'US'] as const).map(m => {
-              const label = m === 'ALL' ? '全部' : m === 'CN' ? 'A股' : m === 'HK' ? '港股' : '美股'
+              const label = m === 'ALL' ? '全部' : m === 'CN' ? 'Cổ phiếu A' : m === 'HK' ? 'Cổ phiếu HK' : 'Cổ phiếu Mỹ'
               const active = marketView === m
               const ratio = m !== 'ALL' ? account.market_allocations?.[m] : undefined
               const isOff = m !== 'ALL' && (ratio ?? 0) <= 0
@@ -652,7 +652,7 @@ export default function PaperTradingPage() {
                 </span>
               </div>
               {(['CN', 'HK', 'US'] as const).map(m => {
-                const label = m === 'CN' ? 'A股' : m === 'HK' ? '港股' : '美股'
+                const label = m === 'CN' ? 'Cổ phiếu A' : m === 'HK' ? 'Cổ phiếu HK' : 'Cổ phiếu Mỹ'
                 const pct = Number(cfgRatios[m]) || 0
                 const amount = ((Number(cfgTotal) || 0) * pct) / 100
                 return (
@@ -705,7 +705,7 @@ export default function PaperTradingPage() {
               <>
                 {/* 通知渠道选择 */}
                 <div>
-                  <div className="text-sm font-medium mb-2">通知渠道</div>
+                  <div className="text-sm font-medium mb-2">Kênh thông báo</div>
                   {notifyChannels.length === 0 ? (
                     <div className="text-xs text-muted-foreground">暂无可用渠道，请先在设置中配置通知渠道</div>
                   ) : (

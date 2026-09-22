@@ -1404,7 +1404,7 @@ export default function StocksPage() {
     return value.toFixed(2)
   }
 
-  const marketLabel = (m: string) => m === 'CN' ? 'A股' : m === 'HK' ? '港股' : m === 'US' ? '美股' : m
+  const marketLabel = (m: string) => m === 'CN' ? 'Cổ phiếu A' : m === 'HK' ? 'Cổ phiếu HK' : m === 'US' ? 'Cổ phiếu Mỹ' : m
 
   // 市场徽章样式和短标签
   const marketBadge = (m: string) => {
@@ -1563,7 +1563,7 @@ export default function StocksPage() {
       {/* Header */}
       <div className="flex flex-col gap-2 md:gap-3 mb-5 md:mb-6">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-[18px] md:text-[22px] font-bold text-foreground tracking-tight shrink-0">持仓</h1>
+          <h1 className="text-[18px] md:text-[22px] font-bold text-foreground tracking-tight shrink-0">Vị thế</h1>
           {/* Desktop buttons + controls */}
           <div className="hidden md:flex items-center gap-3">
             {/* Controls */}
@@ -1835,9 +1835,9 @@ export default function StocksPage() {
                 <div className="flex items-center gap-1">
                   {[
                     { value: '', label: '全部' },
-                    { value: 'CN', label: 'A股' },
-                    { value: 'HK', label: '港股' },
-                    { value: 'US', label: '美股' },
+                    { value: 'CN', label: 'Cổ phiếu A' },
+                    { value: 'HK', label: 'Cổ phiếu HK' },
+                    { value: 'US', label: 'Cổ phiếu Mỹ' },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -1999,7 +1999,7 @@ export default function StocksPage() {
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">现价</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">涨跌</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">成本</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">持仓</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Vị thế</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">市值</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">盈亏</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">今日</th>
@@ -2360,9 +2360,9 @@ export default function StocksPage() {
             <div className="flex items-center gap-1">
               {[
                 { value: '', label: '全部', count: stocks.length },
-                { value: 'CN', label: 'A股', count: stocks.filter(s => s.market === 'CN').length },
-                { value: 'HK', label: '港股', count: stocks.filter(s => s.market === 'HK').length },
-                { value: 'US', label: '美股', count: stocks.filter(s => s.market === 'US').length },
+                { value: 'CN', label: 'Cổ phiếu A', count: stocks.filter(s => s.market === 'CN').length },
+                { value: 'HK', label: 'Cổ phiếu HK', count: stocks.filter(s => s.market === 'HK').length },
+                { value: 'US', label: 'Cổ phiếu Mỹ', count: stocks.filter(s => s.market === 'US').length },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -2718,9 +2718,9 @@ export default function StocksPage() {
                   <div className="flex items-center gap-1">
                     {[
                       { value: '', label: '全部' },
-                      { value: 'CN', label: 'A股' },
-                      { value: 'HK', label: '港股' },
-                      { value: 'US', label: '美股' },
+                      { value: 'CN', label: 'Cổ phiếu A' },
+                      { value: 'HK', label: 'Cổ phiếu HK' },
+                      { value: 'US', label: 'Cổ phiếu Mỹ' },
                     ].map(opt => (
                       <button
                         key={opt.value}
