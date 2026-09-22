@@ -1,4 +1,4 @@
-"""分析历史 API"""
+"""API lịch sử phân tích"""
 
 import logging
 from datetime import timezone
@@ -21,7 +21,7 @@ from src.modules.automation.agent_catalog import (
 
 
 def _format_datetime(dt) -> str:
-    """格式化时间为当前时区的 ISO 格式。"""
+    """Định dạng thời gian sang ISO theo múi giờ hiện tại."""
     if not dt:
         return ""
 
@@ -78,7 +78,7 @@ def list_history(
     limit: int = Query(default=30, le=100),
     db: Session = Depends(get_db),
 ) -> list[HistoryResponse]:
-    """获取分析历史列表"""
+    """Lấy danh sách lịch sử phân tích"""
     query = db.query(AnalysisHistory)
 
     if agent_name:
@@ -151,7 +151,7 @@ def list_history(
 def get_history_detail(
     history_id: int, db: Session = Depends(get_db)
 ) -> HistoryResponse:
-    """获取单条分析详情"""
+    """Lấy chi tiết một bản phân tích"""
     record = db.query(AnalysisHistory).filter(AnalysisHistory.id == history_id).first()
     if not record:
         from fastapi import HTTPException
@@ -193,7 +193,7 @@ def get_history_detail(
 
 @router.delete("/{history_id}")
 def delete_history(history_id: int, db: Session = Depends(get_db)):
-    """删除单条历史记录"""
+    """Xóa một bản ghi lịch sử"""
     record = db.query(AnalysisHistory).filter(AnalysisHistory.id == history_id).first()
     if not record:
         from fastapi import HTTPException

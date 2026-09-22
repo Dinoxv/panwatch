@@ -1,8 +1,11 @@
-"""组合 vs 基准对比(M2):超额收益 / 信息比率 / 相对回撤 + 归一化净值曲线。
+"""Đối chiếu danh mục vs tham chiếu (M2): lợi nhuận vượt trội / tỷ lệ thông tin / sụt giảm tương đối + đường giá trị ròng đã chuẩn hóa.
 
-净值序列由各持仓的日K(KlineCollector,带缓存)按**当前持仓量**重构 —— 近似假设
-区间内持仓不变(忽略区间内加减仓),用于"当前这篮子相对大盘"的对比视角。
-基准默认沪深300;指数需显式腾讯前缀(cn_symbol 会把 000300 误判成 sz)。
+Chuỗi giá trị ròng được dựng lại từ nến ngày của từng vị thế (KlineCollector, có đệm)
+theo **số lượng đang nắm giữ** — giả định xấp xỉ rằng vị thế không đổi trong khoảng
+(bỏ qua việc tăng giảm tỷ trọng trong khoảng), dùng cho góc nhìn "rổ hiện tại này so với
+thị trường chung".
+Tham chiếu mặc định là CSI 300; chỉ số phải ghi rõ tiền tố Tencent (cn_symbol sẽ xét nhầm
+000300 thành sz).
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ _TENCENT_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 
 
 def _parse_tencent_kline(text: str, tencent_sym: str) -> list[KlineData]:
-    """解析腾讯 K 线 JS 变量响应(kline_dayqfq={...})为 KlineData;空/异常返回 []。"""
+    """Đọc phản hồi biến JS nến của Tencent (kline_dayqfq={...}) thành KlineData; rỗng/lỗi thì trả []."""
     if not text or "=" not in text:
         return []
     json_str = text.split("=", 1)[1].strip()
@@ -80,9 +83,9 @@ def compute_benchmark_metrics(
     *,
     annualize: int = _ANNUALIZE,
 ) -> dict | None:
-    """两条等长、按日期对齐的净值序列 → 对比指标 + 归一化曲线(归一到 100)。
+    """Hai chuỗi giá trị ròng dài bằng nhau, khớp theo ngày → chỉ tiêu đối chiếu + đường đã chuẩn hóa (chuẩn về 100).
 
-    无效(长度 <2 / 不等长 / 起点非正)返回 None。
+    Không hợp lệ (dài <2 / không bằng nhau / điểm gốc không dương) thì trả None.
     """
     n = len(portfolio_values)
     if n < 2 or len(benchmark_values) != n or len(dates) != n:
@@ -127,7 +130,7 @@ def compute_benchmark_metrics(
 
 
 def _fetch_benchmark_series(code: str, days: int) -> tuple[list[str], list[float]]:
-    """取基准指数日K → (dates, closes);失败返回 ([], [])。"""
+    """Lấy nến ngày của chỉ số tham chiếu → (dates, closes); hỏng thì trả ([], [])."""
     tsym = INDEX_TENCENT.get(
         code, (code if code.startswith(("sh", "sz")) else f"sh{code}", code)
     )[0]
@@ -148,7 +151,7 @@ def _fetch_benchmark_series(code: str, days: int) -> tuple[list[str], list[float
 
 
 def _ffill_closes(bars: list[KlineData], dates: list[str]) -> list[float]:
-    """把持仓日K前向填充到给定(升序)交易日序列上。dates 均 >= bars 首日。"""
+    """Điền xuôi nến ngày của vị thế lên chuỗi phiên giao dịch cho trước (tăng dần). Mọi dates đều >= ngày đầu của bars."""
     series = sorted(((b.date, b.close) for b in bars), key=lambda x: x[0])
     out: list[float] = []
     last = series[0][1]
@@ -168,9 +171,9 @@ def build_portfolio_benchmark(
     benchmark_code: str = DEFAULT_BENCHMARK,
     kline_fetch=None,
 ) -> dict | None:
-    """holdings: [{symbol, market, quantity, fx}] → 基准对比结果(含归一化曲线)。
+    """holdings: [{symbol, market, quantity, fx}] → kết quả đối chiếu tham chiếu (kèm đường đã chuẩn hóa).
 
-    kline_fetch(symbol, market) -> list[KlineData];默认用 KlineCollector(带缓存)。
+    kline_fetch(symbol, market) -> list[KlineData]; mặc định dùng KlineCollector (có đệm).
     """
     bench_dates, bench_closes = _fetch_benchmark_series(benchmark_code, days)
     if len(bench_dates) < 2:
@@ -233,9 +236,9 @@ def build_attribution(
     benchmark_code: str = DEFAULT_BENCHMARK,
     kline_fetch=None,
 ) -> list[dict]:
-    """近 days 日各持仓对组合收益的贡献(weight×return),按贡献降序。
+    """Mức đóng góp của từng vị thế vào lợi nhuận danh mục trong days ngày gần nhất (weight×return), xếp giảm dần theo mức đóng góp.
 
-    contribution_i ≈ 起始权重_i × 区间收益_i;和≈组合收益。用于"谁拖累/贡献"。
+    contribution_i ≈ trọng số đầu kỳ_i × lợi nhuận trong khoảng_i; tổng ≈ lợi nhuận danh mục. Dùng để xem "ai kéo lùi/ai đóng góp".
     """
     bench_dates, _ = _fetch_benchmark_series(benchmark_code, days)
     if len(bench_dates) < 2:

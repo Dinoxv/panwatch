@@ -1,4 +1,4 @@
-"""AI 对话 API 端点。"""
+"""Điểm cuối API cho phiên trò chuyện với AI."""
 
 import asyncio
 import json
@@ -72,7 +72,7 @@ def suggested_questions(
     market: str = Query("CN", description="市场"),
     db: Session = Depends(get_db),
 ):
-    """根据股票当前状态生成推荐问题（纯模板，不调 AI）。"""
+    """Dựng câu hỏi gợi ý theo trạng thái hiện tại của mã (thuần mẫu, không gọi AI)."""
     questions: list[str] = []
 
     # Tra khuyến nghị gần nhất
@@ -202,7 +202,7 @@ def delete_conversation(conversation_id: int, db: Session = Depends(get_db)):
 
 
 def _save_user_message(db: Session, conv: ChatConversation, content: str) -> ChatMessage:
-    """保存用户消息并按需生成对话标题（流式/非流式共用）。"""
+    """Lưu tin nhắn của người dùng và sinh tiêu đề phiên khi cần (dùng chung cho cả luồng và không luồng)."""
     user_msg = ChatMessage(
         conversation_id=conv.id,
         role="user",
@@ -220,7 +220,7 @@ def _save_user_message(db: Session, conv: ChatConversation, content: str) -> Cha
 
 
 async def _build_messages_for_ai(db: Session, conv: ChatConversation) -> list[dict]:
-    """构建发给模型的完整 messages（system prompt + 历史 + 数据上下文，流式/非流式共用）。"""
+    """Dựng trọn bộ messages gửi cho mô hình (system prompt + lịch sử + ngữ cảnh dữ liệu, dùng chung cho cả luồng và không luồng)."""
     messages_for_ai: list[dict] = []
 
     # System prompt
@@ -280,7 +280,7 @@ async def send_message(
     conversation_id: int,
     body: SendMessageBody,
 ):
-    """发送消息并获取 AI 回复（非流式，保留作兼容与降级兜底）。"""
+    """Gửi tin nhắn và lấy câu trả lời của AI (không luồng, giữ lại để tương thích và làm lưới hứng khi hạ cấp)."""
     db = SessionLocal()
     try:
         conv = db.query(ChatConversation).filter(ChatConversation.id == conversation_id).first()
@@ -384,7 +384,7 @@ async def _run_chat_stream_task(
     stream: SSEStream,
     task_id: int | None = None,
 ) -> None:
-    """后台执行对话生成（工具循环 + token 流），事件推入 stream。"""
+    """Chạy phần sinh nội dung của phiên ở nền (vòng lặp công cụ + luồng token), sự kiện đẩy vào stream."""
     db = SessionLocal()
     task_repository = AssistantRepository(db)
     try:
@@ -533,7 +533,7 @@ async def _run_chat_stream_task(
 
 
 def _sse_response(stream: SSEStream, after_seq: int = 0) -> StreamingResponse:
-    """把 SSEStream 包成 text/event-stream 响应（响应包装中间件对该类型直通）。"""
+    """Bọc SSEStream thành phản hồi text/event-stream (middleware bọc phản hồi cho kiểu này đi thẳng)."""
     return StreamingResponse(
         stream.subscribe(after_seq=after_seq),
         media_type="text/event-stream",
@@ -550,9 +550,9 @@ async def send_message_stream(
     conversation_id: int,
     body: SendMessageBody,
 ):
-    """发送消息并以 SSE 流式返回 AI 回复（token 流 + 工具过程可视）。
+    """Gửi tin nhắn và trả câu trả lời của AI theo luồng SSE (luồng token + quá trình gọi công cụ nhìn thấy được).
 
-    非流式端点 POST /messages 保留不动，前端在流式失败时降级使用。
+    Điểm cuối không luồng POST /messages vẫn giữ nguyên, frontend dùng khi luồng hỏng.
     """
     db = SessionLocal()
     try:
@@ -593,7 +593,7 @@ async def resume_message_stream(
     request: Request,
     last_event_id: int = Query(0, ge=0, description="断线前收到的最后事件序号"),
 ):
-    """断线重连：按 Last-Event-ID（header 优先，query 兜底）从缓冲续推。"""
+    """Nối lại sau đứt: đẩy tiếp từ vùng đệm theo Last-Event-ID (ưu tiên header, query để hứng)."""
     stream = chat_stream_hub.get(stream_id)
     if not stream:
         raise HTTPException(404, "流不存在或已过期")

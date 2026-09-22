@@ -1,4 +1,4 @@
-"""模拟盘引擎：自动按策略信号建仓/平仓，跟踪虚拟账户收益。"""
+"""Engine mô phỏng bàn giao dịch: tự mở/đóng vị thế theo tín hiệu chiến lược, bám lợi nhuận của tài khoản ảo."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ DEFAULT_TIME_STOP_DAYS = 20
 
 
 def _position_weight(rank_score: float) -> float:
-    """按信号强度分配单笔资金占该市场预算的比例(rank_score 越高投越多)。"""
+    """Phân bổ tỷ lệ vốn một lệnh trên ngân sách thị trường đó theo độ mạnh tín hiệu (rank_score càng cao rót càng nhiều)."""
     s = float(rank_score or 0.0)
     if s >= 85:
         return 0.25
@@ -57,9 +57,9 @@ def _compute_quantity(
     cost_model: CostModel,
     lot: int = FIXED_QUANTITY,
 ) -> int:
-    """按信号强度 + 市场预算计算建仓股数(lot 整数倍),受可用现金(含买入费)约束。
+    """Tính số cổ mở vị thế theo độ mạnh tín hiệu + ngân sách thị trường (bội số của lot), bị ràng buộc bởi tiền khả dụng (gồm cả phí mua).
 
-    返回 0 表示连最小一手都买不起,应跳过。
+    Trả 0 nghĩa là không đủ mua nổi một lô tối thiểu, nên bỏ qua.
     """
     if price <= 0:
         return 0
@@ -120,7 +120,7 @@ DEFAULT_ALLOCATIONS: dict[str, float] = {"CN": 0.5, "HK": 0.3, "US": 0.2}
 
 
 def normalize_allocations(raw: dict | None) -> dict[str, float]:
-    """补齐三市场、clamp 到 [0,1]，返回 {market: ratio}。"""
+    """Bù đủ ba thị trường, kẹp về [0,1], trả về {market: ratio}."""
     raw = raw or {}
     out: dict[str, float] = {}
     for m in ALL_MARKETS:
@@ -133,7 +133,7 @@ def normalize_allocations(raw: dict | None) -> dict[str, float]:
 
 
 def market_allocations_or_default(account: Any) -> dict[str, float]:
-    """账户未配置比例时回退默认配置，否则归一化已配置的比例。"""
+    """Tài khoản chưa cấu hình tỷ lệ thì lùi về cấu hình mặc định, ngược lại chuẩn hóa các tỷ lệ đã cấu hình."""
     raw = getattr(account, "market_allocations", None) or {}
     if not raw:
         return dict(DEFAULT_ALLOCATIONS)
@@ -141,7 +141,7 @@ def market_allocations_or_default(account: Any) -> dict[str, float]:
 
 
 def allocations_from_excluded(excluded: list[str] | None) -> dict[str, float]:
-    """迁移用：被排除市场比例置 0，其余市场按默认权重归一化到合计 1.0。"""
+    """Dùng cho migration: thị trường bị loại thì đặt tỷ lệ 0, các thị trường còn lại chuẩn hóa theo trọng số mặc định về tổng 1.0."""
     excluded_set = {str(m).upper() for m in (excluded or [])}
     weights = {m: DEFAULT_ALLOCATIONS[m] for m in ALL_MARKETS if m not in excluded_set}
     total = sum(weights.values())
@@ -154,12 +154,12 @@ def allocations_from_excluded(excluded: list[str] | None) -> dict[str, float]:
 def compute_market_cash(
     initial_capital: float, ratio: float, realized_pnl: float, open_cost: float
 ) -> float:
-    """某市场可用现金 = 总资金×比例 + 该市场已实现盈亏 − 该市场持仓成本（纯函数，可单测）。"""
+    """Tiền khả dụng của một thị trường = tổng vốn×tỷ lệ + lãi lỗ đã thực hiện của thị trường đó − giá vốn vị thế của thị trường đó (hàm thuần, unit test được)."""
     return initial_capital * ratio + realized_pnl - open_cost
 
 
 def market_realized_open(db: Session, market: str) -> tuple[float, float]:
-    """返回 (该市场已实现盈亏合计, 该市场未平仓持仓成本合计)。"""
+    """Trả về (tổng lãi lỗ đã thực hiện của thị trường đó, tổng giá vốn vị thế chưa đóng của thị trường đó)."""
     realized = (
         db.query(func.coalesce(func.sum(PaperTradingTrade.pnl), 0.0))
         .filter(PaperTradingTrade.stock_market == market)
@@ -184,7 +184,7 @@ def market_realized_open(db: Session, market: str) -> tuple[float, float]:
 def market_available_cash(
     db: Session, account: PaperTradingAccount, market: str, alloc: dict | None = None
 ) -> float:
-    """某市场当前可用现金（用于建仓门槛与展示）。"""
+    """Tiền khả dụng hiện tại của một thị trường (dùng cho ngưỡng mở vị thế và phần hiển thị)."""
     alloc = alloc or market_allocations_or_default(account)
     ratio = alloc.get(market, 0.0)
     realized, open_cost = market_realized_open(db, market)
@@ -192,7 +192,7 @@ def market_available_cash(
 
 
 def _serialize_position(pos: PaperTradingPosition) -> dict:
-    """将 ORM Position 提取为 plain dict，避免 detached 问题。"""
+    """Rút ORM Position thành dict thuần, tránh vấn đề detached."""
     return {
         "id": pos.id,
         "stock_symbol": pos.stock_symbol,
@@ -210,7 +210,7 @@ def _serialize_position(pos: PaperTradingPosition) -> dict:
 
 
 def _serialize_trade(trade: PaperTradingTrade) -> dict:
-    """将 ORM Trade 提取为 plain dict。"""
+    """Rút ORM Trade thành dict thuần."""
     return {
         "id": trade.id,
         "stock_symbol": trade.stock_symbol,
@@ -228,7 +228,7 @@ def _serialize_trade(trade: PaperTradingTrade) -> dict:
 
 
 def _serialize_signal(sig: StrategySignalRun) -> dict:
-    """将 ORM Signal 提取为 plain dict。"""
+    """Rút ORM Signal thành dict thuần."""
     return {
         "id": sig.id,
         "stock_symbol": sig.stock_symbol,
@@ -243,7 +243,7 @@ def _serialize_signal(sig: StrategySignalRun) -> dict:
 
 
 class PaperTradingEngine:
-    """模拟盘扫描引擎。"""
+    """Engine quét của mô phỏng bàn giao dịch."""
 
     def _get_or_create_account(self, db: Session) -> PaperTradingAccount:
         account = db.query(PaperTradingAccount).first()
@@ -259,9 +259,9 @@ class PaperTradingEngine:
         return account
 
     def _fetch_quotes_map(self, symbols_markets: list[tuple[str, str]]) -> dict[tuple[str, str], dict]:
-        """批量获取报价，返回 {(market, symbol): quote_dict}
+        """Lấy báo giá hàng loạt, trả về {(market, symbol): quote_dict}
 
-        通过 QuoteOrchestrator 调度,支持多 provider 主备故障转移。
+        Điều phối qua QuoteOrchestrator, hỗ trợ chuyển dự phòng giữa nhiều provider.
         """
         grouped: dict[MarketCode, list[str]] = {}
         for symbol, market in symbols_markets:

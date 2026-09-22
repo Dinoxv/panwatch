@@ -1,4 +1,4 @@
-"""账户和持仓管理 API"""
+"""API quản lý tài khoản và vị thế"""
 import logging
 import time
 import httpx
@@ -25,7 +25,7 @@ EXCHANGE_RATE_TTL = 3600  # Bộ đệm 1 giờ
 
 
 def get_hkd_cny_rate() -> float:
-    """获取港币兑人民币汇率"""
+    """Lấy tỷ giá đô la Hồng Kông sang nhân dân tệ"""
     global _hkd_rate_cache
 
     # Kiểm tra bộ đệm
@@ -59,7 +59,7 @@ def get_hkd_cny_rate() -> float:
 
 
 def get_usd_cny_rate() -> float:
-    """获取美元兑人民币汇率"""
+    """Lấy tỷ giá đô la Mỹ sang nhân dân tệ"""
     global _usd_rate_cache
 
     # Kiểm tra bộ đệm
@@ -162,13 +162,13 @@ class PositionReorderRequest(BaseModel):
 
 @router.get("/accounts", response_model=list[AccountResponse])
 def list_accounts(db: Session = Depends(get_db)):
-    """获取所有账户"""
+    """Lấy mọi tài khoản"""
     return db.query(Account).order_by(Account.id).all()
 
 
 @router.get("/accounts/{account_id}", response_model=AccountResponse)
 def get_account(account_id: int, db: Session = Depends(get_db)):
-    """获取单个账户"""
+    """Lấy một tài khoản"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -177,7 +177,7 @@ def get_account(account_id: int, db: Session = Depends(get_db)):
 
 @router.post("/accounts", response_model=AccountResponse)
 def create_account(data: AccountCreate, db: Session = Depends(get_db)):
-    """创建账户"""
+    """Tạo tài khoản"""
     account = Account(name=data.name, available_funds=data.available_funds)
     db.add(account)
     db.commit()
@@ -188,7 +188,7 @@ def create_account(data: AccountCreate, db: Session = Depends(get_db)):
 
 @router.put("/accounts/{account_id}", response_model=AccountResponse)
 def update_account(account_id: int, data: AccountUpdate, db: Session = Depends(get_db)):
-    """更新账户"""
+    """Cập nhật tài khoản"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -208,7 +208,7 @@ def update_account(account_id: int, data: AccountUpdate, db: Session = Depends(g
 
 @router.delete("/accounts/{account_id}")
 def delete_account(account_id: int, db: Session = Depends(get_db)):
-    """删除账户（会同时删除该账户的所有持仓）"""
+    """Xóa tài khoản (sẽ xóa luôn mọi vị thế của tài khoản đó)"""
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         raise HTTPException(404, "账户不存在")
@@ -231,7 +231,7 @@ def list_positions(
     stock_id: int | None = None,
     db: Session = Depends(get_db)
 ):
-    """获取持仓列表，可按账户或股票筛选"""
+    """Lấy danh sách vị thế, lọc được theo tài khoản hoặc theo mã"""
     query = db.query(Position)
     if account_id:
         query = query.filter(Position.account_id == account_id)
@@ -259,7 +259,7 @@ def list_positions(
 
 @router.post("/positions", response_model=PositionResponse)
 def create_position(data: PositionCreate, db: Session = Depends(get_db)):
-    """创建持仓"""
+    """Tạo vị thế"""
     # Kiểm tra tài khoản và cổ phiếu có tồn tại không
     account = db.query(Account).filter(Account.id == data.account_id).first()
     if not account:
@@ -312,7 +312,7 @@ def create_position(data: PositionCreate, db: Session = Depends(get_db)):
 
 @router.put("/positions/{position_id}", response_model=PositionResponse)
 def update_position(position_id: int, data: PositionUpdate, db: Session = Depends(get_db)):
-    """更新持仓"""
+    """Cập nhật vị thế"""
     position = db.query(Position).filter(Position.id == position_id).first()
     if not position:
         raise HTTPException(404, "持仓不存在")
@@ -348,7 +348,7 @@ def update_position(position_id: int, data: PositionUpdate, db: Session = Depend
 
 @router.delete("/positions/{position_id}")
 def delete_position(position_id: int, db: Session = Depends(get_db)):
-    """删除持仓"""
+    """Xóa vị thế"""
     position = db.query(Position).filter(Position.id == position_id).first()
     if not position:
         raise HTTPException(404, "持仓不存在")
@@ -366,7 +366,7 @@ def delete_position(position_id: int, db: Session = Depends(get_db)):
 
 @router.put("/positions/reorder/batch")
 def reorder_positions(data: PositionReorderRequest, db: Session = Depends(get_db)):
-    """批量更新持仓排序"""
+    """Cập nhật hàng loạt thứ tự sắp xếp vị thế"""
     if not data.items:
         return {"updated": 0}
     ids = [int(x.id) for x in data.items]
@@ -392,14 +392,14 @@ def get_portfolio_summary(
     db: Session = Depends(get_db),
 ):
     """
-    获取持仓汇总信息
+    Lấy thông tin tổng hợp vị thế
 
     Args:
-        account_id: 可选，指定账户ID。不指定则汇总所有账户
+        account_id: tùy chọn, chỉ định ID tài khoản. Không chỉ định thì gộp mọi tài khoản
 
     Returns:
-        accounts: 账户列表及各账户持仓明细
-        total: 所有账户汇总
+        accounts: danh sách tài khoản và chi tiết vị thế của từng tài khoản
+        total: tổng hợp mọi tài khoản
     """
     # Lấy tài khoản
     if account_id:
@@ -584,7 +584,7 @@ def get_portfolio_summary(
 
 
 def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
-    """获取股票列表的实时行情"""
+    """Lấy bảng giá thời gian thực của một danh sách mã"""
     if not stocks:
         return {}
 
@@ -617,7 +617,7 @@ _PORTFOLIO_RESULT_CACHE = TTLCache(default_ttl_sec=600.0)
 
 
 def _holdings_signature(db: Session) -> str:
-    """启用账户持仓的稳定指纹(stock_id + 合并后数量);仅查 DB,不拉行情/K 线。"""
+    """Dấu vân tay ổn định của vị thế trong các tài khoản đang bật (stock_id + số lượng sau khi gộp); chỉ tra DB, không kéo bảng giá/nến."""
     rows = (
         db.query(Position.stock_id, Position.quantity)
         .join(Account, Account.id == Position.account_id)
@@ -631,7 +631,7 @@ def _holdings_signature(db: Session) -> str:
 
 
 def _gather_holdings(db: Session) -> list[dict]:
-    """汇总所有启用账户的真实持仓为统一列表(CNY 市值/浮盈 + fx),多账户同股合并。"""
+    """Gộp vị thế thật của mọi tài khoản đang bật thành một danh sách thống nhất (giá trị/lãi tạm tính quy CNY + fx), cùng mã ở nhiều tài khoản thì gộp lại."""
     accounts = db.query(Account).filter(Account.enabled == True).all()  # noqa: E712
     stock_ids = {p.stock_id for acc in accounts for p in acc.positions}
     stocks = db.query(Stock).filter(Stock.id.in_(stock_ids)).all() if stock_ids else []
@@ -676,7 +676,7 @@ def _gather_holdings(db: Session) -> list[dict]:
 
 @router.get("/portfolio/diagnostics")
 def portfolio_diagnostics(db: Session = Depends(get_db)):
-    """真实持仓组合诊断:集中度(HHI)/最大单仓/市场分布/风险提示(只读)。"""
+    """Soi danh mục vị thế thật: mức tập trung (HHI)/vị thế lớn nhất/phân bố thị trường/cảnh báo rủi ro (chỉ đọc)."""
     from src.modules.portfolio.portfolio_diagnostics import diagnose_positions
 
     return diagnose_positions(_gather_holdings(db))
@@ -686,7 +686,7 @@ def portfolio_diagnostics(db: Session = Depends(get_db)):
 def portfolio_benchmark(
     days: int = 60, benchmark: str = "000300", db: Session = Depends(get_db)
 ):
-    """真实持仓组合 vs 基准:超额收益/信息比率/相对回撤 + 归一化净值曲线。"""
+    """Danh mục vị thế thật vs tham chiếu: lợi nhuận vượt trội/tỷ lệ thông tin/sụt giảm tương đối + đường giá trị ròng đã chuẩn hóa."""
     from src.modules.portfolio.portfolio_benchmark import (
         DEFAULT_BENCHMARK,
         build_portfolio_benchmark,
@@ -715,7 +715,7 @@ def portfolio_benchmark(
 
 @router.get("/portfolio/todos")
 def portfolio_todos(db: Session = Depends(get_db)):
-    """首页空态待办:持仓但未设提醒 / 提醒即将到期(可行动,盘后也不空)。"""
+    """Việc còn treo ở trạng thái rỗng của trang chủ: có vị thế mà chưa đặt cảnh báo / cảnh báo sắp hết hạn (hành động được, ngoài phiên cũng không trống)."""
     todos: list[dict] = []
     accounts = db.query(Account).filter(Account.enabled == True).all()  # noqa: E712
     held_ids = {p.stock_id for acc in accounts for p in acc.positions}
@@ -766,7 +766,7 @@ def portfolio_todos(db: Session = Depends(get_db)):
 
 @router.get("/portfolio/attribution")
 def portfolio_attribution(days: int = 60, benchmark: str = "000300", db: Session = Depends(get_db)):
-    """近 days 日各持仓对组合收益的贡献(谁拖累/贡献),降序。"""
+    """Mức đóng góp của từng vị thế vào lợi nhuận danh mục trong days ngày gần nhất (ai kéo lùi/ai đóng góp), giảm dần."""
     from src.modules.portfolio.portfolio_benchmark import DEFAULT_BENCHMARK, build_attribution
 
     days = max(20, min(int(days), 250))
@@ -808,7 +808,7 @@ def _gather_account_totals(db: Session, *, market_value: float) -> dict:
 
 @router.post("/portfolio/ai-review")
 async def portfolio_ai_review(model_id: int | None = None, db: Session = Depends(get_db)):
-    """组合 AI 体检:诊断+基准+归因 → 叙述结论 + 调仓建议(只读,不下单)。"""
+    """Soi sức khỏe danh mục bằng AI: soi + tham chiếu + phân rã đóng góp → kết luận dạng văn + khuyến nghị cơ cấu lại (chỉ đọc, không đặt lệnh)."""
     from src.modules.portfolio.portfolio_benchmark import build_attribution, build_portfolio_benchmark
     from src.modules.portfolio.portfolio_diagnostics import diagnose_positions
     from src.platform.ai.ai_failover import get_configured_failover_client

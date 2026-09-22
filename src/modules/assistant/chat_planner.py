@@ -1,12 +1,15 @@
-"""Planning 试点 —— "全面诊断我的持仓"计划驱动编排。
+"""Thí điểm Planning — dàn dựng do kế hoạch dẫn dắt cho "soi toàn diện danh mục của tôi".
 
-范围刻意小:只覆盖单一场景(全面诊断持仓)。识别到该意图后走计划驱动:
-LLM 生成结构化计划(逐持仓股分析 → 组合风险 → 汇总建议)→ 计划经 SSE `plan` 事件
-推给前端 → 逐步执行(每步复用现有工具/LLM)→ 步骤失败重规划(上限 1 次,超限带失败
-信息直接汇总)。
+Phạm vi cố ý để nhỏ: chỉ phủ một tình huống duy nhất (soi toàn diện danh mục). Nhận ra ý
+định đó thì đi theo lối do kế hoạch dẫn dắt: LLM sinh kế hoạch có cấu trúc (phân tích
+từng mã trong danh mục → rủi ro danh mục → khuyến nghị tổng hợp) → kế hoạch được đẩy cho
+frontend qua sự kiện SSE `plan` → chạy từng bước (mỗi bước dùng lại công cụ/LLM sẵn có) →
+bước nào hỏng thì lập lại kế hoạch (tối đa 1 lần, quá thì mang luôn thông tin hỏng vào
+phần tổng hợp).
 
-这是**试点**:验证"计划驱动"相对固定流程的价值,不做过度泛化。编排函数把工具执行器
-(execute_tool)与 SSE 流(stream)作为依赖注入,便于单测全 mock。
+Đây là **thí điểm**: để kiểm chứng giá trị của "do kế hoạch dẫn dắt" so với luồng cố
+định, không tổng quát hóa quá tay. Hàm dàn dựng nhận bộ chạy công cụ (execute_tool) và
+luồng SSE (stream) dưới dạng phụ thuộc tiêm vào, để unit test mock được hết.
 """
 
 import json
@@ -29,7 +32,7 @@ _PLANNING_TRIGGERS = (
 
 
 def should_use_planning(content: str) -> bool:
-    """判断用户输入是否命中"全面诊断持仓"场景。"""
+    """Xét xem người dùng nhập vào có rơi vào tình huống "soi toàn diện danh mục" không."""
     if not content:
         return False
     text = content.replace(" ", "")
@@ -71,10 +74,11 @@ def _replan_messages(
 
 
 def parse_plan(text: str) -> list[dict] | None:
-    """从 LLM 文本里容错解析计划步骤列表。
+    """Đọc danh sách bước kế hoạch từ văn bản LLM theo kiểu chịu lỗi.
 
-    支持:纯 JSON、```json 围栏包裹、前后有解释文字、尾部截断等常见脏输出。
-    解析失败返回 None(交由调用方回退默认计划)。
+    Hỗ trợ: JSON thuần, bọc trong hàng rào ```json, có chữ giải thích ở trước/sau, bị cắt
+    cụt ở đuôi và các kiểu đầu ra bẩn thường gặp khác.
+    Đọc hỏng thì trả None (để bên gọi lùi về kế hoạch mặc định).
     """
     if not text:
         return None
@@ -109,12 +113,12 @@ def parse_plan(text: str) -> list[dict] | None:
 
 
 def build_default_plan(portfolio_text: str) -> list[dict]:
-    """LLM 计划不可用时的降级默认计划(仅做组合风险,汇总由系统追加)。"""
+    """Kế hoạch mặc định khi hạ cấp lúc kế hoạch của LLM không dùng được (chỉ làm phần rủi ro danh mục, phần tổng hợp do hệ thống thêm vào)."""
     return [{"title": "组合整体风险评估", "action": "portfolio_risk"}]
 
 
 def normalize_steps(steps: list[dict], start_id: int = 1) -> list[dict]:
-    """规范化步骤:补 id/title/action/params/status。过滤 summarize(汇总系统自动做)。"""
+    """Chuẩn hóa bước: bù id/title/action/params/status. Lọc bỏ summarize (phần tổng hợp hệ thống tự làm)."""
     out = []
     sid = start_id
     for s in steps:
@@ -155,7 +159,7 @@ _SUMMARY_SYSTEM = (
 
 
 async def _execute_step(db, ai_client, execute_tool, step: dict, portfolio_text: str) -> str:
-    """执行单个计划步骤,返回该步的分析文本。"""
+    """Chạy một bước kế hoạch, trả về văn bản phân tích của bước đó."""
     action = step["action"]
     if action == "analyze_stock":
         p = step.get("params") or {}
@@ -189,13 +193,13 @@ def _summary_messages(results: list[tuple[str, str]]) -> list[dict]:
 
 
 async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
-    """计划驱动的"全面诊断持仓"编排,返回最终汇总文本(已通过 SSE 流式推送)。
+    """Dàn dựng "soi toàn diện danh mục" do kế hoạch dẫn dắt, trả về văn bản tổng hợp cuối (đã đẩy theo luồng qua SSE).
 
     Args:
-        db: DB session。
-        stream: SSEStream(需支持 async publish(event, data))。
-        ai_client: AI 客户端(chat_multi / chat_stream)。
-        execute_tool: async (db, name, args) -> str 工具执行器。
+        db: phiên DB.
+        stream: SSEStream (cần hỗ trợ async publish(event, data)).
+        ai_client: máy khách AI (chat_multi / chat_stream).
+        execute_tool: bộ chạy công cụ async (db, name, args) -> str.
     """
     await stream.publish("plan", {"status": "planning", "steps": []})
 
