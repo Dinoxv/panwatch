@@ -19,11 +19,11 @@ from dataclasses import dataclass
 class CostConfig:
     """成本参数(可配置;默认值贴近 A 股散户实际)。"""
 
-    commission_rate: float = 0.00025   # 佣金费率(双边)万 2.5
-    min_commission: float = 5.0        # 单笔最低佣金(元)
-    stamp_duty_rate: float = 0.0005    # 印花税(仅卖出)万 5
-    transfer_fee_rate: float = 0.00001  # 过户费(双边)十万分之 1
-    slippage_bps: float = 5.0          # 滑点(基点,双边;5bps = 0.05%)
+    commission_rate: float = 0.00025   # Tỷ lệ hoa hồng (cả hai chiều) 0,025%
+    min_commission: float = 5.0        # Hoa hồng tối thiểu mỗi lệnh (đồng)
+    stamp_duty_rate: float = 0.0005    # Thuế tem (chỉ chiều bán) 0,05%
+    transfer_fee_rate: float = 0.00001  # Phí chuyển nhượng (cả hai chiều) 0,001%
+    slippage_bps: float = 5.0          # Trượt giá (điểm cơ bản, cả hai chiều; 5bps = 0,05%)
 
 
 @dataclass(frozen=True)
@@ -31,17 +31,17 @@ class Fill:
     """一次成交的净结果(含成本拆解,便于展示与审计)。"""
 
     side: str            # "buy" | "sell"
-    price: float         # 名义价(信号/行情价,未含滑点)
-    fill_price: float    # 实际成交价(含滑点)
+    price: float         # Giá danh nghĩa (giá tín hiệu / giá thị trường, chưa tính trượt giá)
+    fill_price: float    # Giá khớp thực tế (đã tính trượt giá)
     quantity: int
-    gross: float         # 实际成交额 = fill_price * quantity
+    gross: float         # Giá trị khớp thực tế = fill_price * quantity
     commission: float
     stamp_duty: float
     transfer_fee: float
-    slippage_cost: float  # 滑点损耗 = |fill_price - price| * quantity(仅展示)
-    explicit_fees: float  # 显式规费 = commission + stamp_duty + transfer_fee
-    friction: float       # 总摩擦 = explicit_fees + slippage_cost(仅展示)
-    cash_delta: float     # 现金变动:buy 为负,sell 为正(已扣显式规费;滑点含在 fill_price)
+    slippage_cost: float  # Hao hụt do trượt giá = |fill_price - price| * quantity (chỉ để hiển thị)
+    explicit_fees: float  # Phí tường minh = commission + stamp_duty + transfer_fee
+    friction: float       # Tổng ma sát = explicit_fees + slippage_cost (chỉ để hiển thị)
+    cash_delta: float     # Biến động tiền mặt: mua là âm, bán là dương (đã trừ phí tường minh; trượt giá đã nằm trong fill_price)
 
 
 class CostModel:
@@ -103,7 +103,7 @@ class CostModel:
         """一买一卖的完整盈亏(扣全部成本)。便于单笔回测与对账。"""
         buy = self.fill("buy", entry_price, quantity)
         sell = self.fill("sell", exit_price, quantity)
-        # 现金口径:买入流出 -cash_delta(正数),卖出流入 cash_delta
+        # Khẩu độ tiền mặt: tiền chi khi mua là -cash_delta (số dương), tiền thu khi bán là cash_delta
         invested = -buy.cash_delta
         proceeds = sell.cash_delta
         pnl = proceeds - invested
@@ -123,5 +123,5 @@ class CostModel:
         }
 
 
-# 全局默认实例(可被覆盖配置)
+# Thực thể mặc định toàn cục (có thể ghi đè bằng cấu hình)
 DEFAULT_COST_MODEL = CostModel()

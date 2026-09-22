@@ -27,7 +27,7 @@ from src.platform.persistence.models import FactorWeight, FactorWeightHistory
 
 logger = logging.getLogger(__name__)
 
-# 归一化基准:一个「不错」的 IR / 一个「有意义」的单期 IC。
+# Mốc chuẩn hóa: một IR ở mức «khá» / một IC một kỳ ở mức «có ý nghĩa».
 IR_REF = 0.5
 IC_REF = 0.05
 
@@ -45,7 +45,7 @@ def compute_target(factor_code: str, ic, ir, *, beta: float = 0.4) -> float | No
     else:
         return None
     if factor_code in PENALTY_FACTORS:
-        term = -term  # 惩罚因子:IC 越负越该信
+        term = -term  # Nhân tố phạt: IC càng âm thì càng đáng tin
     term = max(-1.0, min(1.0, term))
     return 1.0 * (1.0 + beta * term)
 
@@ -75,7 +75,7 @@ def calibrate_factor_weights(
             days=days, horizon=horizon, min_samples=min_samples, market=market, db=db
         )
         factors = ic_result.get("factors", {})
-        get_factor_weights(market, db=db)  # 确保 5 个因子行存在
+        get_factor_weights(market, db=db)  # Bảo đảm đủ 5 dòng nhân tố
 
         lo, hi = float(clamp[0]), float(clamp[1])
         changed = 0
@@ -93,7 +93,7 @@ def calibrate_factor_weights(
             ir = stats.get("ir")
             n = int(stats.get("sample_size", 0))
 
-            # 记录最近一次观测(供 API 展示),无论是否调整。
+            # Ghi lại quan sát gần nhất (để API hiển thị), bất kể có điều chỉnh hay không.
             row.meta = {
                 **(row.meta or {}),
                 "last_ic": ic, "last_ir": ir, "last_sample_size": n,
@@ -128,7 +128,7 @@ def calibrate_factor_weights(
         db.commit()
         return {"market": market, "checked": len(CALIBRATABLE_FACTORS),
                 "changed": changed, "rows": rows_changed}
-    except Exception as e:  # pragma: no cover - 防御性
+    except Exception as e:  # pragma: no cover - nhánh phòng thủ
         logger.warning(f"[因子标定] market={market} 失败: {e}")
         db.rollback()
         return {"market": market, "checked": 0, "changed": 0, "rows": [], "error": str(e)}

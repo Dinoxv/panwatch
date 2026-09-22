@@ -69,7 +69,7 @@ def parse_news_time(value: str | datetime | int | float | None) -> datetime | No
         except Exception:
             continue
 
-    # 常见月日格式（无年份），按当前年份补齐。
+    # Các định dạng ngày-tháng thường gặp (không có năm), bù bằng năm hiện tại.
     for fmt in ("%m-%d %H:%M:%S", "%m-%d %H:%M", "%m/%d %H:%M:%S", "%m/%d %H:%M"):
         try:
             partial = datetime.strptime(normalized, fmt)

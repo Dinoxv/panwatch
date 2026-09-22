@@ -39,11 +39,11 @@ class AIModel(Base):
     __tablename__ = "ai_models"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)  # 显示名，如 "GLM-4-Flash"
+    name = Column(String, nullable=False)  # Tên hiển thị, ví dụ "GLM-4-Flash"
     service_id = Column(
         Integer, ForeignKey("ai_services.id", ondelete="CASCADE"), nullable=False
     )
-    model = Column(String, nullable=False)  # 实际模型标识，如 "glm-4-flash"
+    model = Column(String, nullable=False)  # Định danh mô hình thật, ví dụ "glm-4-flash"
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -68,8 +68,8 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)  # 账户名称，如 "招商证券"、"华泰证券"
-    available_funds = Column(Float, default=0)  # 可用资金
+    name = Column(String, nullable=False)  # Tên tài khoản, ví dụ "招商证券", "华泰证券"
+    available_funds = Column(Float, default=0)  # Tiền khả dụng
     enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -86,7 +86,7 @@ class Stock(Base):
     symbol = Column(String, nullable=False)
     name = Column(String, nullable=False)
     market = Column(String, nullable=False)  # CN / HK / US
-    # 以下字段已废弃，持仓信息移至 Position 表
+    # Các trường dưới đây đã bỏ, thông tin vị thế chuyển sang bảng Position
     cost_price = Column(Float, nullable=True)
     quantity = Column(Integer, nullable=True)
     invested_amount = Column(Float, nullable=True)
@@ -117,9 +117,9 @@ class Position(Base):
     stock_id = Column(
         Integer, ForeignKey("stocks.id", ondelete="CASCADE"), nullable=False
     )
-    cost_price = Column(Float, nullable=False)  # 成本价
-    quantity = Column(Integer, nullable=False)  # 持仓数量
-    invested_amount = Column(Float, nullable=True)  # 投入资金（用于盘中监控）
+    cost_price = Column(Float, nullable=False)  # Giá vốn
+    quantity = Column(Integer, nullable=False)  # Khối lượng nắm giữ
+    invested_amount = Column(Float, nullable=True)  # Vốn đã giải ngân (dùng cho giám sát trong phiên)
     sort_order = Column(Integer, default=0)
     trading_style = Column(
         String, default="swing"
@@ -168,7 +168,7 @@ class AgentConfig(Base):
     display_order = Column(Integer, default=0)
     enabled = Column(Boolean, default=True)
     schedule = Column(String, default="")
-    # 执行模式: batch=批量(多只股票一起分析发送) / single=单只(逐只分析发送，实时性高)
+    # Chế độ thực thi: batch = hàng loạt (phân tích và gửi nhiều mã cùng lúc) / single = từng mã (phân tích và gửi lần lượt, tính thời gian thực cao hơn)
     execution_mode = Column(String, default="batch")
     ai_model_id = Column(
         Integer, ForeignKey("ai_models.id", ondelete="SET NULL"), nullable=True
@@ -240,11 +240,11 @@ class DataSource(Base):
         String, nullable=False
     )  # "news" / "chart" / "quote" / "kline" / "capital_flow"
     provider = Column(String, nullable=False)  # "xueqiu" / "eastmoney" / "tencent"
-    config = Column(JSON, default={})  # 配置参数
+    config = Column(JSON, default={})  # Tham số cấu hình
     enabled = Column(Boolean, default=True)
-    priority = Column(Integer, default=0)  # 越小优先级越高
-    supports_batch = Column(Boolean, default=False)  # 是否支持批量查询
-    test_symbols = Column(JSON, default=[])  # 测试用股票代码列表
+    priority = Column(Integer, default=0)  # Số càng nhỏ thì độ ưu tiên càng cao
+    supports_batch = Column(Boolean, default=False)  # Có hỗ trợ truy vấn hàng loạt hay không
+    test_symbols = Column(JSON, default=[])  # Danh sách mã cổ phiếu dùng để kiểm thử
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -258,11 +258,11 @@ class NewsCache(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source = Column(String, nullable=False)  # "cls" / "eastmoney"
-    external_id = Column(String, nullable=False)  # 来源侧 ID
+    external_id = Column(String, nullable=False)  # ID phía nguồn
     title = Column(String, nullable=False)
     content = Column(String, default="")
     publish_time = Column(DateTime, nullable=False)
-    symbols = Column(JSON, default=[])  # 关联股票代码列表
+    symbols = Column(JSON, default=[])  # Danh sách mã cổ phiếu liên quan
     importance = Column(Integer, default=0)  # Mức quan trọng 0-3
     created_at = Column(DateTime, server_default=func.now())
 
@@ -279,7 +279,7 @@ class NotifyThrottle(Base):
     agent_name = Column(String, nullable=False)
     stock_symbol = Column(String, nullable=False)
     last_notify_at = Column(DateTime, nullable=False)
-    notify_count = Column(Integer, default=1)  # 当日通知次数
+    notify_count = Column(Integer, default=1)  # Số lần thông báo trong ngày
 
 
 class AnalysisHistory(Base):
@@ -294,11 +294,11 @@ class AnalysisHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent_name = Column(String, nullable=False)  # "daily_report" / "premarket_outlook"
-    stock_symbol = Column(String, nullable=False)  # 股票代码，"*" 表示全部
-    analysis_date = Column(String, nullable=False)  # 分析日期 "YYYY-MM-DD"
-    title = Column(String, default="")  # 分析标题
-    content = Column(String, nullable=False)  # AI 分析结果
-    raw_data = Column(JSON, default={})  # 原始数据快照
+    stock_symbol = Column(String, nullable=False)  # Mã cổ phiếu, "*" nghĩa là tất cả
+    analysis_date = Column(String, nullable=False)  # Ngày phân tích "YYYY-MM-DD"
+    title = Column(String, default="")  # Tiêu đề phân tích
+    content = Column(String, nullable=False)  # Kết quả phân tích của AI
+    raw_data = Column(JSON, default={})  # Ảnh chụp dữ liệu gốc
     agent_kind_snapshot = Column(String, default="workflow")
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -397,7 +397,7 @@ class AgentPredictionOutcome(Base):
     stock_market = Column(String, nullable=False, default="CN")
     prediction_date = Column(String, nullable=False)  # YYYY-MM-DD
     horizon_days = Column(Integer, nullable=False, default=1)  # 1/5/10...
-    # 同一次建议的各 horizon 共用 UUID；历史记录为空时由查询侧兼容聚合。
+    # Các horizon của cùng một lần khuyến nghị dùng chung UUID; bản ghi cũ để trống thì phía truy vấn tự gộp tương thích.
     prediction_group_id = Column(String, nullable=True)
     # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
     horizon_unit = Column(String, nullable=False, default="trading_days")
@@ -423,17 +423,17 @@ class StockSuggestion(Base):
     stock_market = Column(String, nullable=False, default="CN", index=True)
     stock_name = Column(String, default="")
 
-    # 建议内容
+    # Nội dung khuyến nghị
     action = Column(
         String, nullable=False
     )  # buy/add/reduce/sell/hold/watch/alert/avoid
     action_label = Column(
         String, nullable=False
-    )  # 中文标签：建仓/加仓/减仓/清仓/持有/观望
-    signal = Column(String, default="")  # 信号描述
-    reason = Column(String, default="")  # 建议理由
+    )  # Nhãn hiển thị: Mở vị thế / Gia tăng / Giảm bớt / Thanh lý / Nắm giữ / Quan sát
+    signal = Column(String, default="")  # Mô tả tín hiệu
+    reason = Column(String, default="")  # Lý do khuyến nghị
 
-    # 来源追踪
+    # Truy vết nguồn
     agent_name = Column(
         String, nullable=False
     )  # intraday_monitor/daily_report/premarket_outlook

@@ -19,10 +19,10 @@ class AIClient:
             "api_key": api_key,
         }
         if proxy:
-            kwargs["http_client"] = None  # TODO: 如需代理，用 httpx 配置
+            kwargs["http_client"] = None  # TODO: cần proxy thì cấu hình qua httpx
         self.client = AsyncOpenAI(**kwargs)
-        # 保留原始配置作为实例属性,供需要桥接到第三方 LLM 框架的 agent 使用
-        # (e.g. TradingAgents 需要 base_url+api_key 重新构造 langchain 的 LLM)
+        # Giữ cấu hình gốc làm thuộc tính của thực thể, cho các agent cần bắc cầu sang framework LLM bên thứ ba dùng
+        # (ví dụ TradingAgents cần base_url + api_key để dựng lại LLM của langchain)
         self.base_url = base_url
         self.api_key = api_key
         self.model = model
@@ -49,7 +49,7 @@ class AIClient:
             {"role": "system", "content": system_prompt},
         ]
 
-        # 构建 user message
+        # Dựng user message
         if images:
             content_parts = [{"type": "text", "text": user_content}]
             for img_path in images:
@@ -67,10 +67,10 @@ class AIClient:
             create_kwargs = {"model": self.model, "messages": messages}
             if temperature is not None:
                 create_kwargs["temperature"] = temperature
-            # OTel gen_ai span(默认关闭时为 no-op);token 用量在拿到 usage 后回填。
+            # Span gen_ai của OTel (no-op khi tắt mặc định); lượng token điền ngược sau khi nhận được usage.
             with otel.llm_span(self.model, operation="chat") as _span:
                 response = await self.client.chat.completions.create(**create_kwargs)
-                # 记录 token 用量
+                # Ghi nhận lượng token
                 if response.usage:
                     self.last_usage = normalize_provider_usage(response.usage, model=self.model)
                     self.total_tokens_used += response.usage.total_tokens
@@ -215,12 +215,12 @@ class AIClient:
                 raise
 
         content_parts: list[str] = []
-        # OpenAI 流式协议下 tool_calls 按 index 分片下发（arguments 逐段拼接）
+        # Theo giao thức luồng của OpenAI, tool_calls được gửi thành từng mảnh theo index (arguments ghép dần từng đoạn)
         tool_calls_acc: dict[int, dict] = {}
         provider_usage = None
 
         async for chunk in stream:
-            # 部分兼容服务会在末尾单发一个只含 usage 的 chunk
+            # Một số dịch vụ tương thích gửi riêng ở cuối một chunk chỉ chứa usage
             usage = getattr(chunk, "usage", None)
             if usage:
                 self.total_tokens_used += usage.total_tokens

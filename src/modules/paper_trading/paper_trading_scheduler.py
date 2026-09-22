@@ -41,7 +41,7 @@ class PaperTradingScheduler:
             opened = result.get("opened", 0)
             closed = result.get("closed", 0)
             status = result.get("status", "?")
-            # 有实际开/平仓才是业务事件,否则只是心跳。
+            # Chỉ khi thực sự mở / đóng vị thế mới là sự kiện nghiệp vụ, còn lại chỉ là nhịp tim.
             level = logging.INFO if (opened or closed) else logging.DEBUG
             logger.log(
                 level,
@@ -82,13 +82,13 @@ class PaperTradingScheduler:
             self._scan_job,
             "interval",
             seconds=self.interval_seconds,
-            jitter=20,  # 抖动错峰,避免与价格提醒扫描每 60s 同刻并发写 SQLite
+            jitter=20,  # Lệch pha ngẫu nhiên, tránh ghi SQLite cùng lúc với vòng quét cảnh báo giá mỗi 60s
             id="paper_trading_scan",
             replace_existing=True,
             coalesce=True,
             max_instances=1,
         )
-        # 盘前计划 - 每天 09:00
+        # Kế hoạch trước phiên — 09:00 mỗi ngày
         self.scheduler.add_job(
             self._premarket_job,
             "cron",
@@ -99,7 +99,7 @@ class PaperTradingScheduler:
             coalesce=True,
             max_instances=1,
         )
-        # 日终摘要 - 每天 15:30
+        # Tóm tắt cuối phiên — 15:30 mỗi ngày
         self.scheduler.add_job(
             self._summary_job,
             "cron",

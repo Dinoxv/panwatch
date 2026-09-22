@@ -40,13 +40,13 @@ from src.platform.observability.log_context import get_log_context
 
 logger = logging.getLogger(__name__)
 
-# ── 错误类别 ───────────────────────────────────────────────────────────
-ERR_PARAM = "param"    # 参数不兼容:摘参重试同模型
-ERR_SWITCH = "switch"  # 可降级:换下一候选 + 记冷却
-ERR_FATAL = "fatal"    # 不可降级:直接抛(prompt/内容类)
+# ── Phân loại lỗi ──────────────────────────────────────────────────────
+ERR_PARAM = "param"    # Tham số không tương thích: bỏ tham số rồi thử lại chính mô hình đó
+ERR_SWITCH = "switch"  # Hạ cấp được: chuyển sang ứng viên kế tiếp + ghi thời gian chờ
+ERR_FATAL = "fatal"    # Không hạ cấp được: ném luôn (thuộc nhóm prompt / nội dung)
 
-# ── 负缓存冷却(照抄 kline_collector 模式)────────────────────────────
-# key = 模型标签(如 "智谱/glm-4-flash");value = 冷却截止的 monotonic 时间戳。
+# ── Negative cache và thời gian chờ (chép nguyên mẫu của kline_collector) ──
+# key = nhãn mô hình (ví dụ "智谱/glm-4-flash"); value = mốc monotonic khi hết thời gian chờ.
 _AI_FAIL_UNTIL: dict[str, float] = {}
 _AI_FAIL_COOLDOWN_S = 60.0
 
@@ -65,7 +65,7 @@ def _mark_fail(label: str) -> None:
 
 
 def _mark_ok(label: str) -> None:
-    # 成功即清除冷却标记(恢复)。
+    # Thành công là xóa dấu thời gian chờ (đã phục hồi).
     _AI_FAIL_UNTIL.pop(label, None)
 
 
@@ -86,7 +86,7 @@ def _looks_like_param_error(exc: Exception) -> bool:
 
 def classify_ai_error(exc: Exception) -> str:
     """把 AI 调用异常分流到三类:ERR_PARAM / ERR_SWITCH / ERR_FATAL。"""
-    # 网络 / 超时 / 5xx / 限流 / 鉴权失效 / 权限 → 换模型
+    # Mạng / quá hạn / 5xx / giới hạn tốc độ / xác thực hết hiệu lực / thiếu quyền → đổi mô hình
     if isinstance(
         exc,
         (
@@ -99,14 +99,14 @@ def classify_ai_error(exc: Exception) -> str:
         ),
     ):
         return ERR_SWITCH
-    # 400 / 422:区分"参数不兼容"(摘参重试)与"内容/prompt 问题"(直接抛)
+    # 400 / 422: phân biệt "tham số không tương thích" (bỏ tham số thử lại) với "vấn đề nội dung / prompt" (ném luôn)
     if isinstance(exc, BadRequestError):
         return ERR_PARAM if _looks_like_param_error(exc) else ERR_FATAL
-    # 其余带 HTTP 状态码的异常:5xx 视为可降级,4xx 视为致命
+    # Các ngoại lệ khác có mã trạng thái HTTP: 5xx coi là hạ cấp được, 4xx coi là lỗi chí mạng
     status = getattr(exc, "status_code", None)
     if isinstance(status, int):
         return ERR_SWITCH if status >= 500 else ERR_FATAL
-    # 未知异常:保守降级(下一候选可能是不同服务商,或链耗尽后统一抛)
+    # Ngoại lệ lạ: hạ cấp một cách thận trọng (ứng viên kế tiếp có thể thuộc nhà cung cấp khác, hoặc hết chuỗi thì ném ra)
     return ERR_SWITCH
 
 
@@ -128,10 +128,10 @@ class FailoverAIClient:
             raise ValueError("FailoverAIClient 需要至少一个候选模型")
         self.candidates = candidates
         self.on_switch = on_switch
-        # 实际使用的模型标签,默认主模型;成功调用后更新为真正跑通的那个。
+        # Nhãn mô hình thực dùng, mặc định là mô hình chính; gọi thành công thì cập nhật thành mô hình thật sự chạy được.
         self.used_model_label = candidates[0][1]
 
-    # ── 透传属性(兼容把它当普通 AIClient 用的调用方)────────────────
+    # ── Thuộc tính chuyển tiếp (tương thích với phía gọi coi nó như AIClient thường) ──
     @property
     def _primary(self) -> AIClient:
         return self.candidates[0][0]
@@ -167,12 +167,12 @@ class FailoverAIClient:
     async def list_models(self) -> list[str]:
         return await self._primary.list_models()
 
-    # ── 候选选取:优先非冷却;全部冷却则取主候选做恢复探测 ──────────
+    # ── Chọn ứng viên: ưu tiên cái không trong thời gian chờ; nếu tất cả đều đang chờ thì lấy ứng viên chính để dò phục hồi ──
     def _iter_candidates(self) -> list[tuple[AIClient, str]]:
         live = [(c, lbl) for c, lbl in self.candidates if not _is_cooling(lbl)]
         if live:
             return live
-        # 全部在冷却窗口内:降级返回主候选(忽略冷却)做恢复探测,而非直接失败。
+        # Tất cả đều còn trong cửa sổ chờ: hạ cấp trả về ứng viên chính (bỏ qua thời gian chờ) để dò phục hồi, thay vì thất bại ngay.
         return self.candidates[:1]
 
     def _log_switch(self, label: str, exc: Exception) -> None:
@@ -186,7 +186,7 @@ class FailoverAIClient:
         if self.on_switch is not None:
             try:
                 self.on_switch(label, exc)
-            except Exception:  # noqa: BLE001 — 回调不得影响主流程
+            except Exception:  # noqa: BLE001 — callback không được ảnh hưởng luồng chính
                 logger.debug("on_switch 回调异常(已忽略)", exc_info=True)
 
     async def _run(self, method_name: str, *args, temperature, **kwargs):
@@ -202,7 +202,7 @@ class FailoverAIClient:
             except Exception as exc:  # noqa: BLE001
                 kind = classify_ai_error(exc)
                 if kind == ERR_PARAM:
-                    # 摘掉 temperature 重试同一模型一次
+                    # Bỏ temperature rồi thử lại chính mô hình đó một lần
                     try:
                         retry_kwargs = dict(kwargs)
                         retry_kwargs["temperature"] = None
@@ -218,7 +218,7 @@ class FailoverAIClient:
                         kind = classify_ai_error(exc2)
                 if kind == ERR_FATAL:
                     raise
-                # ERR_SWITCH:记冷却 + 打日志 + 试下一候选
+                # ERR_SWITCH: ghi thời gian chờ + ghi nhật ký + thử ứng viên kế tiếp
                 _mark_fail(label)
                 last_exc = exc
                 self._log_switch(label, exc)
@@ -361,7 +361,7 @@ def build_failover_client(
             )
         )
 
-    # 补齐备选候选
+    # Bổ sung đủ các ứng viên dự phòng
     own_session = False
     if db is None:
         from src.platform.persistence.database import SessionLocal
@@ -390,7 +390,7 @@ def build_failover_client(
                     f"{svc.name}/{m.model}",
                 )
             )
-    except Exception:  # noqa: BLE001 — 备选查询失败不影响主候选可用
+    except Exception:  # noqa: BLE001 — truy vấn ứng viên dự phòng lỗi cũng không ảnh hưởng ứng viên chính
         logger.warning("构建 failover 备选候选失败,仅用主模型", exc_info=True)
     finally:
         if own_session:

@@ -177,7 +177,7 @@ def get_kline_summary_batch(payload: KlineSummaryBatchRequest):
             "summary": summary,
         }
 
-    # 与前端原先的并发上限保持一致，减少批量接口对数据源的瞬时压力。
+    # Giữ đúng trần song song mà giao diện vốn dùng, giảm áp lực tức thời mà endpoint hàng loạt gây cho nguồn dữ liệu.
     with ThreadPoolExecutor(max_workers=min(5, len(payload.items))) as executor:
         futures = [executor.submit(load_one, index) for index in range(len(payload.items))]
         return [future.result() for future in futures]

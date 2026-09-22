@@ -17,8 +17,8 @@ from src.platform.persistence.models import FactorWeight, FactorWeightHistory
 
 logger = logging.getLogger(__name__)
 
-# 可标定因子(与 StrategyFactorSnapshot 列、factor_eval.FACTOR_FIELDS 对齐)。
-# source_bonus 暂不进标定集(v1 维持权重 1.0);final_score 是合成结果,非输入因子。
+# Các nhân tố hiệu chỉnh được (khớp với cột của StrategyFactorSnapshot và factor_eval.FACTOR_FIELDS).
+# source_bonus tạm chưa vào tập hiệu chỉnh (v1 giữ trọng số 1.0); final_score là kết quả tổng hợp chứ không phải nhân tố đầu vào.
 CALIBRATABLE_FACTORS = (
     "alpha_score",
     "catalyst_score",
@@ -27,7 +27,7 @@ CALIBRATABLE_FACTORS = (
     "crowd_penalty",
 )
 
-# 惩罚类因子:在 raw_score 中被减,IC 预期为负。
+# Nhân tố phạt: bị trừ trong raw_score, kỳ vọng IC âm.
 PENALTY_FACTORS = frozenset({"risk_penalty", "crowd_penalty"})
 
 MARKETS = ("CN", "HK", "US")
@@ -80,7 +80,7 @@ def get_all_factor_weights(*, db=None) -> list[dict]:
     db = db or SessionLocal()
     try:
         for m in MARKETS:
-            get_factor_weights(m, db=db)  # 确保各市场已 seed
+            get_factor_weights(m, db=db)  # Bảo đảm mọi thị trường đã được khởi tạo dữ liệu nền
         rows = (
             db.query(FactorWeight)
             .order_by(FactorWeight.market, FactorWeight.factor_code)
@@ -105,7 +105,7 @@ def set_factor_weight(
     own = db is None
     db = db or SessionLocal()
     try:
-        get_factor_weights(market, db=db)  # 确保行存在
+        get_factor_weights(market, db=db)  # Bảo đảm dòng dữ liệu tồn tại
         row = (
             db.query(FactorWeight)
             .filter(FactorWeight.factor_code == factor_code, FactorWeight.market == market)
@@ -113,7 +113,7 @@ def set_factor_weight(
         )
         if weight is not None:
             old = float(row.weight)
-            new = round(max(0.1, min(3.0, float(weight))), 4)  # 手动也有界,防误填
+            new = round(max(0.1, min(3.0, float(weight))), 4)  # Nhập tay cũng có chặn biên, phòng điền nhầm
             if abs(new - old) >= 1e-9:
                 row.weight = new
                 row.reason = "manual"

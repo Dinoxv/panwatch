@@ -27,9 +27,9 @@ from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
-# A 股交易日集合;None = 尚未加载或加载失败(此时降级为只判周末)
+# Tập phiên giao dịch của cổ phiếu A; None = chưa nạp hoặc nạp thất bại (lúc đó hạ cấp về chỉ xét cuối tuần)
 _CN_TRADING_DATES: frozenset[date] | None = None
-# 日历覆盖区间,用于判断查询日期是否落在可信范围内(跨年未刷新时会超出)
+# Khoảng thời gian mà lịch phủ, dùng để biết ngày truy vấn có nằm trong vùng đáng tin không (sang năm mới mà chưa làm mới thì sẽ vượt ra ngoài)
 _CN_RANGE: tuple[date, date] | None = None
 
 _FALLBACK_TZ = "Asia/Shanghai"
@@ -133,17 +133,17 @@ def is_trading_day(market, d: date | datetime | None = None) -> bool:
     code = _to_market_code(market)
     target = _resolve_date(code, d)
 
-    # 周末:三个市场都不开。零依赖、永远准确,放在最前面。
+    # Cuối tuần: cả ba thị trường đều đóng. Không phụ thuộc gì, luôn đúng, nên đặt lên đầu.
     if target.weekday() >= 5:
         return False
 
-    # A 股:日历已加载且覆盖该日期时按日历判(含法定节假日)。
+    # Cổ phiếu A: khi lịch đã nạp và có phủ ngày đó thì xét theo lịch (gồm cả nghỉ lễ theo quy định).
     if code == MarketCode.CN and _CN_TRADING_DATES and _CN_RANGE:
         if _CN_RANGE[0] <= target <= _CN_RANGE[1]:
             return target in _CN_TRADING_DATES
         logger.debug("[交易日历] %s 超出A股日历覆盖范围,降级为只判周末", target)
 
-    # 港美股、日历缺失、超出覆盖范围:只判周末。
+    # Cổ phiếu Hồng Kông / Mỹ, lịch thiếu, hoặc ngày vượt vùng phủ: chỉ xét cuối tuần.
     return True
 
 

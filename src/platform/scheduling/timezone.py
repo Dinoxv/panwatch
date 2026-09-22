@@ -32,7 +32,7 @@ def beijing_now() -> datetime:
 def to_utc(dt: datetime) -> datetime:
     """将时间转换为 UTC"""
     if dt.tzinfo is None:
-        # 假设无时区的时间是默认时区
+        # Coi thời gian không có múi giờ là theo múi giờ mặc định
         dt = dt.replace(tzinfo=_get_app_tz())
     return dt.astimezone(timezone.utc)
 
@@ -40,7 +40,7 @@ def to_utc(dt: datetime) -> datetime:
 def to_beijing(dt: datetime) -> datetime:
     """将时间转换为默认时区（历史命名保留）"""
     if dt.tzinfo is None:
-        # 假设无时区的时间是 UTC
+        # Coi thời gian không có múi giờ là UTC
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(_get_app_tz())
 

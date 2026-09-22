@@ -50,8 +50,8 @@ class ToggleBody(BaseModel):
 
 class UpdateSettingsBody(BaseModel):
     excluded_markets: list[str] | None = None  # Tương thích trường cũ
-    market_allocations: dict[str, float] | None = None  # {"CN":0.5,...}，合计 ≤ 1
-    initial_capital: float | None = None  # 总资金（>0 时按差额增/减资）
+    market_allocations: dict[str, float] | None = None  # {"CN":0.5,...}, tổng ≤ 1
+    initial_capital: float | None = None  # Tổng vốn (lớn hơn 0 thì tăng / giảm vốn theo phần chênh lệch)
 
 
 def _serialize_account_dict(
@@ -467,7 +467,7 @@ def update_settings(body: UpdateSettingsBody, db: Session = Depends(get_db)):
         if total > 1.0 + 1e-9:
             raise HTTPException(400, f"投资比例合计不能超过 100%（当前 {round(total * 100)}%）")
         acc.market_allocations = alloc
-        # 同步派生 excluded_markets（比例 0 即排除），兼容旧读取
+        # Suy đồng bộ ra excluded_markets (tỷ trọng 0 là bị loại), giữ tương thích với cách đọc cũ
         acc.excluded_markets = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
     elif body.excluded_markets is not None:
         valid = {"CN", "HK", "US"}
@@ -493,7 +493,7 @@ async def manual_scan():
 
 
 # ---------------------------------------------------------------------------
-# 跟单通知设置
+# Cài đặt thông báo sao chép lệnh
 # ---------------------------------------------------------------------------
 
 _NOTIFY_KEYS = [

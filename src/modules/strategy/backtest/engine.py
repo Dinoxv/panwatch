@@ -39,11 +39,11 @@ class Signal:
 
     symbol: str
     market: str
-    signal_date: str                  # YYYY-MM-DD(信号产生日)
-    entry_price: float | None = None  # None = 用下一交易日开盘价
+    signal_date: str                  # YYYY-MM-DD (ngày phát tín hiệu)
+    entry_price: float | None = None  # None = dùng giá mở cửa phiên giao dịch kế tiếp
     stop_loss: float | None = None
     target_price: float | None = None
-    holding_days: int = 10            # 最大持有交易日(event 模式)
+    holding_days: int = 10            # Số phiên giao dịch nắm giữ tối đa (chế độ event)
 
 
 @dataclass
@@ -128,19 +128,19 @@ class Backtester:
 
         exit_price = exit_date = exit_reason = None
         held = 0
-        # T+1 起逐日检查(入场日当天不可卖)
+        # Kiểm tra từng phiên kể từ T+1 (ngày vào lệnh không được bán)
         for j in range(ei + 1, len(bars)):
             held = j - ei
             bar = bars[j]
             if stop and stop > 0:
-                if bar.open <= stop:  # 跳空跌破
+                if bar.open <= stop:  # Nhảy giá thủng xuống
                     exit_price, exit_date, exit_reason = bar.open, bar.date, "stop_loss"
                     break
                 if bar.low <= stop:
                     exit_price, exit_date, exit_reason = stop, bar.date, "stop_loss"
                     break
             if target and target > 0:
-                if bar.open >= target:  # 跳空冲高
+                if bar.open >= target:  # Nhảy giá vọt lên
                     exit_price, exit_date, exit_reason = bar.open, bar.date, "target"
                     break
                 if bar.high >= target:

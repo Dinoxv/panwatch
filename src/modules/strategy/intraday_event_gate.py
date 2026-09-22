@@ -36,7 +36,7 @@ def _safe_float(v: Any) -> float | None:
         return None
 
 
-# ATR 自适应异动默认倍数:涨跌幅 >= k×ATR% 视为相对个股自身波动的异动。
+# Bội số mặc định cho ngưỡng biến động thích ứng theo ATR: biên độ >= k×ATR% thì coi là bất thường so với chính dao động của mã.
 DEFAULT_ATR_K = 1.5
 
 

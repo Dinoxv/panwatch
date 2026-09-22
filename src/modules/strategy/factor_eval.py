@@ -19,7 +19,7 @@ from src.platform.persistence.models import StrategyFactorSnapshot, StrategyOutc
 
 logger = logging.getLogger(__name__)
 
-# 参与评估的因子字段(对应 StrategyFactorSnapshot 列)
+# Các trường nhân tố tham gia đánh giá (ứng với cột của StrategyFactorSnapshot)
 FACTOR_FIELDS = (
     "alpha_score",
     "catalyst_score",
@@ -84,8 +84,8 @@ def evaluate_factor_ic(
     db = db or SessionLocal()
     try:
         cutoff = (date.today() - timedelta(days=max(7, int(days)))).strftime("%Y-%m-%d")
-        # 防泄漏(point-in-time):只纳入持有期已走完的样本
-        # (snapshot_date + horizon 日历日 <= today),杜绝偷看未实现收益。
+        # Chống rò rỉ dữ liệu tương lai (point-in-time): chỉ lấy các mẫu đã đi hết kỳ nắm giữ
+        # (snapshot_date + horizon ngày lịch <= hôm nay), triệt tiêu việc nhìn trộm lợi nhuận chưa thành hiện thực.
         horizon_cutoff = (date.today() - timedelta(days=int(horizon))).strftime("%Y-%m-%d")
         query = (
             db.query(StrategyFactorSnapshot, StrategyOutcome.outcome_return_pct)

@@ -13,8 +13,8 @@ from src.platform.persistence.database import SessionLocal
 from src.platform.persistence.models import DataSource
 from src.platform.marketdata.models import MarketCode
 
-# 数据源测试的统一样本。每个市场固定两个稳定、容易识别的代码，避免新建数据源
-# 时只测到 A 股，导致港股/美股 provider 的市场路由问题直到生产才暴露。
+# Bộ mẫu thống nhất để kiểm thử nguồn dữ liệu. Mỗi thị trường cố định hai mã ổn định, dễ nhận ra, tránh việc tạo nguồn mới
+# mà chỉ kiểm thử được cổ phiếu A, khiến lỗi định tuyến thị trường của provider Hồng Kông / Mỹ tới tận môi trường thật mới lộ.
 DEFAULT_TEST_SYMBOLS_BY_MARKET: dict[str, tuple[str, str]] = {
     "CN": ("600519", "601127"),
     "HK": ("00700", "00386"),
@@ -28,9 +28,9 @@ DEFAULT_TEST_SYMBOLS: tuple[str, ...] = tuple(
 
 logger = logging.getLogger(__name__)
 
-# 数据源"测试"最多测多少个配置的 test_symbols(上限,防用户贴一大串把源打爆)。
-# 取 10 覆盖常见配置(此前 kline/capital_flow 写死 [:3]、quote/events [:5],会把用户
-# 配的第 4/6 个悄悄切掉,造成"配了 N 个只返回前几个"的意外)。
+# Số test_symbols tối đa mà một lần "kiểm thử" nguồn dữ liệu sẽ chạy (đặt trần, phòng người dùng dán một danh sách dài làm quá tải nguồn).
+# Lấy 10 để phủ các cấu hình thường gặp (trước đây kline/capital_flow gán cứng [:3], quote/events [:5], làm mã thứ 4 / thứ 6
+# mà người dùng cấu hình bị cắt âm thầm, gây tình huống bất ngờ "cấu hình N mã mà chỉ trả về vài mã đầu").
 _TEST_SYMBOL_LIMIT = 10
 
 
@@ -45,9 +45,9 @@ class CollectorResult:
     error: str = ""
     source_name: str = ""
     source_provider: str = ""
-    # 本次实际执行的代码(包含未返回的数据),用于测试弹窗回显配置/默认值。
+    # Các mã thực sự được chạy lần này (kể cả mã không trả về dữ liệu), dùng để hộp thoại kiểm thử hiển thị lại cấu hình / giá trị mặc định.
     test_symbols: list[str] = field(default_factory=list)
-    # 部分成功时保留逐代码失败原因，避免无数据代码(如 APPL)静默消失。
+    # Khi chỉ thành công một phần thì giữ lý do lỗi của từng mã, tránh để mã không có dữ liệu (ví dụ APPL) biến mất lặng lẽ.
     errors: list[dict[str, str]] = field(default_factory=list)
 
 
@@ -74,7 +74,7 @@ class DataCollectorManager:
     - 批量/单个采集
     """
 
-    # 数据源类型 -> (provider -> 采集器工厂)
+    # Loại nguồn dữ liệu -> (provider -> hàm nhà máy tạo bộ thu thập)
     COLLECTOR_FACTORIES: dict[str, dict[str, Callable]] = {}
 
     def __init__(self):
@@ -124,8 +124,8 @@ class DataCollectorManager:
         )
         self.logs.append(log)
 
-        # 同时输出到 logger:error 走 WARNING；start/success 是底层心跳,降到 DEBUG。
-        # UI 日志板始终从 self.logs 读完整记录,不受这里影响。
+        # Đồng thời ghi ra logger: error đi mức WARNING; start/success chỉ là nhịp tim tầng dưới nên hạ xuống DEBUG.
+        # Bảng nhật ký trên giao diện luôn đọc bản ghi đầy đủ từ self.logs, không bị chỗ này ảnh hưởng.
         if action == "error":
             logger.warning(f"[{source_name}] {message}")
         else:
@@ -175,7 +175,7 @@ class DataCollectorManager:
         """获取股票代码到名称的映射"""
         from src.platform.persistence.models import Stock
 
-        # 默认测试股票名称映射
+        # Ánh xạ tên cho các mã kiểm thử mặc định
         default_names = {
             "601127": "赛力斯",
             "600519": "贵州茅台",
@@ -189,7 +189,7 @@ class DataCollectorManager:
             stocks = db.query(Stock).filter(Stock.symbol.in_(symbols)).all()
             result = {s.symbol: s.name for s in stocks}
 
-            # 对于数据库中没有的股票，使用默认名称
+            # Mã chưa có trong cơ sở dữ liệu thì dùng tên mặc định
             for symbol in symbols:
                 if symbol not in result and symbol in default_names:
                     result[symbol] = default_names[symbol]
@@ -197,7 +197,7 @@ class DataCollectorManager:
             return result
         except Exception as e:
             logger.warning(f"获取股票名称失败: {e}")
-            # 返回默认名称
+            # Trả về tên mặc định
             return {s: default_names.get(s, s) for s in symbols if s in default_names}
         finally:
             db.close()
@@ -374,12 +374,12 @@ class DataCollectorManager:
         )
 
         try:
-            # 收集 vendor/market_get 的真实失败原因,失败时透到 UI(而不是笼统的"无数据")
+            # Thu lý do lỗi thật của vendor / market_get rồi đưa lên giao diện khi thất bại (thay vì chỉ báo chung chung "không có dữ liệu")
             with capture_errors() as errs:
                 result = await self._test_source_impl(source, test_symbols)
             result.test_symbols = list(test_symbols)
             if not result.success and errs:
-                # 去重保序 + 截断,拼成真因;若原本已有更具体的 error(如"provider 无对应 vendor")保留在前
+                # Khử trùng lặp giữ thứ tự + cắt bớt rồi ghép thành nguyên nhân thật; nếu sẵn có lỗi cụ thể hơn (ví dụ "provider không có vendor tương ứng") thì giữ nó ở đầu
                 seen: dict[str, None] = {}
                 for m in errs:
                     seen.setdefault(m, None)
@@ -436,8 +436,8 @@ class DataCollectorManager:
             return await self._test_news_source(source, test_symbols)
 
         elif source.type == "kline":
-            # 按 provider 路由到对应 Provider,而不是写死走 tencent (KlineCollector)。
-            # Tushare/YFinance 的 token 等配置从 source.config 注入。
+            # Định tuyến tới đúng Provider theo provider, thay vì gán cứng đi qua tencent (KlineCollector).
+            # Token và các cấu hình khác của Tushare / YFinance được tiêm từ source.config.
             return await self._test_kline_source(source, test_symbols)
 
         elif source.type == "capital_flow":
@@ -465,7 +465,7 @@ class DataCollectorManager:
             )
 
         elif source.type == "quote":
-            # 按 provider 路由到对应 Provider,Tushare(暂无 quote)/YFinance 可正确测到。
+            # Định tuyến tới đúng Provider theo provider, nhờ vậy Tushare (tạm chưa có quote) / YFinance đều kiểm thử đúng.
             return await self._test_quote_source(source, test_symbols)
 
         elif source.type == "chart":
@@ -565,8 +565,8 @@ class DataCollectorManager:
             success=False, error=f"不支持的数据源类型: {source.type}"
         )
 
-    # 包内 kline/quote/flash_news/fundamentals Engine 各自只注册了这些 vendor(权威来源见 marketdata.PACKAGE_VENDORS_BY_TYPE)。
-    # provider 不在这个集合里 = 包内没实现该源,测试应给出明确 error,不能构造 Engine 硬跑。
+    # Các Engine kline/quote/flash_news/fundamentals trong gói chỉ đăng ký đúng những vendor này (nguồn có thẩm quyền xem marketdata.PACKAGE_VENDORS_BY_TYPE).
+    # provider không nằm trong tập này = gói chưa cài đặt nguồn đó, phép kiểm thử phải báo lỗi rõ ràng, không được dựng Engine chạy bừa.
     _NEWS_PACKAGE_VENDORS = PACKAGE_VENDORS_BY_TYPE["news"]
     _KLINE_PACKAGE_VENDORS = PACKAGE_VENDORS_BY_TYPE["kline"]
     _QUOTE_PACKAGE_VENDORS = PACKAGE_VENDORS_BY_TYPE["quote"]
@@ -704,7 +704,7 @@ class DataCollectorManager:
         names = self._get_stock_names(test_symbols)
 
         try:
-            # 包内 news publish_time 是 aware(UTC),now 也须 aware,否则 since 过滤崩
+            # publish_time của news trong gói có múi giờ (UTC) nên now cũng phải có múi giờ, nếu không phép lọc since sẽ hỏng
             from datetime import timezone
             news = md.news(test_symbols, names=names, now=datetime.now(timezone.utc))
         except Exception as e:
@@ -1038,7 +1038,7 @@ class DataCollectorManager:
         )
 
 
-# 全局单例
+# Thực thể duy nhất toàn cục
 _manager: DataCollectorManager | None = None
 
 

@@ -865,15 +865,15 @@ def _compute_factor_breakdown(
     regime_multiplier += _clamp((regime_confidence - 0.5) * 0.06, -0.03, 0.03)
     regime_multiplier = _clamp(regime_multiplier, 0.85, 1.12)
 
-    # 每因子外置权重(默认 1.0 → 行为 = 现状,零回归)。snapshot 仍存 raw 因子分,
-    # 权重只作用于合成,确保 IC 测在原始因子上(见 factor_calibration 设计要点)。
+    # Trọng số đặt ngoài cho từng nhân tố (mặc định 1.0 → hành vi giữ nguyên hiện trạng, không hồi quy). Ảnh chụp vẫn lưu điểm nhân tố thô,
+    # trọng số chỉ tác động lúc tổng hợp, bảo đảm IC được đo trên nhân tố gốc (xem phần thiết kế của factor_calibration).
     fw = factor_weights or {}
     raw_score = (
         base_score
         + fw.get("alpha_score", 1.0) * alpha_score
         + fw.get("catalyst_score", 1.0) * catalyst_score
         + fw.get("quality_score", 1.0) * quality_score
-        + source_bonus  # v1: source_bonus 权重固定 1.0
+        + source_bonus  # v1: trọng số source_bonus cố định 1.0
     )
     raw_score -= fw.get("risk_penalty", 1.0) * risk_penalty
     raw_score -= fw.get("crowd_penalty", 1.0) * crowd_penalty
@@ -1616,7 +1616,7 @@ def evaluate_strategy_outcomes(
                 existing=existing,
             )
             stats["skipped_not_due"] += skipped_not_due
-            # 所有 horizon 都已评估或尚未到期时，不需要联网取该标的 K 线。
+            # Khi mọi horizon đều đã đánh giá hoặc chưa tới hạn thì không cần gọi mạng lấy nến của mã đó.
             if not pending_horizons:
                 continue
             key = (

@@ -236,7 +236,7 @@ async def scan_alert_rules(dry_run: bool = False, bypass_market_hours: bool = Tr
         from server import price_alert_scheduler
 
         if price_alert_scheduler:
-            # 手动扫描默认绕过交易时段门禁，便于即时验证规则
+            # Quét thủ công mặc định bỏ qua cổng giờ giao dịch, để kiểm chứng quy tắc ngay lập tức
             if bypass_market_hours:
                 return await price_alert_scheduler.trigger_once(dry_run=dry_run)
             return await ENGINE.scan_once(dry_run=dry_run, bypass_market_hours=False)

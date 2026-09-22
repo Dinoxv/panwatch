@@ -36,29 +36,29 @@ class Settings(BaseSettings):
     notify_telegram_bot_token: str = ""
     notify_telegram_chat_id: str = ""
 
-    # 代理
+    # Proxy
     http_proxy: str = ""
 
-    # 通知策略（可通过 UI 的“系统设置”覆盖）
-    # 静默时间段（本地时区），格式: HH:MM-HH:MM，空为关闭；跨夜示例: 23:00-07:00
+    # Chính sách thông báo (có thể ghi đè ở mục “cài đặt hệ thống” trên giao diện)
+    # Khung giờ im lặng (múi giờ địa phương), định dạng HH:MM-HH:MM, để trống là tắt; ví dụ qua đêm: 23:00-07:00
     notify_quiet_hours: str = ""
-    # 通知失败重试次数（不含首次尝试）
+    # Số lần thử lại khi gửi thông báo thất bại (không tính lần đầu)
     notify_retry_attempts: int = 2
-    # 重试退避秒数（基数），实际会按 1x,2x,... 递增
+    # Số giây giãn cách khi thử lại (giá trị cơ sở), thực tế tăng dần theo 1x, 2x, ...
     notify_retry_backoff_seconds: float = 2.0
-    # 幂等窗口覆盖（JSON），示例: {"news_digest":60,"daily_report":720}
+    # Ghi đè cửa sổ chống lặp (JSON), ví dụ: {"news_digest":60,"daily_report":720}
     notify_dedupe_ttl_overrides: str = ""
 
-    # SSL 证书（企业环境）
+    # Chứng chỉ SSL (môi trường doanh nghiệp)
     ca_cert_file: str = ""
 
-    # 调度
-    # day_of_week 使用 POSIX cron 语义(1-5=周一到周五)
+    # Lập lịch
+    # day_of_week dùng ngữ nghĩa POSIX cron (1-5 = thứ Hai đến thứ Sáu)
     daily_report_cron: str = "30 15 * * 1-5"
 
-    # 默认时区（用于调度、时间展示等）。
-    # 统一使用一个环境变量控制：TZ（默认 Asia/Shanghai）。
-    # 建议使用 IANA 时区名，如 Asia/Shanghai, America/New_York。
+    # Múi giờ mặc định (dùng cho lập lịch, hiển thị thời gian...).
+    # Thống nhất điều khiển bằng một biến môi trường duy nhất: TZ (mặc định Asia/Shanghai).
+    # Nên dùng tên múi giờ IANA, ví dụ Asia/Shanghai, America/New_York.
     app_timezone: str = Field(
         default="Asia/Shanghai",
         validation_alias=AliasChoices("TZ", "APP_TIMEZONE"),
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
-        # .env 里可能有 HTTPS_PROXY 等未声明字段(httpx/系统标准变量),忽略不报错
+        # Trong .env có thể có các trường chưa khai báo như HTTPS_PROXY (biến chuẩn của httpx / hệ thống), bỏ qua chứ không báo lỗi
         "extra": "ignore",
     }
 

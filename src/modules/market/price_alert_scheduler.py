@@ -26,7 +26,7 @@ class PriceAlertScheduler:
         try:
             result = await ENGINE.scan_once()
             triggered = result.get("triggered", 0)
-            # 实际触发了告警才是业务事件,否则只是心跳。
+            # Chỉ khi thực sự kích hoạt cảnh báo mới là sự kiện nghiệp vụ, còn lại chỉ là nhịp tim.
             level = logging.INFO if triggered else logging.DEBUG
             logger.log(
                 level,
@@ -50,7 +50,7 @@ class PriceAlertScheduler:
             self._scan_job,
             "interval",
             seconds=self.interval_seconds,
-            jitter=20,  # 抖动错峰,避免与模拟盘扫描每 60s 同刻并发写 SQLite
+            jitter=20,  # Lệch pha ngẫu nhiên, tránh ghi SQLite cùng lúc với vòng quét mô phỏng mỗi 60s
             id="price_alert_scan",
             replace_existing=True,
             coalesce=True,
