@@ -670,8 +670,8 @@ def build_panwatch_tool_registry(session: Session) -> ToolRegistry:
             market=market.value,
         )
         session.add(stock)
-        # 规则通过外键引用新登记的股票；先 flush 获取主键，仍由下方
-        # 的单次 commit 保证股票目录和提醒规则一起成功或一起回滚。
+        # Quy tắc tham chiếu cổ phiếu vừa đăng ký qua khóa ngoại; flush trước để lấy khóa chính, việc danh mục cổ phiếu và quy tắc cảnh báo
+        # cùng thành công hoặc cùng quay lui vẫn do một lần commit duy nhất bên dưới bảo đảm.
         session.flush()
         return stock, True
 

@@ -15,7 +15,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# 触发词:显式命中即走计划驱动(简单启发式,试点足够)
+# Từ khóa kích hoạt: khớp tường minh là chuyển sang chế độ dẫn dắt theo kế hoạch (heuristic đơn giản, đủ cho giai đoạn thử nghiệm)
 _PLANNING_TRIGGERS = (
     "全面诊断",
     "诊断我的持仓",
@@ -172,7 +172,7 @@ async def _execute_step(db, ai_client, execute_tool, step: dict, portfolio_text:
         ]
         return await ai_client.chat_multi(msgs, temperature=0.4)
 
-    # portfolio_risk 及其它未知 action:统一按组合风险处理
+    # portfolio_risk và các action lạ khác: xử lý thống nhất như rủi ro danh mục
     msgs = [
         {"role": "system", "content": _STEP_SYSTEM},
         {"role": "user", "content": f"评估以下持仓组合的整体风险:\n{portfolio_text}"},
@@ -201,7 +201,7 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
 
     portfolio_text = await execute_tool(db, "get_portfolio", {})
 
-    # 1) 生成计划(失败/解析不了则回退默认计划)
+    # 1) Sinh kế hoạch (thất bại / không bóc được thì lùi về kế hoạch mặc định)
     steps = None
     try:
         raw = await ai_client.chat_multi(_plan_messages(portfolio_text), temperature=0.3)
@@ -216,7 +216,7 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
 
     await _publish_plan(stream, steps, status="running")
 
-    # 2) 逐步执行,失败重规划(上限 1 次)
+    # 2) Thực thi từng bước, hỏng thì lập lại kế hoạch (tối đa 1 lần)
     results: list[tuple[str, str]] = []
     replanned = False
     i = 0
@@ -243,14 +243,14 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
                 if new_steps:
                     steps = steps[:i] + normalize_steps(new_steps, start_id=step["id"])
                     await _publish_plan(stream, steps, status="running")
-                    continue  # 从当前位置用新计划重试
-            # 已重规划过或重规划失败:标记失败,带失败信息继续汇总
+                    continue  # Thử lại từ vị trí hiện tại bằng kế hoạch mới
+            # Đã lập lại kế hoạch hoặc việc lập lại thất bại: đánh dấu thất bại, mang thông tin lỗi đi tổng hợp tiếp
             step["status"] = "failed"
             results.append((step["title"], f"(该步执行失败:{e})"))
         await _publish_plan(stream, steps, status="running")
         i += 1
 
-    # 3) 汇总(流式推 token)
+    # 3) Tổng hợp (đẩy token theo luồng)
     summary = ""
     try:
         parts: list[str] = []
@@ -261,7 +261,7 @@ async def run_portfolio_diagnosis(db, stream, ai_client, execute_tool) -> str:
                 parts.append(payload)
                 await stream.publish("token", {"text": payload})
         summary = "".join(parts)
-    except Exception as e:  # noqa: BLE001 — 流式汇总失败降级为非流式
+    except Exception as e:  # noqa: BLE001 — tổng hợp theo luồng thất bại thì hạ cấp sang không dùng luồng
         logger.warning("流式汇总失败,降级非流式: %s", e)
         try:
             summary = await ai_client.chat_multi(_summary_messages(results), temperature=0.4)

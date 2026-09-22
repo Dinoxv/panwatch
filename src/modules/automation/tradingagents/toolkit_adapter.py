@@ -469,8 +469,8 @@ def patch_route_to_vendor():
 # Tiếp quản load_ohlcv
 # get_verified_market_snapshot của thượng nguồn bản mới → market_data_validator.load_ohlcv nối thẳng yfinance,
 # không đi qua route_to_vendor. Cổ phiếu A (không có .SS) / Hồng Kông (không có .HK) thì yfinance không lấy được → NoMarketDataError,
-# 整个 TradingAgents 分析失败。这里把 A股/港股的 load_ohlcv 改走 PanWatch K线;
-# 非 PanWatch 标的(美股)透传原生 yfinance,故进程级永久安装安全、无需卸载。
+# khiến cả lượt phân tích TradingAgents thất bại. Ở đây chuyển load_ohlcv của cổ phiếu A / Hồng Kông sang lấy nến từ PanWatch;
+# mã không thuộc PanWatch (cổ phiếu Mỹ) vẫn chuyển thẳng cho yfinance gốc, nên cài vĩnh viễn ở cấp tiến trình là an toàn, không cần gỡ.
 # ---------------------------------------------------------------------------
 _LOAD_OHLCV_PATCHED = False
 _real_load_ohlcv: Any = None
@@ -505,8 +505,8 @@ def _build_panwatch_ohlcv_df(symbol: str, curr_date: str):
 
     from src.platform.marketdata.collectors.kline_collector import KlineCollector
     market = _market_for_symbol(symbol)
-    # collect() 已经为本次分析准备了 K 线；验证快照只需要同一份数据，
-    # 不应因为上游默认 lookback=750 再向东财发起一轮可能阻塞的请求。
+    # collect() đã chuẩn bị nến cho lượt phân tích này; ảnh chụp kiểm chứng chỉ cần đúng bộ dữ liệu đó,
+    # không nên vì thượng nguồn mặc định lookback=750 mà gọi thêm một vòng request tới EastMoney có nguy cơ treo.
     cached_klines = _cache().get("klines")
     cached_stock = _cache().get("stock")
     cached_symbol = getattr(cached_stock, "symbol", "") if cached_stock is not None else ""
@@ -728,7 +728,7 @@ def _args_summary(args: tuple) -> str:
     parts = []
     for i, a in enumerate(args):
         if i == 0 and isinstance(a, str) and len(a) == 6 and a.isdigit():
-            continue  # 跳过 symbol(已单独显示)
+            continue  # Bỏ qua symbol (đã hiển thị riêng)
         s = str(a)
         if len(s) > 40:
             s = s[:40] + "..."
@@ -792,20 +792,20 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
     method = (method_name or "").lower()
     header = _stock_meta_header(symbol)
 
-    # 1a) 单指标查询:get_indicators(symbol, indicator_name, curr_date, look_back_days)
-    # 上游对每个技术指标(macd/rsi/kdj/boll/...)各调一次,8 次返回相同 K线 CSV 是浪费。
-    # 我们按 indicator 名返回简短的"该指标当前值 + 简要解读",避免重复污染上下文。
+    # 1a) Truy vấn một chỉ báo: get_indicators(symbol, indicator_name, curr_date, look_back_days)
+    # Thượng nguồn gọi riêng cho từng chỉ báo (macd/rsi/kdj/boll/...), trả về 8 lần cùng một CSV nến là lãng phí.
+    # Ta trả theo tên chỉ báo một đoạn ngắn "giá trị hiện tại + diễn giải vắn tắt", tránh làm nhiễu ngữ cảnh vì lặp.
     if "indicator" in method:
         if args and len(args) >= 2:
             indicator = str(args[1]).lower()
             return f"{header}\n\n{_render_single_indicator(indicator, symbol)}"
-        # 没传 indicator 参数:降级到 K 线 CSV
+        # Không truyền tham số indicator: hạ cấp về CSV nến
         klines = _cache().get("klines") or []
         if klines:
             return f"{header}\n\n{_klines_to_csv(klines)}"
         return f"{header}\n\n[No data available for indicators on {symbol}]"
 
-    # 1b) K 线 / 股价完整 CSV:get_stockstats / get_yfin_data / get_stock_data
+    # 1b) CSV đầy đủ nến / giá: get_stockstats / get_yfin_data / get_stock_data
     if any(k in method for k in (
         "stockstats", "yfin", "ohlcv", "kline", "price", "stock_data",
     )):
@@ -814,7 +814,7 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
             return f"{header}\n\n{_klines_to_csv(klines)}"
         return f"{header}\n\n[No kline data available from PanWatch for {symbol}]"
 
-    # 2) 公告/事件/新闻:get_finnhub_news / get_news / get_events / get_global_news / get_insider_*
+    # 2) Công bố thông tin / sự kiện / tin tức: get_finnhub_news / get_news / get_events / get_global_news / get_insider_*
     if any(k in method for k in ("news", "event", "announce", "insider")):
         events = _cache().get("events") or []
         if events:
@@ -825,14 +825,14 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
             "on the metadata above and other tool outputs.]"
         )
 
-    # 3) 资金流(主力资金净流入)— 注意:不要匹配 "cashflow" / "cash_flow",那是现金流量表
+    # 3) Dòng tiền (dòng tiền lớn vào ròng) — lưu ý: KHÔNG khớp "cashflow" / "cash_flow", đó là báo cáo lưu chuyển tiền tệ
     if "capital" in method or ("flow" in method and "cash" not in method):
         flow = _cache().get("capital_flow")
         if flow:
             return f"{header}\n\n{_flow_to_text(flow)}"
         return f"{header}\n\n[No capital flow data available for {symbol}]"
 
-    # 4) 基本面 / 财报:有真实 akshare 财务数据时返回完整指标,否则 fallback 到 quote
+    # 4) Cơ bản / báo cáo tài chính: có dữ liệu tài chính thật từ akshare thì trả đủ chỉ tiêu, không thì lùi về quote
     financial = _cache().get("financial")
     if "fundamental" in method or "financial" in method:
         if financial:
@@ -864,7 +864,7 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
             "Avoid invented cash flow numbers.]"
         )
 
-    # 未识别:让上游走默认 vendor
+    # Không nhận dạng được: để thượng nguồn dùng vendor mặc định
     raise NotImplementedError(f"no panwatch backing for {method_name}")
 
 
@@ -897,13 +897,13 @@ def _render_single_indicator(indicator: str, symbol: str) -> str:
     """
     tech = _cache().get("technical")
     if not tech:
-        # 没预计算时,fallback 到 K 线 CSV(让 LLM 自己算)
+        # Không có sẵn kết quả tính trước thì lùi về CSV nến (để LLM tự tính)
         klines = _cache().get("klines") or []
         if klines:
             return (
                 f"[Indicator query: {indicator}] (no precomputed value, "
                 f"returning raw K-line CSV for self-calculation)\n\n"
-                f"{_klines_to_csv(klines[-30:])}"  # 仅 30 条够
+                f"{_klines_to_csv(klines[-30:])}"  # Chỉ 30 bản ghi là đủ
             )
         return f"[No data available for indicator '{indicator}' on {symbol}]"
 
@@ -954,7 +954,7 @@ def _render_single_indicator(indicator: str, symbol: str) -> str:
         handled = True
 
     if not handled:
-        # 未识别的指标:倾倒全部技术指标摘要
+        # Chỉ báo không nhận dạng được: đổ ra toàn bộ tóm tắt chỉ báo kỹ thuật
         lines.append("(indicator name not specifically recognized — returning full snapshot)")
         for attr in (
             "ma5", "ma10", "ma20", "ma60",

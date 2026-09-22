@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-# 表由共享持久化平台注册；组合 repository 直接使用它们，避免模块内保留
-# 一个不承载任何领域行为的 ``portfolio.models`` re-export 文件。
+# Các bảng do tầng lưu trữ dùng chung đăng ký; repository của danh mục dùng thẳng chúng, khỏi phải giữ lại trong module
+# một tệp ``portfolio.models`` chỉ làm nhiệm vụ xuất lại mà không mang bất kỳ hành vi nghiệp vụ nào.
 from src.platform.persistence.models import PaperTradingPosition, Position, Stock
 
 

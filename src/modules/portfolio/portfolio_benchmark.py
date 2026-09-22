@@ -16,7 +16,7 @@ from src.platform.marketdata.models import MarketCode
 
 logger = logging.getLogger(__name__)
 
-# 腾讯日K接口(与 kline_collector.TENCENT_KLINE_URL 同源,本地化以解除对其内部符号的依赖)
+# Endpoint nến ngày của Tencent (cùng nguồn với kline_collector.TENCENT_KLINE_URL, đưa về đây để cắt phụ thuộc vào ký hiệu nội bộ của module đó)
 _TENCENT_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 
 
@@ -57,7 +57,7 @@ def _parse_tencent_kline(text: str, tencent_sym: str) -> list[KlineData]:
                 continue
     return out
 
-# 常见指数 → (腾讯行情符号, 中文名);指数前缀特殊,不能走 cn_symbol 自动判断
+# Các chỉ số thường dùng → (mã giá Tencent, tên hiển thị); tiền tố của chỉ số đặc biệt nên không thể để cn_symbol tự suy
 INDEX_TENCENT: dict[str, tuple[str, str]] = {
     "000300": ("sh000300", "沪深300"),
     "000905": ("sh000905", "中证500"),
@@ -66,7 +66,7 @@ INDEX_TENCENT: dict[str, tuple[str, str]] = {
     "000001": ("sh000001", "上证指数"),
 }
 DEFAULT_BENCHMARK = "000300"
-_ANNUALIZE = 242  # A股年化交易日数
+_ANNUALIZE = 242  # Số phiên giao dịch mỗi năm của cổ phiếu A
 
 
 def benchmark_label(code: str) -> str:
@@ -104,7 +104,7 @@ def compute_benchmark_metrics(
     std = var**0.5
     info_ratio = (mean_excess / std * (annualize**0.5)) if std > 0 else 0.0
 
-    # 相对回撤:组合/基准 归一比值序列的最大回撤
+    # Sụt giảm tương đối: mức sụt giảm tối đa của chuỗi tỷ lệ chuẩn hóa danh mục / chuẩn so sánh
     ratio = [pn / bn for pn, bn in zip(pnorm, bnorm)]
     peak, max_dd = ratio[0], 0.0
     for r in ratio:
@@ -192,9 +192,9 @@ def build_portfolio_benchmark(
     if not holding_series:
         return None
 
-    # 所有持仓都有数据的起点,避免早期持仓缺数导致 NAV 失真;
-    # 但覆盖极差的单只持仓(坏源/新股,只有最近 1-2 根)不许一票否决整个窗口:
-    # 保底窗口 = max(10, 基准天数一半),覆盖不到保底窗口起点的持仓剔除出 NAV(记入 excluded)。
+    # Mốc bắt đầu mà mọi vị thế đều có dữ liệu, tránh để vị thế thiếu dữ liệu giai đoạn đầu làm méo giá trị ròng;
+    # nhưng một mã có độ phủ quá tệ (nguồn hỏng / mã mới, chỉ có 1-2 cây nến gần nhất) không được phép phủ quyết cả cửa sổ:
+    # cửa sổ tối thiểu = max(10, nửa số phiên của chuẩn so sánh), vị thế không phủ tới mốc đó bị loại khỏi giá trị ròng (ghi vào excluded).
     min_window = max(10, len(bench_dates) // 2)
     floor_date = bench_dates[-min_window] if len(bench_dates) >= min_window else bench_dates[0]
     kept = [hs for hs in holding_series if hs[2] <= floor_date]
@@ -221,7 +221,7 @@ def build_portfolio_benchmark(
         metrics["benchmark_code"] = benchmark_code
         metrics["benchmark_label"] = benchmark_label(benchmark_code)
         if excluded:
-            # 覆盖不足被剔除的持仓(如坏源/新股),供上层展示"基于 N-x 只计算"
+            # Các vị thế bị loại vì thiếu độ phủ (nguồn hỏng / mã mới), để tầng trên hiển thị "tính trên N-x mã"
             metrics["excluded"] = excluded
     return metrics
 

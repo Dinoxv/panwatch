@@ -18,10 +18,10 @@ from src.platform.marketdata.models import MarketCode
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# 汇率缓存
-_hkd_rate_cache: dict = {"rate": 0.92, "ts": 0}  # 港币默认汇率 0.92
-_usd_rate_cache: dict = {"rate": 7.25, "ts": 0}  # 美元默认汇率 7.25
-EXCHANGE_RATE_TTL = 3600  # 1 小时缓存
+# Bộ đệm tỷ giá
+_hkd_rate_cache: dict = {"rate": 0.92, "ts": 0}  # Tỷ giá HKD mặc định 0,92
+_usd_rate_cache: dict = {"rate": 7.25, "ts": 0}  # Tỷ giá USD mặc định 7,25
+EXCHANGE_RATE_TTL = 3600  # Bộ đệm 1 giờ
 
 
 def get_hkd_cny_rate() -> float:
@@ -42,7 +42,7 @@ def get_hkd_cny_rate() -> float:
                 "Referer": "https://finance.sina.com.cn/"
             }
         )
-        # 格式: var hq_str_fx_shkdcny="时间,汇率,..."
+        # Định dạng: var hq_str_fx_shkdcny="thời gian,tỷ giá,..."
         text = resp.text
         if "=" in text and "," in text:
             data = text.split('"')[1]
@@ -76,7 +76,7 @@ def get_usd_cny_rate() -> float:
                 "Referer": "https://finance.sina.com.cn/"
             }
         )
-        # 格式: var hq_str_fx_susdcny="时间,汇率,..."
+        # Định dạng: var hq_str_fx_susdcny="thời gian,tỷ giá,..."
         text = resp.text
         if "=" in text and "," in text:
             data = text.split('"')[1]
@@ -140,7 +140,7 @@ class PositionResponse(BaseModel):
     invested_amount: float | None
     sort_order: int
     trading_style: str | None
-    # 关联信息
+    # Thông tin liên kết
     account_name: str | None = None
     stock_symbol: str | None = None
     stock_name: str | None = None
@@ -260,7 +260,7 @@ def list_positions(
 @router.post("/positions", response_model=PositionResponse)
 def create_position(data: PositionCreate, db: Session = Depends(get_db)):
     """创建持仓"""
-    # 检查账户和股票是否存在
+    # Kiểm tra tài khoản và cổ phiếu có tồn tại không
     account = db.query(Account).filter(Account.id == data.account_id).first()
     if not account:
         raise HTTPException(400, "账户不存在")
@@ -269,7 +269,7 @@ def create_position(data: PositionCreate, db: Session = Depends(get_db)):
     if not stock:
         raise HTTPException(400, "股票不存在")
 
-    # 检查是否已存在该账户的该股票持仓
+    # Kiểm tra tài khoản này đã có vị thế ở mã đó chưa
     existing = db.query(Position).filter(
         Position.account_id == data.account_id,
         Position.stock_id == data.stock_id,
@@ -324,7 +324,7 @@ def update_position(position_id: int, data: PositionUpdate, db: Session = Depend
     if data.invested_amount is not None:
         position.invested_amount = data.invested_amount
     if data.trading_style is not None:
-        # 空字符串表示清空，设为 None
+        # Chuỗi rỗng nghĩa là xóa trắng, đặt thành None
         position.trading_style = data.trading_style if data.trading_style else None
 
     db.commit()
@@ -401,7 +401,7 @@ def get_portfolio_summary(
         accounts: 账户列表及各账户持仓明细
         total: 所有账户汇总
     """
-    # 获取账户
+    # Lấy tài khoản
     if account_id:
         accounts = db.query(Account).filter(Account.id == account_id, Account.enabled == True).all()
     else:
@@ -420,7 +420,7 @@ def get_portfolio_summary(
             }
         }
 
-    # 获取所有相关股票
+    # Lấy toàn bộ cổ phiếu liên quan
     all_stock_ids = set()
     for acc in accounts:
         for pos in acc.positions:
@@ -429,14 +429,14 @@ def get_portfolio_summary(
     stocks = db.query(Stock).filter(Stock.id.in_(all_stock_ids)).all() if all_stock_ids else []
     stock_map = {s.id: s for s in stocks}
 
-    # 获取实时行情（可选）
+    # Lấy giá thời gian thực (tùy chọn)
     quotes = _fetch_quotes_for_stocks(stocks) if include_quotes else {}
 
-    # 获取汇率
+    # Lấy tỷ giá
     hkd_rate = get_hkd_cny_rate()
     usd_rate = get_usd_cny_rate()
 
-    # 计算各账户持仓
+    # Tính vị thế của từng tài khoản
     account_summaries = []
     grand_total_market_value = 0
     grand_total_cost = 0
@@ -463,7 +463,7 @@ def get_portfolio_summary(
             change_pct = quote["change_pct"] if quote else None
             prev_close = quote.get("prev_close") if quote else None
 
-            # 根据市场确定汇率
+            # Xác định tỷ giá theo thị trường
             is_foreign = stock.market in ("HK", "US")
             if stock.market == "HK":
                 rate = hkd_rate
@@ -485,12 +485,12 @@ def get_portfolio_summary(
                 acc_daily_pnl += daily_pnl
 
             cost = pos.cost_price * pos.quantity
-            cost_cny = cost * rate  # 假设成本价也是原币种
+            cost_cny = cost * rate  # Giả định giá vốn cũng tính bằng bản tệ
             acc_cost += cost_cny
 
             if current_price is not None:
-                market_value = current_price * pos.quantity  # 原币种市值
-                market_value_cny = market_value * rate  # 人民币市值
+                market_value = current_price * pos.quantity  # Giá trị thị trường theo bản tệ
+                market_value_cny = market_value * rate  # Giá trị thị trường quy CNY
                 pnl = market_value_cny - cost_cny
                 pnl_pct = (pnl / cost_cny * 100) if cost_cny > 0 else 0
 
@@ -555,7 +555,7 @@ def get_portfolio_summary(
         grand_pnl_pct = 0
         grand_total_assets = grand_available_funds
 
-    # 构建 quotes 字典（用于前端股票列表显示）
+    # Dựng dict quotes (để giao diện hiển thị danh sách cổ phiếu)
     quotes_dict = {}
     if include_quotes:
         for symbol, quote in quotes.items():
@@ -579,7 +579,7 @@ def get_portfolio_summary(
             "HKD_CNY": hkd_rate,
             "USD_CNY": usd_rate,
         },
-        "quotes": quotes_dict,  # 可选：返回行情数据
+        "quotes": quotes_dict,  # Tùy chọn: trả kèm dữ liệu giá
     }
 
 
@@ -611,8 +611,8 @@ def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
     return quotes
 
 
-# 组合基准/归因结果缓存:重建全持仓 NAV 很贵(逐只拉 K 线),按持仓指纹缓存结果。
-# 持仓变动即失效(指纹变);失败/空结果不缓存,避免把瞬时故障冻住 10 分钟。
+# Bộ đệm kết quả chuẩn so sánh / phân rã đóng góp: dựng lại giá trị ròng cho cả danh mục rất tốn (phải kéo nến từng mã), nên đệm theo vân tay của danh mục.
+# Vị thế đổi là bộ đệm mất hiệu lực ngay (vân tay đổi); kết quả lỗi / rỗng thì không đệm, tránh đóng băng một sự cố nhất thời suốt 10 phút.
 _PORTFOLIO_RESULT_CACHE = TTLCache(default_ttl_sec=600.0)
 
 
@@ -653,7 +653,7 @@ def _gather_holdings(db: Session) -> list[dict]:
             mv_cny = (price * pos.quantity * rate) if price else cost_cny
             pnl_cny = (mv_cny - cost_cny) if price else 0.0
             key = (stock.market, stock.symbol)
-            if key in seen:  # 多账户同一标的合并
+            if key in seen:  # Gộp cùng một mã nằm ở nhiều tài khoản
                 h = seen[key]
                 h["quantity"] += pos.quantity
                 h["market_value"] += mv_cny
@@ -707,7 +707,7 @@ def portfolio_benchmark(
         return {"empty": True, "reason": "no_holdings"}
     res = build_portfolio_benchmark(holdings, days=days, benchmark_code=bcode)
     if not res:
-        # 失败/数据不足不缓存,下轮可重试(由 K 线负缓存兜住打爆)
+        # Lỗi / thiếu dữ liệu thì không đệm, vòng sau thử lại (đã có negative cache của nến chặn việc gọi dồn dập)
         return {"empty": True, "reason": "insufficient_data"}
     _PORTFOLIO_RESULT_CACHE.set(ckey, res)
     return res
@@ -784,7 +784,7 @@ def portfolio_attribution(days: int = 60, benchmark: str = "000300", db: Session
         return {"items": []}
     items = build_attribution(holdings, days=days, benchmark_code=bcode)
     result = {"items": items}
-    if items:  # 空结果不缓存,下轮可重试
+    if items:  # Kết quả rỗng không đệm, vòng sau thử lại
         _PORTFOLIO_RESULT_CACHE.set(ckey, result)
     return result
 

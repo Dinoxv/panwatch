@@ -19,7 +19,7 @@ from src.platform.persistence.models import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# 配置读取
+# Đọc cấu hình
 # ---------------------------------------------------------------------------
 
 _CONFIG_KEYS = {
@@ -61,7 +61,7 @@ def _is_mode_enabled(mode_key: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# 渠道构建
+# Dựng kênh
 # ---------------------------------------------------------------------------
 
 def _build_notifier() -> NotifierManager | None:
@@ -81,7 +81,7 @@ def _build_notifier() -> NotifierManager | None:
                 .all()
             )
         else:
-            # 未指定渠道时使用默认渠道
+            # Không chỉ định kênh thì dùng kênh mặc định
             channels = (
                 db.query(NotifyChannel)
                 .filter(NotifyChannel.enabled.is_(True), NotifyChannel.is_default.is_(True))
@@ -101,7 +101,7 @@ def _build_notifier() -> NotifierManager | None:
 
 
 # ---------------------------------------------------------------------------
-# 消息格式化
+# Định dạng thông điệp
 # ---------------------------------------------------------------------------
 
 EXIT_REASON_LABELS = {
@@ -140,7 +140,7 @@ def _format_entry_message(pos: dict, sig: dict | None) -> tuple[str, str]:
     name = pos.get("stock_name") or pos["stock_symbol"]
     title = f"【模拟盘建仓】{name}"
 
-    # 盈亏比
+    # Tỷ lệ lãi trên lỗ
     rr_str = ""
     entry_price = pos.get("entry_price", 0)
     stop_loss = pos.get("stop_loss", 0)
@@ -201,7 +201,7 @@ def _dedup_signals(signals: list[StrategySignalRun]) -> list[tuple[StrategySigna
         else:
             _, count = seen[key]
             seen[key] = (seen[key][0], count + 1)
-    # 已按 rank_score desc 查询，保留首次出现的顺序即可
+    # Đã truy vấn theo rank_score giảm dần, chỉ cần giữ thứ tự xuất hiện lần đầu
     return list(seen.values())
 
 
@@ -237,7 +237,7 @@ def _format_daily_summary(
     account: PaperTradingAccount,
 ) -> tuple[str, str]:
     """格式化日终摘要，返回 (title, body)。"""
-    # 总资产
+    # Tổng tài sản
     positions_value = sum((p.current_price or p.entry_price) * p.quantity for p in positions)
     total_equity = account.current_capital + positions_value
     unrealized = sum(p.unrealized_pnl or 0 for p in positions)
@@ -245,7 +245,7 @@ def _format_daily_summary(
     title = "【模拟盘日终摘要】"
     lines = [f"总资产: {total_equity:,.2f}"]
 
-    # 当日平仓
+    # Đóng vị thế trong ngày
     if trades:
         day_pnl = sum(t.pnl for t in trades)
         pnl_sign = "+" if day_pnl >= 0 else ""
@@ -257,7 +257,7 @@ def _format_daily_summary(
     else:
         lines.append("\n当日无平仓操作")
 
-    # 持仓浮盈
+    # Lãi chưa thực hiện của vị thế
     if positions:
         u_sign = "+" if unrealized >= 0 else ""
         lines.append(f"\n持仓中 {len(positions)} 只, 浮动盈亏: {u_sign}{unrealized:,.2f}")
@@ -273,7 +273,7 @@ def _format_daily_summary(
 
 
 # ---------------------------------------------------------------------------
-# 触发函数
+# Hàm kích hoạt
 # ---------------------------------------------------------------------------
 
 async def notify_entry(pos: dict, sig: dict | None) -> None:
@@ -363,7 +363,7 @@ async def send_daily_summary() -> None:
             now = datetime.now(timezone.utc)
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-            # 当日已平仓
+            # Đã đóng vị thế trong ngày
             trades = (
                 db.query(PaperTradingTrade)
                 .filter(PaperTradingTrade.closed_at >= today_start)
@@ -371,7 +371,7 @@ async def send_daily_summary() -> None:
                 .all()
             )
 
-            # 持仓中
+            # Đang nắm giữ
             positions = (
                 db.query(PaperTradingPosition)
                 .filter(PaperTradingPosition.status == "open")

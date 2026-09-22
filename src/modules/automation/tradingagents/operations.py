@@ -33,7 +33,7 @@ from src.platform.persistence.models import (
 
 logger = logging.getLogger(__name__)
 
-# 这些函数是 API/盘中监控使用的外围运维入口，不参与主图执行。
+# Các hàm này là cửa vận hành ngoại vi cho API / giám sát trong phiên, không tham gia luồng chạy chính của đồ thị.
 __all__ = [
     "backfill_tradingagents_suggestions",
     "build_history_comparison",
@@ -98,7 +98,7 @@ def _budget_allows(db: Session) -> bool:
     raw = agent.raw_config or {}
     budget = float(raw.get("monthly_budget_usd") or 0.0)
     if budget <= 0:
-        return True  # 没设上限 = 不限制
+        return True  # Không đặt trần = không giới hạn
 
     try:
         status = check_budget(budget)
@@ -181,7 +181,7 @@ def fire_and_forget_trigger(stock: Any, source_agent: str = "intraday_monitor") 
             logger.exception(f"[auto_trigger] TA 联动触发失败 - {symbol}")
 
     try:
-        # 优先在当前事件循环 schedule;无 loop 则起新线程兜底
+        # Ưu tiên xếp lịch trên event loop hiện tại; không có loop thì dự phòng bằng cách mở luồng mới
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.create_task(_run())
@@ -248,8 +248,8 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
             action_label = sug.get("action_label") or "持有"
             confidence = sug.get("confidence")
 
-            # 检查 stock_suggestions 中是否已有(同股票 + 同 agent + 同 action + 近 24h)
-            # 简化:直接尝试 save,save_suggestion 会判重
+            # Kiểm tra stock_suggestions đã có chưa (cùng mã + cùng agent + cùng action + trong 24h qua)
+            # Làm gọn: cứ gọi save, chính save_suggestion sẽ lo khử trùng lặp
             existing = (
                 db.query(StockSuggestion)
                 .filter(
@@ -269,7 +269,7 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
                 else ""
             )
 
-            # 推断 market(分析记录里没存,从 stock_symbol 简单推断)
+            # Suy ra thị trường (bản ghi phân tích không lưu, suy đơn giản từ stock_symbol)
             symbol = r.stock_symbol
             if symbol.isdigit() and len(symbol) == 6:
                 market = "CN"
@@ -280,7 +280,7 @@ def backfill_tradingagents_suggestions(days: int = 7) -> dict:
             else:
                 market = "CN"
 
-            # 从 AnalysisHistory record 拿股票名(如果存在)
+            # Lấy tên cổ phiếu từ bản ghi AnalysisHistory (nếu có)
             stock_name = ""
             try:
                 from src.platform.persistence.models import Stock
@@ -426,7 +426,7 @@ def build_history_comparison(
     if not records:
         return {"items": [], "stats": _empty_stats()}
 
-    # 拉历史 K线(回溯天数 + 30 天缓冲让最早的决策也能算 20 日收益)
+    # Kéo nến lịch sử (số ngày nhìn lại + đệm 30 ngày để quyết định sớm nhất cũng tính được lợi nhuận 20 phiên)
     try:
         collector = KlineCollector(_resolve_market(market))
         klines = collector.get_klines(symbol, days=days + 40)
@@ -444,7 +444,7 @@ def build_history_comparison(
         action = (sug.get("action") or "hold").lower()
         confidence = sug.get("confidence")
         cost_usd = raw.get("cost_usd")
-        # 分析价优先用落库时存的"分析时实时价"(立即显示),K线 close 作 fallback
+        # Giá phân tích ưu tiên lấy "giá thời gian thực lúc phân tích" đã lưu (hiện ngay), giá đóng cửa của nến chỉ là dự phòng
         stored_price = raw.get("price_at_analysis")
         stored_price = round(float(stored_price), 2) if isinstance(stored_price, (int, float)) else None
 

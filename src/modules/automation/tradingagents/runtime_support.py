@@ -19,7 +19,7 @@ from src.platform.ai.ai_client import AIClient
 
 logger = logging.getLogger(__name__)
 
-# 这是 Agent 入口允许依赖的稳定运行时接口；兼容补丁实现留在本文件下半部。
+# Đây là giao diện runtime ổn định mà cửa vào Agent được phép phụ thuộc; phần cài đặt bản vá tương thích nằm ở nửa dưới tệp này.
 __all__ = [
     "VALID_ANALYSTS",
     "apply_compat_patches",
@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-# TradingAgents selected_analysts 字段的合法值(见上游 graph/trading_graph.py)
+# Các giá trị hợp lệ của trường selected_analysts trong TradingAgents (xem graph/trading_graph.py của thượng nguồn)
 VALID_ANALYSTS = {"market", "social", "news", "fundamentals"}
 
 
@@ -72,15 +72,15 @@ def build_ta_llm_config(
             f"非法 analyst 名: {invalid}; 合法值: {sorted(VALID_ANALYSTS)}"
         )
 
-    # 继承上游默认 config(含 data_cache_dir / project_dir / memory_log_path 等),
-    # 否则 TradingAgentsGraph.__init__ 用 os.makedirs(config["data_cache_dir"]) 会 KeyError。
+    # Kế thừa config mặc định của thượng nguồn (gồm data_cache_dir / project_dir / memory_log_path...),
+    # nếu không thì TradingAgentsGraph.__init__ gọi os.makedirs(config["data_cache_dir"]) sẽ KeyError.
     try:
         from tradingagents.default_config import DEFAULT_CONFIG as _UPSTREAM_DEFAULT
         config = dict(_UPSTREAM_DEFAULT)
     except ImportError:
         config = {}
 
-    # 上游 config 含嵌套 vendor 配置；先复制，避免单次运行污染 DEFAULT_CONFIG。
+    # config của thượng nguồn có cấu hình vendor lồng nhau; sao chép trước để một lượt chạy không làm bẩn DEFAULT_CONFIG.
     config["data_vendors"] = dict(config.get("data_vendors") or {})
     config["tool_vendors"] = dict(config.get("tool_vendors") or {})
 
@@ -97,26 +97,26 @@ def build_ta_llm_config(
             "memory_log_path": str(memory_dir / "trading_memory.md"),
         })
 
-    # SEC EDGAR 的三张财务报表具备 filing-date 语义，只在美股且用户显式启用时
-    # 作为首选；非 SEC 标的或暂时不可用时回退 yfinance。
+    # Ba báo cáo tài chính của SEC EDGAR có ngữ nghĩa ngày nộp hồ sơ, chỉ ưu tiên khi là cổ phiếu Mỹ và người dùng bật tường minh;
+    # mã ngoài phạm vi SEC hoặc lúc SEC tạm không dùng được thì lùi về yfinance.
     statement_vendor = "sec_edgar,yfinance" if enable_sec_edgar and market.upper() == "US" else "yfinance"
-    # set_config() 对嵌套 dict 做 merge。即使本次不启用 EDGAR，也必须显式写回
-    # yfinance，避免前一次美股运行留下的 tool_vendors 泄漏到 A/HK 分析。
+    # set_config() gộp dict lồng nhau. Kể cả lượt này không bật EDGAR vẫn phải ghi lại tường minh
+    # yfinance, tránh tool_vendors còn sót từ lượt chạy cổ phiếu Mỹ trước rò sang lượt phân tích A / Hồng Kông.
     config["tool_vendors"].update({
         "get_balance_sheet": statement_vendor,
         "get_cashflow": statement_vendor,
         "get_income_statement": statement_vendor,
     })
 
-    # PanWatch 覆盖。
-    # ⚠️ llm_provider 故意不用 "openai":TA 检测到 openai 会强制开 use_responses_api=True
-    # (OpenAI Responses API,/v1/responses 端点),硅基流动/智谱/Ollama 等第三方 OpenAI 兼容
-    # 服务不支持这个端点,会 404。
-    # 用 "openrouter" 走标准 chat completions (/v1/chat/completions),同时 backend_url
-    # 覆盖默认 openrouter 端点为 PanWatch 配置的真实 base_url。
-    # 双模型解析:
-    # - deep_model 未指定 → 用 ai_client.model
-    # - quick_model 未指定 → 用 deep_model(单模型场景退化)
+    # PanWatch ghi đè.
+    # ⚠️ llm_provider cố ý KHÔNG đặt là "openai": TA thấy openai sẽ ép bật use_responses_api=True
+    # (OpenAI Responses API, endpoint /v1/responses), mà các dịch vụ tương thích OpenAI của bên thứ ba như SiliconFlow / Zhipu / Ollama
+    # không hỗ trợ endpoint đó nên sẽ trả 404.
+    # Dùng "openrouter" để đi qua chat completions chuẩn (/v1/chat/completions), đồng thời backend_url
+    # ghi đè endpoint openrouter mặc định bằng base_url thật mà PanWatch đã cấu hình.
+    # Phân giải hai mô hình:
+    # - deep_model không chỉ định → dùng ai_client.model
+    # - quick_model không chỉ định → dùng deep_model (suy biến về trường hợp một mô hình)
     deep_llm = (deep_model or ai_client.model or "").strip() or ai_client.model
     quick_llm = (quick_model or deep_llm or "").strip() or deep_llm
 
@@ -130,10 +130,10 @@ def build_ta_llm_config(
         "selected_analysts": analysts,
         "output_language": output_language,
         "online_tools": True,
-        "checkpoint_enabled": False,  # 避免 sqlite checkpoint 文件污染
+        "checkpoint_enabled": False,  # Tránh để tệp checkpoint sqlite làm bẩn dữ liệu
         "holding_period_days": max(1, int(holding_period_days)),
-        # TradingAgents 0.5.0 默认把这些交给底层 SDK；不设边界时，供应商
-        # 连接断开或模型持续输出会让整个 LangGraph 永久停在当前 analyst。
+        # TradingAgents 0.5.0 mặc định giao mấy thứ này cho SDK bên dưới; không đặt giới hạn thì khi nhà cung cấp
+        # rớt kết nối hoặc mô hình xuất liên tục, cả LangGraph sẽ kẹt vĩnh viễn ở chuyên viên phân tích hiện tại.
         "llm_timeout_seconds": max(1, int(llm_timeout_seconds)),
         "llm_max_retries": max(0, int(llm_max_retries)),
         "max_tokens": max(256, int(llm_max_tokens)),
@@ -155,7 +155,7 @@ def inject_api_key_env(ai_client: AIClient) -> None:
     if not ai_client.api_key:
         logger.warning("[TA] AIClient 没有 api_key,TradingAgents LLM 调用大概率失败")
         return
-    # 覆盖多个候选 env var,让 TA 不管走哪条 provider 分支都能取到 key
+    # Ghi vào nhiều biến môi trường ứng viên, để TA đi nhánh provider nào cũng lấy được khóa
     os.environ["OPENROUTER_API_KEY"] = ai_client.api_key
     os.environ["OPENAI_API_KEY"] = ai_client.api_key
     os.environ["DEEPSEEK_API_KEY"] = ai_client.api_key
@@ -233,30 +233,30 @@ def _patch_tool_call_args_coercion() -> None:
         logger.debug("[TA compat] langchain_core 未装,跳过 tool_call 补丁")
         return
 
-    # 找到 create_tool_call 工厂函数(langchain 1.x);旧版可能叫 ToolCall 类直接构造
+    # Tìm hàm nhà máy create_tool_call (langchain 1.x); bản cũ có thể dựng thẳng bằng lớp ToolCall
     create_func = getattr(_tool_module, "create_tool_call", None)
     if create_func is None:
         logger.debug("[TA compat] create_tool_call 未找到,跳过")
         return
 
     if getattr(create_func, "_panwatch_patched", False):
-        return  # 已经 patched
+        return  # Đã patch rồi
 
     original = create_func
 
     def _patched_create_tool_call(*args, **kwargs):
-        # 取出 args 参数(可能位置或关键字)
+        # Lấy tham số args ra (có thể là tham số vị trí hoặc từ khóa)
         raw_args = kwargs.get("args")
         if raw_args is None and len(args) >= 2:
-            # 位置参数:create_tool_call(name, args, ...) 顺序假设
-            # 实际签名见 langchain_core.messages.tool 源码,这里宽松处理
+            # Tham số vị trí: giả định thứ tự create_tool_call(name, args, ...)
+            # Chữ ký thật xem mã nguồn langchain_core.messages.tool, ở đây xử lý nới lỏng
             try:
-                # 重新构造 kwargs 让上游严格 validator 拿到 dict
+                # Dựng lại kwargs để validator nghiêm ngặt của thượng nguồn nhận được dict
                 pass
             except Exception:
                 pass
 
-        # 修正 args 类型
+        # Sửa kiểu của args
         if isinstance(raw_args, str):
             try:
                 parsed = json.loads(raw_args)
@@ -276,11 +276,11 @@ def _patch_tool_call_args_coercion() -> None:
 
     _patched_create_tool_call._panwatch_patched = True  # type: ignore[attr-defined]
 
-    # 替换模块级符号 + 替换内部 import
+    # Thay ký hiệu cấp module + thay cả phần import bên trong
     _tool_module.create_tool_call = _patched_create_tool_call
     try:
-        # langchain_core.output_parsers.openai_tools 在文件顶部 from . import create_tool_call
-        # 但 import 语义是把对象绑定到本地,所以需要也替换那边
+        # langchain_core.output_parsers.openai_tools ở đầu tệp có from . import create_tool_call
+        # nhưng ngữ nghĩa import là gắn đối tượng vào cục bộ, nên phải thay cả bên đó
         from langchain_core.output_parsers import openai_tools as _ot
         if hasattr(_ot, "create_tool_call"):
             _ot.create_tool_call = _patched_create_tool_call

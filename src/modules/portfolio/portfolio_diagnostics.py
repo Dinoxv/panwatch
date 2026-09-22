@@ -13,11 +13,11 @@ from src.platform.persistence.models import PaperTradingPosition
 
 logger = logging.getLogger(__name__)
 
-# 风险阈值(可后续配置化)
-MAX_SINGLE_WEIGHT = 0.40   # 单仓占比上限
-HIGH_HHI = 0.50            # HHI 集中度高线
-MAX_MARKET_WEIGHT = 0.70   # 单市场占比上限
-MIN_POSITIONS = 3          # 最少分散持仓数
+# Ngưỡng rủi ro (có thể đưa vào cấu hình sau)
+MAX_SINGLE_WEIGHT = 0.40   # Trần tỷ trọng một vị thế
+HIGH_HHI = 0.50            # Mức cao của chỉ số tập trung HHI
+MAX_MARKET_WEIGHT = 0.70   # Trần tỷ trọng một thị trường
+MIN_POSITIONS = 3          # Số vị thế tối thiểu để coi là đã phân tán
 
 
 def herfindahl(values: list[float]) -> float:

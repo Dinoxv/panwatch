@@ -22,7 +22,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# 统一导出“业务数据 → TradingAgents 上下文”的入口，避免调用方关心内部渲染函数。
+# Gom về một cửa xuất duy nhất cho luồng “dữ liệu nghiệp vụ → ngữ cảnh TradingAgents”, để phía gọi không phải bận tâm tới các hàm kết xuất bên trong.
 __all__ = [
     "build_stock_metadata_context",
     "fetch_financial_abstract",
@@ -69,11 +69,11 @@ def fetch_financial_abstract(symbol: str) -> dict | None:
     if df is None or df.empty:
         return None
 
-    # 列结构:[选项, 指标, 20260331, 20251231, ...] —— 取最近 N 期
+    # Cấu trúc cột: [选项, 指标, 20260331, 20251231, ...] — lấy N kỳ gần nhất
     period_cols = [c for c in df.columns if str(c).isdigit() and len(str(c)) == 8]
     if not period_cols:
         return None
-    recent_periods = period_cols[:6]  # 最多 6 期(1.5 年)
+    recent_periods = period_cols[:6]  # Tối đa 6 kỳ (1,5 năm)
 
     indicators: dict[str, dict[str, float | None]] = {}
     categories: dict[str, dict[str, dict[str, float | None]]] = {}
@@ -305,8 +305,8 @@ def to_tradingagents_portfolio(portfolio: Any):
         for position in getattr(account, "positions", ()) or ():
             ticker = str(getattr(position, "symbol", "") or "").strip().upper()
             quantity = _finite_number(getattr(position, "quantity", None))
-            # TradingAgents 0.5.0 用正数表示多头、负数表示空头；这里只过滤
-            # 零数量和脏数据，不能把空头当成“无持仓”丢掉。
+            # TradingAgents 0.5.0 dùng số dương cho vị thế mua, số âm cho vị thế bán; ở đây chỉ lọc bỏ
+            # khối lượng bằng 0 và dữ liệu rác, không được coi vị thế bán là “không có vị thế” rồi bỏ đi.
             if not ticker or quantity is None or quantity == 0:
                 continue
             average_price = _finite_number(getattr(position, "cost_price", None))
@@ -320,8 +320,8 @@ def to_tradingagents_portfolio(portfolio: Any):
             for lot_quantity, average_price in lots
             if average_price is not None
         ]
-        # 用数量绝对值做成本价权重：同方向仓位与旧逻辑一致，混合多空时
-        # 也不会因净数量接近 0 而产生无意义的极端均价；quantity 仍保留净符号。
+        # Dùng trị tuyệt đối của khối lượng làm trọng số cho giá vốn: cùng chiều thì kết quả y như logic cũ, còn khi trộn mua - bán
+        # cũng không sinh ra giá bình quân cực đoan vô nghĩa vì khối lượng ròng gần 0; quantity vẫn giữ dấu của giá trị ròng.
         total_abs_quantity = sum(abs(lot_quantity) for lot_quantity, _ in priced_lots)
         average_price = (
             sum(abs(lot_quantity) * price for lot_quantity, price in priced_lots)

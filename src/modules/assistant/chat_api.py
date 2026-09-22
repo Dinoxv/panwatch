@@ -75,7 +75,7 @@ def suggested_questions(
     """根据股票当前状态生成推荐问题（纯模板，不调 AI）。"""
     questions: list[str] = []
 
-    # 查最近建议
+    # Tra khuyến nghị gần nhất
     latest_suggestion = (
         db.query(StockSuggestion)
         .filter(
@@ -95,7 +95,7 @@ def suggested_questions(
         elif action == "alert":
             questions.append("最近的异动提醒是什么情况？需要关注吗？")
 
-    # 查持仓（Position 通过 stock_id 关联 Stock 表）
+    # Tra vị thế (Position liên kết bảng Stock qua stock_id)
     has_position = (
         db.query(Position)
         .join(Stock, Position.stock_id == Stock.id)
@@ -107,7 +107,7 @@ def suggested_questions(
     else:
         questions.append("现在适合建仓吗？")
 
-    # 通用问题
+    # Câu hỏi chung
     questions.append("分析近期走势和关键支撑压力位")
     questions.append("有什么值得关注的消息或事件？")
 
@@ -210,7 +210,7 @@ def _save_user_message(db: Session, conv: ChatConversation, content: str) -> Cha
     )
     db.add(user_msg)
 
-    # 更新对话标题（首条消息取前 20 字）
+    # Cập nhật tiêu đề hội thoại (lấy 20 chữ đầu của tin nhắn đầu tiên)
     if not conv.title:
         conv.title = content[:20]
 
@@ -226,17 +226,17 @@ async def _build_messages_for_ai(db: Session, conv: ChatConversation) -> list[di
     # System prompt
     system_content = SYSTEM_PROMPT
 
-    # 绑定股票提示
+    # Gợi ý về cổ phiếu đã gắn
     if conv.stock_symbol and conv.stock_market:
         system_content += f"\n\n当前对话关联股票：{conv.stock_market}:{conv.stock_symbol}"
 
-    # 前端页面快照（对话创建时传入）
+    # Ảnh chụp trang ở giao diện (truyền vào lúc tạo hội thoại)
     if conv.initial_context:
         system_content += "\n\n--- 用户页面快照（对话创建时） ---\n" + conv.initial_context
 
     messages_for_ai.append({"role": "system", "content": system_content})
 
-    # 历史消息
+    # Tin nhắn cũ
     history = (
         db.query(ChatMessage)
         .filter(ChatMessage.conversation_id == conv.id)
@@ -248,15 +248,15 @@ async def _build_messages_for_ai(db: Session, conv: ChatConversation) -> list[di
         if m.role in ("user", "assistant"):
             messages_for_ai.append({"role": m.role, "content": m.content})
 
-    # 注入基础上下文（持仓 + 绑定股票的行情/建议）
+    # Nạp ngữ cảnh cơ sở (vị thế + giá / khuyến nghị của cổ phiếu đã gắn)
     context_parts: list[str] = []
 
-    # 用户持仓
+    # Vị thế của người dùng
     portfolio_ctx = _build_portfolio_context(db)
     if portfolio_ctx:
         context_parts.append(portfolio_ctx)
 
-    # 绑定股票的实时数据
+    # Dữ liệu thời gian thực của cổ phiếu đã gắn
     if conv.stock_symbol and conv.stock_market:
         realtime = await _fetch_realtime_context(conv.stock_symbol, conv.stock_market)
         if realtime:
@@ -269,7 +269,7 @@ async def _build_messages_for_ai(db: Session, conv: ChatConversation) -> list[di
             context_parts.append(stock_ctx)
 
     if context_parts:
-        # 把上下文追加到 system message
+        # Nối ngữ cảnh vào system message
         messages_for_ai[0]["content"] += "\n\n--- 当前数据 ---\n" + "\n\n".join(context_parts)
 
     return messages_for_ai
@@ -290,7 +290,7 @@ async def send_message(
         _save_user_message(db, conv, body.content)
         messages_for_ai = await _build_messages_for_ai(db, conv)
 
-        # 调用 AI（带 tool use，用于按需获取更多数据；主模型失败自动 failover）
+        # Gọi AI (có tool use để lấy thêm dữ liệu khi cần; mô hình chính hỏng thì tự hạ cấp)
         ai_client = _get_ai_client(db, conv.ai_model_id)
         ai_response = ""
         try:
@@ -300,7 +300,7 @@ async def send_message(
                         messages_for_ai, tools=CHAT_TOOLS, temperature=0.5,
                     )
                 except Exception:
-                    # 模型不支持 tool use → 直接用 chat_multi
+                    # Mô hình không hỗ trợ tool use → dùng thẳng chat_multi
                     logger.info("Tool use 不可用，使用普通对话")
                     ai_response = await ai_client.chat_multi(messages_for_ai, temperature=0.5)
                     break
@@ -309,7 +309,7 @@ async def send_message(
                     ai_response = response_msg.content or ""
                     break
 
-                # 执行 tool calls
+                # Thực thi các lời gọi công cụ
                 messages_for_ai.append({
                     "role": "assistant",
                     "content": response_msg.content or None,
@@ -339,7 +339,7 @@ async def send_message(
             logger.error(f"AI 对话失败: {e}")
             ai_response = f"抱歉，AI 服务暂时不可用：{e}"
 
-        # 保存 AI 回复
+        # Lưu phản hồi của AI
         assistant_msg = ChatMessage(
             conversation_id=conversation_id,
             role="assistant",
@@ -347,7 +347,7 @@ async def send_message(
         )
         db.add(assistant_msg)
 
-        # 更新对话时间
+        # Cập nhật thời điểm của hội thoại
         conv.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(assistant_msg)
@@ -362,19 +362,19 @@ async def send_message(
         db.close()
 
 
-# ──────────────── SSE 流式对话 ────────────────
+# ──────────────── Hội thoại dạng luồng SSE ────────────────
 #
-# 事件分型（均带自增 id，供 Last-Event-ID 续推）：
-# - meta:            {stream_id, conversation_id, user_message_id} 首条，供断线重连定位流
-# - token:           {text} 增量文本；工具调用轮的过渡性文本也会流出，前端在收到
-#                    tool_call_start 时应清空当前缓冲（最终落库的只有末轮回答）
-# - tool_call_start: {name, arguments} 模型决定调用工具（前端可视化"正在查询…"）
-# - tool_result:     {name, ok, preview} 工具执行完成（preview 截断，完整结果只进模型上下文）
-# - done:            {message_id, content, created_at} 最终回答（已落库）
-# - error:           {message} AI 服务异常（错误文案同样落库，行为与非流式端点一致）
+# Phân loại sự kiện (đều mang id tự tăng để Last-Event-ID nối tiếp được):
+# - meta:            {stream_id, conversation_id, user_message_id} sự kiện đầu, để định vị luồng khi kết nối lại
+# - token:           {text} văn bản bổ sung; văn bản chuyển tiếp ở vòng gọi công cụ cũng chảy ra, giao diện khi nhận
+#                    tool_call_start thì nên xóa bộ đệm hiện tại (chỉ câu trả lời vòng cuối mới được lưu)
+# - tool_call_start: {name, arguments} mô hình quyết định gọi công cụ (giao diện hiện "đang truy vấn…")
+# - tool_result:     {name, ok, preview} công cụ chạy xong (preview đã cắt, kết quả đầy đủ chỉ vào ngữ cảnh mô hình)
+# - done:            {message_id, content, created_at} câu trả lời cuối (đã lưu)
+# - error:           {message} dịch vụ AI lỗi (nội dung lỗi cũng được lưu, hành xử giống endpoint không dùng luồng)
 #
-# 生成任务与 SSE 连接解耦：任务往 SSEStream 缓冲推事件，连接断开不影响生成与落库；
-# 前端可用 GET /chat/streams/{stream_id} + Last-Event-ID 续推。
+# Tác vụ sinh nội dung tách rời khỏi kết nối SSE: tác vụ đẩy sự kiện vào bộ đệm SSEStream, đứt kết nối không ảnh hưởng việc sinh và lưu;
+# giao diện dùng GET /chat/streams/{stream_id} + Last-Event-ID để nối tiếp.
 
 TOOL_RESULT_PREVIEW_CHARS = 200
 
@@ -397,7 +397,7 @@ async def _run_chat_stream_task(
         ai_client = _get_ai_client(db, conv.ai_model_id)
         ai_response = ""
 
-        # P2 试点:识别"全面诊断持仓"意图 → 走计划驱动(复用工具执行器,plan 事件推前端)
+        # Thử nghiệm P2: nhận ra ý định "chẩn đoán toàn diện vị thế" → chuyển sang dẫn dắt theo kế hoạch (tái dùng bộ thực thi công cụ, đẩy sự kiện plan ra giao diện)
         latest_user = next(
             (m.get("content") or "" for m in reversed(messages_for_ai) if m.get("role") == "user"),
             "",
@@ -425,7 +425,7 @@ async def _run_chat_stream_task(
                             else:
                                 final_msg = payload
                     except Exception:
-                        # 模型不支持 tool use / 流式 → 降级为普通对话（与非流式端点同策略）
+                        # Mô hình không hỗ trợ tool use / luồng → hạ cấp về hội thoại thường (cùng chiến lược với endpoint không dùng luồng)
                         logger.info("流式 tool use 不可用，降级为普通对话")
                         ai_response = await ai_client.chat_multi(messages_for_ai, temperature=0.5)
                         await stream.publish("token", {"text": ai_response})
@@ -436,7 +436,7 @@ async def _run_chat_stream_task(
                         ai_response = (final_msg or {}).get("content") or ""
                         break
 
-                    # 有工具调用：把 assistant 消息 + 工具结果追加进上下文，进入下一轮
+                    # Có lời gọi công cụ: nối tin nhắn assistant + kết quả công cụ vào ngữ cảnh rồi sang vòng kế tiếp
                     messages_for_ai.append({
                         "role": "assistant",
                         "content": (final_msg or {}).get("content") or None,
@@ -487,7 +487,7 @@ async def _run_chat_stream_task(
                 ai_response = f"抱歉，AI 服务暂时不可用：{e}"
                 await stream.publish("error", {"message": str(e)})
 
-        # 落库（无论连接是否还在，结果照常持久化）
+        # Lưu xuống (dù kết nối còn hay không, kết quả vẫn được lưu bền như thường)
         assistant_msg = ChatMessage(
             conversation_id=conversation_id,
             role="assistant",
@@ -508,7 +508,7 @@ async def _run_chat_stream_task(
             "message_id": assistant_msg.id,
             "content": ai_response,
             "created_at": str(assistant_msg.created_at or ""),
-            # 实际使用的模型标签(failover 后可能非主模型),供前端透明展示
+            # Nhãn mô hình thực sự dùng (sau khi hạ cấp có thể không còn là mô hình chính), để giao diện hiển thị minh bạch
             "model_label": getattr(ai_client, "used_model_label", ""),
         })
     except Exception as e:
@@ -539,7 +539,7 @@ def _sse_response(stream: SSEStream, after_seq: int = 0) -> StreamingResponse:
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            # 禁用 nginx 等反代的缓冲，保证事件实时下发
+            # Tắt bộ đệm của reverse proxy như nginx, bảo đảm sự kiện đẩy xuống theo thời gian thực
             "X-Accel-Buffering": "no",
         },
     )
@@ -575,14 +575,14 @@ async def send_message_stream(
         db.close()
 
     stream = chat_stream_hub.create()
-    # meta 事件放最前：告知 stream_id，断线后可 GET /chat/streams/{stream_id} 续推
+    # Sự kiện meta đặt đầu tiên: báo stream_id, đứt kết nối thì GET /chat/streams/{stream_id} để nối tiếp
     await stream.publish("meta", {
         "stream_id": stream.stream_id,
         "conversation_id": conversation_id,
         "user_message_id": user_message_id,
         "task_id": task_id,
     })
-    # 生成任务独立运行，不随本次响应连接断开而中止
+    # Tác vụ sinh nội dung chạy độc lập, không dừng theo việc kết nối của response này bị đứt
     asyncio.create_task(_run_chat_stream_task(conversation_id, stream, task_id))
     return _sse_response(stream)
 

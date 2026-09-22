@@ -54,7 +54,7 @@ class HistoryResponse(BaseModel):
     title: str
     content: str
     suggestions: dict | None = (
-        None  # 个股建议 {symbol: {action, action_label, reason, should_alert}}
+        None  # Khuyến nghị từng mã {symbol: {action, action_label, reason, should_alert}}
     )
     news: list[dict] | None = None
     quality_overview: dict | None = None

@@ -225,7 +225,7 @@ def get_dashboard_overview(
     )
     risk_items = risk_items[: int(risk_limit)]
 
-    # Portfolio quick stats (DB-only, no实时行情请求).
+    # Portfolio quick stats (DB-only, không gọi giá thời gian thực).
     positions = (
         db.query(Position, Stock)
         .join(Stock, Position.stock_id == Stock.id)
@@ -258,7 +258,7 @@ def get_dashboard_overview(
         or 0.0
     )
 
-    # Market pulse from latest market scan snapshot (stable even without外网).
+    # Market pulse from latest market scan snapshot (ổn định ngay cả khi không có mạng ngoài).
     pulse_query = db.query(MarketScanSnapshot)
     if snapshot_date:
         pulse_query = pulse_query.filter(MarketScanSnapshot.snapshot_date == snapshot_date)
@@ -392,7 +392,7 @@ def get_dashboard_overview(
 logger = logging.getLogger(__name__)
 
 
-# ── 今日必读 AI 策展(Phase C)────────────────────────────────────────────
+# ── AI tuyển chọn tin phải đọc hôm nay (Phase C) ────────────────────────
 class CurateCandidate(BaseModel):
     type: str
     symbol: str = ""
@@ -446,7 +446,7 @@ async def curate_today(req: CurateRequest, db: Session = Depends(get_db)):
     except Exception as e:
         logger.debug(f"curate AI 失败,按原序兜底: {e}")
 
-    if not items:  # 兜底:原序 + 递减重要度
+    if not items:  # Dự phòng: giữ thứ tự gốc + mức quan trọng giảm dần
         items = [
             {"index": i, "importance": max(0, 100 - i * 5), "why": c.signal or ""}
             for i, c in enumerate(cands)

@@ -23,16 +23,16 @@ from src.modules.strategy.backtest.cost_model import CostModel
 
 logger = logging.getLogger(__name__)
 
-# 模拟盘交易成本(A股口径,Phase 1)。与回测共用同一成本模型。
+# Chi phí giao dịch của mô phỏng (khẩu độ cổ phiếu A, Phase 1). Dùng chung mô hình chi phí với kiểm thử lịch sử.
 COST_MODEL = CostModel()
 
-# 建仓股数下限(A股一手)
+# Số cổ phiếu tối thiểu khi mở vị thế (một lô của cổ phiếu A)
 FIXED_QUANTITY = 100
 
-# 移动止损:浮盈超过 MIN_PROFIT_FOR_TRAILING 后启用,从持仓最高价回撤超 TRAILING_STOP_PCT 即离场
+# Cắt lỗ động: bật sau khi lãi chưa thực hiện vượt MIN_PROFIT_FOR_TRAILING; sụt quá TRAILING_STOP_PCT tính từ giá cao nhất của vị thế thì thoát lệnh
 MIN_PROFIT_FOR_TRAILING = 0.05
 TRAILING_STOP_PCT = 0.10
-# 时间止损:无 signal.holding_days 时的默认最大持有自然日
+# Dừng theo thời gian: số ngày tự nhiên nắm giữ tối đa mặc định khi tín hiệu không có signal.holding_days
 DEFAULT_TIME_STOP_DAYS = 20
 
 
@@ -66,7 +66,7 @@ def _compute_quantity(
     target_cash = max(0.0, market_budget) * _position_weight(rank_score)
     qty = int((target_cash / price) // lot) * lot
     if qty < lot:
-        qty = lot  # 至少一手
+        qty = lot  # Tối thiểu một lô
     while qty >= lot:
         outlay = -cost_model.fill("buy", price, qty).cash_delta
         if outlay <= available_cash:
@@ -112,7 +112,7 @@ def _safe_float(v: Any) -> float | None:
 
 
 # ---------------------------------------------------------------------------
-# 分市场资金配置（投资比例 → 子池现金）
+# Phân bổ vốn theo thị trường (tỷ trọng giải ngân → tiền của từng nhóm con)
 # ---------------------------------------------------------------------------
 
 ALL_MARKETS: tuple[str, ...] = ("CN", "HK", "US")
@@ -146,7 +146,7 @@ def allocations_from_excluded(excluded: list[str] | None) -> dict[str, float]:
     weights = {m: DEFAULT_ALLOCATIONS[m] for m in ALL_MARKETS if m not in excluded_set}
     total = sum(weights.values())
     if total <= 0:
-        # 全部被排除：兜底投 A 股
+        # Bị loại hết: dự phòng dồn vào cổ phiếu A
         return {"CN": 1.0, "HK": 0.0, "US": 0.0}
     return {m: round(weights.get(m, 0.0) / total, 6) for m in ALL_MARKETS}
 
@@ -284,7 +284,7 @@ class PaperTradingEngine:
         self, db: Session, account: PaperTradingAccount,
     ) -> tuple[int, set[tuple[str, str]], list[tuple[PaperTradingPosition, StrategySignalRun | None]]]:
         """检查可入场的策略信号，自动建仓。返回 (建仓数, 新建仓股票key集合, 建仓事件列表)。"""
-        # 查询最新活跃买入信号
+        # Truy vấn tín hiệu mua đang hoạt động mới nhất
         query = (
             db.query(StrategySignalRun)
             .filter(

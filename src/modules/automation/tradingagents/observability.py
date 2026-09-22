@@ -23,7 +23,7 @@ from src.platform.persistence.models import AnalysisHistory
 
 logger = logging.getLogger(__name__)
 
-# 进度和预算共用同一套 TradingAgents 运行观测入口；数据库生命周期仍由 agent_runs 负责。
+# Tiến độ và ngân sách dùng chung một bộ cửa quan sát lượt chạy TradingAgents; vòng đời trong cơ sở dữ liệu vẫn do agent_runs quản.
 __all__ = [
     "STAGES_ORDER",
     "PanWatchProgressHandler",
@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-# 默认阶段映射:TradingAgents 4 个 analyst + 辩论 + 风控 + PM
+# Ánh xạ giai đoạn mặc định: 4 chuyên viên phân tích của TradingAgents + tranh luận + quản trị rủi ro + PM
 STAGES_ORDER = [
     "data_collection",
     "market_analyst",
@@ -48,8 +48,8 @@ STAGES_ORDER = [
     "final_decision",
 ]
 
-# TradingAgents 0.5.0 的 LangGraph 节点名不是界面阶段名的一一映射。
-# 这里集中维护别名，而不是在每个 callback 分支里散落字符串判断；上游节点改名时只需改这一张表。
+# Tên nút LangGraph của TradingAgents 0.5.0 không ánh xạ một-một với tên giai đoạn trên giao diện.
+# Bí danh gom về đây thay vì rải phép so chuỗi khắp các nhánh callback; thượng nguồn đổi tên nút thì chỉ phải sửa đúng bảng này.
 NODE_STAGE_ALIASES = {
     "market_analyst": "market_analyst",
     "sentiment_analyst": "social_analyst",
@@ -72,7 +72,7 @@ NODE_STAGE_ALIASES = {
 try:
     from langchain_core.callbacks import BaseCallbackHandler as _LCBaseCallbackHandler
     _LANGCHAIN_AVAILABLE = True
-except ImportError:  # tradingagents 未装时仍允许 import 本模块,测试不依赖
+except ImportError:  # Vẫn import được module này khi chưa cài tradingagents, để test không phụ thuộc vào nó
     _LANGCHAIN_AVAILABLE = False
 
     class _LCBaseCallbackHandler:  # type: ignore[no-redef]
@@ -101,11 +101,11 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         agent_name: str = "tradingagents",
         cancel_event: threading.Event | None = None,
     ):
-        # langchain_core BaseCallbackHandler 没有 __init__ 参数,直接 super 安全
+        # BaseCallbackHandler của langchain_core không nhận tham số __init__, nên gọi super trực tiếp là an toàn
         try:
             super().__init__()
         except TypeError:
-            # 某些版本要求无参,某些要求带参,兜底
+            # Có bản đòi không tham số, có bản đòi có tham số — bắt dự phòng cả hai
             pass
         self.trace_id = trace_id
         self.agent_name = agent_name
@@ -113,13 +113,13 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         self._started_at = time.monotonic()
         self._total_cost = 0.0
         self._completed_stages: set[str] = set()
-        # LangChain 1.x 的 on_chain_end 不保证携带 name/metadata，因此必须保存
-        # start 时的 run_id -> 节点信息，才能把结束事件关回正确阶段。
+        # on_chain_end của LangChain 1.x không bảo đảm mang theo name/metadata, nên bắt buộc phải lưu
+        # ánh xạ run_id lúc start -> thông tin nút, thì mới quy sự kiện kết thúc về đúng giai đoạn.
         self._chain_runs: dict[str, dict[str, str]] = {}
         self._llm_runs: dict[str, dict[str, str]] = {}
         self._tool_runs: dict[str, dict[str, str]] = {}
-        # OTel 桥接:handler 在异步侧构造(to_thread 之前),此处捕获当前上下文,
-        # 供工作线程里的 callback 把节点/LLM 子 span 挂到 root span 下(关闭时为 None)。
+        # Cầu nối OTel: handler được dựng ở phía bất đồng bộ (trước to_thread), chỗ này bắt lấy ngữ cảnh hiện tại
+        # để callback trong luồng worker gắn được span con của nút / LLM vào dưới root span (bằng None khi tắt).
         self._otel_parent = otel.capture_context()
         self._otel_stage_spans: dict[str, Any] = {}
         self._otel_llm_span: Any = None
@@ -152,9 +152,9 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         """向采集等非 LangChain 阶段发出同一格式的进度事件。"""
         self._emit(stage, action, **extra)
 
-    # ---- LangChain callbacks 接口 ----
+    # ---- Giao diện callbacks của LangChain ----
 
-    # 关键:LLM 默认按 token 估算成本(deepseek-chat 单价),后续可由调用方注入更精确单价
+    # Điểm mấu chốt: chi phí LLM mặc định ước theo token (đơn giá deepseek-chat), phía gọi có thể tiêm đơn giá chính xác hơn sau
     _PRICE_PER_M_PROMPT = 0.14
     _PRICE_PER_M_COMPLETION = 0.28
 
@@ -180,7 +180,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             operation_id=operation_id,
             **({"agent": agent, "langgraph_node": agent} if agent else {}),
         )
-        # OTel:TA 的一次 LLM 调用 -> gen_ai 子 span(遵循 GenAI 语义约定)。
+        # OTel: mỗi lời gọi LLM của TA -> một span con gen_ai (theo quy ước ngữ nghĩa GenAI).
         self._otel_llm_span = otel.start_detached_span(
             f"chat {model}".strip() if model else "chat",
             parent_context=self._otel_parent,
@@ -192,7 +192,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         )
 
     def on_llm_end(self, response, **kwargs):
-        # langchain LLMResult.llm_output 含 token_usage
+        # LLMResult.llm_output của langchain có chứa token_usage
         usage = {}
         try:
             usage = (response.llm_output or {}).get("token_usage") or {}
@@ -200,7 +200,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             pass
         prompt_tokens = usage.get("prompt_tokens") or 0
         completion_tokens = usage.get("completion_tokens") or 0
-        # 累加成本估算
+        # Cộng dồn chi phí ước tính
         cost = (
             prompt_tokens / 1_000_000 * self._PRICE_PER_M_PROMPT
             + completion_tokens / 1_000_000 * self._PRICE_PER_M_COMPLETION
@@ -218,7 +218,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             operation_id=operation_id,
             **({"agent": agent, "langgraph_node": agent} if agent else {}),
         )
-        # OTel:回填 token 用量并结束 gen_ai span。
+        # OTel: điền ngược lượng token rồi đóng span gen_ai.
         if self._otel_llm_span is not None:
             otel.set_span_attributes(
                 self._otel_llm_span,
@@ -231,8 +231,8 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             self._otel_llm_span = None
 
     def on_chain_start(self, serialized, inputs, **kwargs):
-        # LangGraph 节点切换。节点名优先取 kwargs.name/metadata.langgraph_node，
-        # 因为 serialized 在不同 LangChain 版本里可能只有 runnable 类型名称。
+        # Chuyển nút LangGraph. Tên nút ưu tiên lấy từ kwargs.name / metadata.langgraph_node,
+        # vì serialized ở các bản LangChain khác nhau có khi chỉ chứa tên kiểu runnable.
         name = _callback_name(serialized, kwargs)
         stage = _normalize_stage(name)
         if not stage:
@@ -251,8 +251,8 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             run_id=run_id,
             parent_run_id=_parent_run_id(kwargs),
         )
-        # OTel 节点 span 只保留一个当前阶段，重复的并行/重试节点仍会产生进度事件，
-        # 但不会因为重复 span 让追踪树无限膨胀。
+        # Span nút của OTel chỉ giữ một giai đoạn đang hoạt động; nút song song / thử lại trùng nhau vẫn sinh sự kiện tiến độ,
+        # nhưng không để span trùng làm cây truy vết phình vô hạn.
         if stage not in self._otel_stage_spans:
             span = otel.start_detached_span(
                 f"tradingagents.stage {stage}",
@@ -326,7 +326,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             **({"agent": agent, "langgraph_node": agent} if agent else {}),
         )
 
-    # ---- 公共方法 ----
+    # ---- Phương thức công khai ----
 
     def record_cost(self, usd: float) -> None:
         self._total_cost += usd
@@ -436,8 +436,8 @@ def aggregate_progress(log_entries: list[dict]) -> dict:
             started_at = ts
 
         if not stage or stage not in stage_state:
-            # LLM/工具事件不属于独立阶段，但需要保留当前活动操作，
-            # 这样外部数据请求卡住时 UI 能显示具体工具名。
+            # Sự kiện LLM / công cụ không phải một giai đoạn riêng, nhưng vẫn cần giữ lại thao tác đang chạy,
+            # để khi request dữ liệu bên ngoài bị treo thì giao diện hiện được tên công cụ cụ thể.
             if stage == "llm_call":
                 kind = "tool" if action.startswith("tool_") else "llm"
                 name = tags.get("tool") if kind == "tool" else tags.get("model")
@@ -457,8 +457,8 @@ def aggregate_progress(log_entries: list[dict]) -> dict:
                     if tags.get("operation_id"):
                         active_operations.pop(operation_id, None)
                     else:
-                        # 兼容旧日志/上游未传 run_id 的回调：只移除同类型同名称
-                        # 的一个操作，不影响并行执行的其它工具。
+                        # Tương thích nhật ký cũ / callback của thượng nguồn không gửi run_id: chỉ gỡ đúng một thao tác
+                        # cùng loại cùng tên, không ảnh hưởng các công cụ khác đang chạy song song.
                         expected_name = name or ("工具调用" if kind == "tool" else "LLM 调用")
                         for key, operation in list(active_operations.items()):
                             if operation["kind"] == kind and operation["name"] == expected_name:
@@ -480,7 +480,7 @@ def aggregate_progress(log_entries: list[dict]) -> dict:
                 if tags.get("error"):
                     source_state["error"] = str(tags["error"])[:200]
 
-        # cost 累积取最后一条的 total_cost_usd
+        # Chi phí cộng dồn lấy total_cost_usd của bản ghi cuối
         cost = tags.get("total_cost_usd")
         if cost is not None:
             total_cost = max(total_cost, float(cost))
@@ -492,7 +492,7 @@ def aggregate_progress(log_entries: list[dict]) -> dict:
         elif action == "stage_end":
             stage_state[stage]["status"] = "done"
             if "started_at" in stage_state[stage] and ts:
-                # 简略时长(实际 ts 是 datetime,这里依赖调用方转换)
+                # Thời lượng rút gọn (ts thật là datetime, chỗ này dựa vào phía gọi chuyển đổi)
                 pass
 
     return {
@@ -529,7 +529,7 @@ def check_budget(monthly_budget_usd: float, agent_name: str = "tradingagents") -
         }
     """
     now = datetime.now(timezone.utc)
-    # AnalysisHistory.analysis_date 是 "YYYY-MM-DD" 字符串
+    # AnalysisHistory.analysis_date là chuỗi "YYYY-MM-DD"
     month_prefix = now.strftime("%Y-%m")
 
     db = SessionLocal()
@@ -602,7 +602,7 @@ def estimate_cost(
     prompt_tokens = n_analysts * 5000 + max(1, debate_rounds) * 12000 + 15000
     completion_tokens = n_analysts * 2000 + max(1, debate_rounds) * 4000 + 3000
 
-    # 单价表(美元/百万 token)
+    # Bảng đơn giá (USD / triệu token)
     PRICING = {
         "deepseek-chat": (0.14, 0.28),
         "deepseek-reasoner": (0.55, 2.19),
