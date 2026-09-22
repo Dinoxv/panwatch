@@ -8,9 +8,9 @@ from marketdata.symbol import Symbol
 
 
 class Vendor(ABC):
-    #: 注册名,与 SourceConfig.vendor / DataSource.provider 对齐
+    #: Tên đăng ký, khớp với SourceConfig.vendor / DataSource.provider
     name: str = ""
-    #: 支持的市场集合(空集=全部);Engine 会按市场过滤
+    #: Tập thị trường được hỗ trợ (tập rỗng = tất cả); Engine sẽ lọc theo thị trường
     supports_markets: set[str] = set()
 
     @abstractmethod

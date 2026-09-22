@@ -121,27 +121,27 @@ class Fundamentals:
     symbol: str
     market: str
     name: str = ""
-    # —— 估值类 ——
-    pe_ttm: float | None = None                    # 市盈率(TTM)
-    pe_static: float | None = None                  # 市盈率(静态)
-    pb: float | None = None                         # 市净率
-    ps_ttm: float | None = None                     # 市销率(TTM)
-    total_market_value: float | None = None         # 总市值(亿)
-    circulating_market_value: float | None = None   # 流通市值(亿)
-    dividend_yield: float | None = None             # 股息率(%)
+    # —— Nhóm định giá ——
+    pe_ttm: float | None = None                    # P/E (TTM)
+    pe_static: float | None = None                  # P/E (tĩnh)
+    pb: float | None = None                         # P/B
+    ps_ttm: float | None = None                     # P/S (TTM)
+    total_market_value: float | None = None         # Vốn hóa (trăm triệu)
+    circulating_market_value: float | None = None   # Vốn hóa lưu hành (trăm triệu)
+    dividend_yield: float | None = None             # Tỷ suất cổ tức (%)
     total_shares: float | None = None               # Tổng số cổ phần (cổ phiếu)
     float_shares: float | None = None                # Số cổ phần lưu hành (cổ phiếu)
-    # —— 财报类 ——
-    eps: float | None = None                        # 每股收益
-    bps: float | None = None                        # 每股净资产
-    roe: float | None = None                        # 净资产收益率(%)
-    revenue: float | None = None                    # 营业收入
-    net_profit: float | None = None                 # 归母净利润
-    gross_margin: float | None = None               # 毛利率(%)
-    net_margin: float | None = None                 # 净利率(%)
-    revenue_yoy: float | None = None                # 营收同比增长(%)
-    net_profit_yoy: float | None = None             # 净利润同比增长(%)
-    report_date: str = ""                           # 报告期(原样字符串,不做日期解析)
+    # —— Nhóm báo cáo tài chính ——
+    eps: float | None = None                        # Lợi nhuận trên mỗi cổ phần (EPS)
+    bps: float | None = None                        # Giá trị sổ sách trên mỗi cổ phần
+    roe: float | None = None                        # Tỷ suất lợi nhuận trên vốn chủ sở hữu (%)
+    revenue: float | None = None                    # Doanh thu
+    net_profit: float | None = None                 # Lợi nhuận sau thuế thuộc cổ đông công ty mẹ
+    gross_margin: float | None = None               # Biên lợi nhuận gộp (%)
+    net_margin: float | None = None                 # Biên lợi nhuận ròng (%)
+    revenue_yoy: float | None = None                # Tăng trưởng doanh thu so với cùng kỳ (%)
+    net_profit_yoy: float | None = None             # Tăng trưởng lợi nhuận ròng so với cùng kỳ (%)
+    report_date: str = ""                           # Kỳ báo cáo (giữ nguyên chuỗi, không bóc thành ngày)
     timestamp: datetime = field(default_factory=datetime.now)
 
 
@@ -152,13 +152,13 @@ class DragonTigerItem:
     trade_date: str
     symbol: str
     name: str = ""
-    reason: str | None = None          # 上榜原因
+    reason: str | None = None          # Lý do lọt bảng
     close: float | None = None         # Giá đóng cửa
-    change_pct: float | None = None    # 涨跌幅(%)
-    net_buy: float | None = None       # 龙虎榜净买额(元)
-    buy_amt: float | None = None       # 龙虎榜买入额(元)
-    sell_amt: float | None = None      # 龙虎榜卖出额(元)
-    turnover_pct: float | None = None  # 换手率(%)
+    change_pct: float | None = None    # Biên độ (%)
+    net_buy: float | None = None       # Giá trị mua ròng trên bảng giao dịch đột biến (đồng)
+    buy_amt: float | None = None       # Giá trị mua trên bảng giao dịch đột biến (đồng)
+    sell_amt: float | None = None      # Giá trị bán trên bảng giao dịch đột biến (đồng)
+    turnover_pct: float | None = None  # Tỷ lệ vòng quay (%)
 
 
 @dataclass
@@ -167,13 +167,13 @@ class MarginItem:
 
     date: str
     symbol: str
-    rz_balance: float | None = None     # 融资余额(元)
-    rz_buy: float | None = None         # 融资买入额(元)
-    rz_repay: float | None = None       # 融资偿还额(元)
-    rq_balance: float | None = None     # 融券余额(元)
-    rq_sell_vol: float | None = None    # 融券卖出量(股)
-    rq_repay_vol: float | None = None   # 融券偿还量(股)
-    total_balance: float | None = None  # 两融余额(元)
+    rz_balance: float | None = None     # Dư nợ vay mua (đồng)
+    rz_buy: float | None = None         # Giá trị mua bằng vốn vay (đồng)
+    rz_repay: float | None = None       # Giá trị trả nợ vay mua (đồng)
+    rq_balance: float | None = None     # Dư nợ vay chứng khoán (đồng)
+    rq_sell_vol: float | None = None    # Khối lượng bán khống (cổ phiếu)
+    rq_repay_vol: float | None = None   # Khối lượng hoàn trả chứng khoán vay (cổ phiếu)
+    total_balance: float | None = None  # Tổng dư nợ giao dịch ký quỹ (đồng)
 
 
 @dataclass
@@ -182,10 +182,10 @@ class ShareholderItem:
 
     report_date: str
     symbol: str
-    holder_num: int | None = None      # 股东户数
-    change_num: int | None = None      # 户数变化(较上期)
-    change_ratio: float | None = None  # 户数环比变化(%)
-    avg_shares: float | None = None    # 户均持股(股)
+    holder_num: int | None = None      # Số lượng cổ đông
+    change_num: int | None = None      # Thay đổi số cổ đông (so với kỳ trước)
+    change_ratio: float | None = None  # Thay đổi số cổ đông so với kỳ liền trước (%)
+    avg_shares: float | None = None    # Số cổ phần bình quân mỗi cổ đông
 
 
 @dataclass
@@ -194,10 +194,10 @@ class DividendItem:
 
     ex_date: str
     symbol: str
-    dividend_per_share: float | None = None  # 每股派息(税前,元)
-    transfer_ratio: float | None = None      # 每10股转增(股)
-    bonus_ratio: float | None = None         # 每10股送股(股)
-    progress: str = ""                       # 方案进度
+    dividend_per_share: float | None = None  # Cổ tức trên mỗi cổ phần (trước thuế, đồng)
+    transfer_ratio: float | None = None      # Cổ phiếu thưởng từ thặng dư vốn trên mỗi 10 cổ phần
+    bonus_ratio: float | None = None         # Cổ phiếu thưởng từ lợi nhuận trên mỗi 10 cổ phần
+    progress: str = ""                       # Tiến độ phương án
 
 
 @dataclass
@@ -206,10 +206,10 @@ class NorthboundItem:
     字段待实抓校准(沙箱代理拦截,无法验证真实响应结构)。"""
 
     date: str
-    hgt_net: float | None = None   # 沪股通净买入(亿元)
-    sgt_net: float | None = None   # 深股通净买入(亿元)⚠️ 近期不可靠(可能 NaN/量级异常),需容错
-    total_net: float | None = None  # 北向合计=hgt_net+sgt_net;任一为 None 则 None(不臆造)
-    time: str = ""                  # 末值对应的分钟时间点(可选)
+    hgt_net: float | None = None   # Mua ròng qua kênh Thượng Hải (trăm triệu đồng)
+    sgt_net: float | None = None   # Mua ròng qua kênh Thâm Quyến (trăm triệu đồng) ⚠️ gần đây không đáng tin (có thể NaN / sai độ lớn), phải bắt lỗi
+    total_net: float | None = None  # Tổng dòng vốn phía Bắc = hgt_net + sgt_net; một trong hai là None thì kết quả là None (không bịa số)
+    time: str = ""                  # Mốc phút ứng với giá trị cuối (tùy chọn)
 
 
 @dataclass

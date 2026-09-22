@@ -27,7 +27,7 @@ def _to_float(value) -> float | None:
         return None
 
 
-# ============================== 腾讯(CN) ==============================
+# ==================== Tencent (CN) ====================
 
 def _parse_fundamentals_line(line: str, market: str) -> Fundamentals | None:
     """解析腾讯 qt.gtimg `~` 数组行为 Fundamentals。
@@ -89,7 +89,7 @@ class TencentFundamentalsVendor(FundamentalsVendor):
         return out
 
 
-# ============================== 东财 ==============================
+# ==================== EastMoney ====================
 
 _PUSH2_URL = "https://push2.eastmoney.com/api/qt/stock/get"
 _PUSH2_HOST = "push2.eastmoney.com"

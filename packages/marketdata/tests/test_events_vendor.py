@@ -6,11 +6,11 @@ from marketdata.types import EventItem
 
 
 def test_events_parses_and_filters(monkeypatch):
-    # 东财 ann 响应结构与字段名以 src/collectors/events_collector.py 的 _parse_item 实际读取为准:
+    # Cấu trúc và tên trường của phản hồi ann (EastMoney) lấy theo đúng những gì _parse_item trong src/collectors/events_collector.py thực sự đọc:
     # data.list[].{art_code, title, notice_date, columns[].column_name, codes[].stock_code}
     #
-    # 日期相对「今天」生成:since_days 窗口是滚动的,写死日期的用例会在跨过窗口那天
-    # 突然全被过滤掉而失败(曾发生)。
+    # Ngày sinh ra tương đối so với «hôm nay»: cửa sổ since_days là cửa sổ trượt, nên test gán cứng ngày sẽ đột ngột bị lọc sạch
+    # và fail vào đúng ngày vượt khỏi cửa sổ (đã từng xảy ra).
     recent = date.today() - timedelta(days=2)
     older = date.today() - timedelta(days=4)
     recent_code = f"AN{recent:%Y%m%d}0002"
@@ -20,7 +20,7 @@ def test_events_parses_and_filters(monkeypatch):
         "success": True,
         "data": {
             "list": [
-                # 较新、"回购" -> event_type=repurchase, importance=2
+                # Mới hơn, "mua lại cổ phiếu" -> event_type=repurchase, importance=2
                 {
                     "art_code": recent_code,
                     "title": "贵州茅台股份有限公司关于回购股份的公告",
@@ -28,7 +28,7 @@ def test_events_parses_and_filters(monkeypatch):
                     "columns": [{"column_name": "临时公告"}],
                     "codes": [{"stock_code": "600519"}],
                 },
-                # 较旧、"重大资产重组" -> event_type=restructuring, importance=3
+                # Cũ hơn, "tái cơ cấu tài sản trọng yếu" -> event_type=restructuring, importance=3
                 {
                     "art_code": older_code,
                     "title": "贵州茅台股份有限公司关于重大资产重组的公告",
@@ -36,7 +36,7 @@ def test_events_parses_and_filters(monkeypatch):
                     "columns": [{"column_name": "重大事项"}],
                     "codes": [{"stock_code": "600519"}],
                 },
-                # 与第一条重复的 art_code -> 应被去重
+                # art_code trùng với bản ghi đầu -> phải bị khử trùng lặp
                 {
                     "art_code": recent_code,
                     "title": "贵州茅台股份有限公司关于回购股份的公告(重复)",
@@ -49,15 +49,15 @@ def test_events_parses_and_filters(monkeypatch):
     }
     monkeypatch.setattr(ev, "market_get", lambda *a, **k: payload)
 
-    # 混入一个非 A 股代码(5 位港股),验证 A 股过滤只对 symbols 生效、不影响返回结构。
+    # Trộn vào một mã không thuộc cổ phiếu A (mã Hồng Kông 5 chữ số) để kiểm chứng phép lọc cổ phiếu A chỉ tác động lên symbols, không đổi cấu trúc trả về.
     symbols = [Symbol.parse("600519"), Symbol.parse("00700")]
     out = ev.EventsVendor().fetch(symbols, {"since_days": 30})
 
     assert all(isinstance(x, EventItem) for x in out)
-    # 去重生效:3 条输入 -> 2 条唯一 (source, external_id)
+    # Khử trùng lặp có hiệu lực: 3 bản ghi đầu vào -> 2 bản ghi duy nhất theo (source, external_id)
     assert len(out) == 2
 
-    # 排序:按 (publish_time, importance) 降序 -> 较新的回购公告排第一
+    # Sắp xếp: theo (publish_time, importance) giảm dần -> công bố mua lại mới hơn đứng đầu
     assert out[0].external_id == recent_code
     assert out[0].event_type == "repurchase"
     assert out[0].importance == 2

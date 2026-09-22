@@ -50,7 +50,7 @@ def test_below_threshold_skips():
     with patch("src.modules.automation.tradingagents.operations.SessionLocal") as session_factory:
         db = MagicMock()
         session_factory.return_value = db
-        # query(AgentConfig) 第一次返回 agent
+        # query(AgentConfig) lần đầu trả về agent
         db.query.return_value.filter.return_value.first.return_value = _make_agent(
             {"auto_trigger": {"enabled": True, "change_pct_threshold": 5.0}}
         )

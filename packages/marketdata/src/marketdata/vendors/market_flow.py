@@ -81,7 +81,7 @@ def _datacenter_get(report: str, filter_str: str, sort_col: str, page_size: int 
     return data if isinstance(data, list) else []
 
 
-# ============================== 龙虎榜(市场级) ==============================
+# ==================== Bảng giao dịch đột biến (cấp thị trường) ====================
 
 _REPORT_DRAGON_TIGER = "RPT_DAILYBILLBOARD_DETAILSNEW"
 
@@ -125,7 +125,7 @@ class EastmoneyDragonTigerVendor(DragonTigerVendor):
         return out
 
 
-# ============================== 融资融券(按 symbol) ==============================
+# ==================== Giao dịch ký quỹ (theo symbol) ====================
 
 _REPORT_MARGIN = "RPTA_WEB_RZRQ_GGMX"
 
@@ -166,7 +166,7 @@ class EastmoneyMarginVendor(MarginVendor):
         return out
 
 
-# ============================== 股东户数(按 symbol) ==============================
+# ==================== Số lượng cổ đông (theo symbol) ====================
 
 _REPORT_SHAREHOLDERS = "RPT_HOLDERNUMLATEST"
 
@@ -204,7 +204,7 @@ class EastmoneyShareholdersVendor(ShareholdersVendor):
         return out
 
 
-# ============================== 分红(按 symbol) ==============================
+# ==================== Cổ tức (theo symbol) ====================
 
 _REPORT_DIVIDEND = "RPT_SHAREBONUS_DET"
 

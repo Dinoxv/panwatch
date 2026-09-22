@@ -106,8 +106,8 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=300.0), default_ttl=300.0,
         )
-        # 龙虎榜/融资融券/股东户数/分红:市场/资金面,均走东财 datacenter 同构接口,
-        # 更新频率低(日频/期频),沿用 fundamentals 同款 300s TTL。
+        # Bảng giao dịch đột biến / giao dịch ký quỹ / số lượng cổ đông / cổ tức: thuộc mặt thị trường và dòng tiền, đều đi qua cùng một dạng endpoint datacenter của EastMoney,
+        # tần suất cập nhật thấp (theo ngày / theo kỳ) nên dùng luôn TTL 300s giống fundamentals.
         self._dragon_tiger_engine = Engine(
             datatype="dragon_tiger",
             vendors=build_vendors("dragon_tiger"),
@@ -132,8 +132,8 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=300.0), default_ttl=300.0,
         )
-        # 北向资金(同花顺 hexin 当日分钟累计净买入):市场级、单源,更新频率为分钟级
-        # 但当日累计值短期内变化不大,沿用 flash_news 同款 60s TTL(比 300s 更贴合"盘中递增")。
+        # Dòng vốn phía Bắc (mua ròng lũy kế theo phút trong ngày, nguồn hexin của Tonghuashun): cấp thị trường, một nguồn, cập nhật theo phút
+        # nhưng giá trị lũy kế trong ngày biến động chậm, nên dùng TTL 60s giống flash_news (bám sát tính chất "tăng dần trong phiên" hơn 300s).
         self._northbound_engine = Engine(
             datatype="northbound",
             vendors=build_vendors("northbound"),

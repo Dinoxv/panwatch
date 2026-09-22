@@ -46,7 +46,7 @@ def test_get_market_indices_uses_marketdata(monkeypatch):
             ]
 
     monkeypatch.setattr(mkt, "get_market_data", lambda: _MD())
-    # spark 取数不是本用例关注点,桩掉避免真实联网(见 test_market_indices_spark.py 专测 spark)。
+    # Việc lấy dữ liệu spark không phải trọng tâm của test này nên thay bằng stub để khỏi gọi mạng thật (xem test_market_indices_spark.py chuyên kiểm thử spark).
     monkeypatch.setattr(mkt, "get_index_klines", lambda *a, **k: [])
 
     out = asyncio.run(mkt.get_market_indices())
@@ -54,6 +54,6 @@ def test_get_market_indices_uses_marketdata(monkeypatch):
     assert captured["symbols"] == [idx["tencent_symbol"] for idx in mkt.MARKET_INDICES]
     sh = next(i for i in out if i["symbol"] == "000001")
     assert sh["current_price"] == 3200.0 and sh["change_pct"] == 0.63
-    # 未命中行情的指数仍返回基本信息占位(current_price=None),匹配逻辑不变
+    # Chỉ số không khớp dữ liệu giá vẫn trả về thông tin cơ bản làm chỗ giữ (current_price=None), logic khớp giữ nguyên
     hsi = next(i for i in out if i["symbol"] == "HSI")
     assert hsi["current_price"] is None

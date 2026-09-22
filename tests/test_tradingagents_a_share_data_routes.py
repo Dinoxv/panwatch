@@ -139,7 +139,7 @@ def _full_ctx(extras=None):
 
 
 # ============================================================
-# 1. get_stock_data → K 线 CSV
+# 1. get_stock_data → CSV nến
 # ============================================================
 
 def test_get_stock_data_returns_kline_csv_for_maotai():
@@ -153,7 +153,7 @@ def test_get_stock_data_returns_kline_csv_for_maotai():
 
 
 # ============================================================
-# 2. get_indicators → 单指标精炼(不重复 K 线 CSV)
+# 2. get_indicators → tinh gọn theo từng chỉ báo (không lặp lại CSV nến)
 # ============================================================
 
 def test_get_indicators_macd_returns_macd_values_only():
@@ -166,7 +166,7 @@ def test_get_indicators_macd_returns_macd_values_only():
     assert "MACD" in result
     assert "8.5" in result  # DIF
     assert "金叉" in result
-    # 不应该是完整 K 线 CSV(那是 5008 字)
+    # Không được là CSV nến đầy đủ (bản đó dài 5008 ký tự)
     assert len(result) < 1000
 
 
@@ -211,14 +211,14 @@ def test_get_indicators_no_repeat_full_csv():
         macd = _serve_from_panwatch("get_indicators", "600519", {}, args=("600519", "macd"))
         rsi = _serve_from_panwatch("get_indicators", "600519", {}, args=("600519", "rsi"))
         boll = _serve_from_panwatch("get_indicators", "600519", {}, args=("600519", "boll"))
-    # 三次返回应该差异显著
+    # Ba lần trả về phải khác nhau rõ rệt
     assert macd != rsi != boll
-    # 每个都应小于 1k 字符(K 线 CSV 是 5k+)
+    # Mỗi kết quả phải dưới 1k ký tự (CSV nến là hơn 5k)
     assert max(len(macd), len(rsi), len(boll)) < 1000
 
 
 # ============================================================
-# 3. get_news / get_global_news → 公告事件
+# 3. get_news / get_global_news → sự kiện công bố thông tin
 # ============================================================
 
 def test_get_news_returns_company_announcements():
@@ -238,7 +238,7 @@ def test_get_global_news_with_empty_events_blocks_unrelated_news():
 
 
 # ============================================================
-# 4. get_fundamentals → 真实财务摘要
+# 4. get_fundamentals → tóm tắt tài chính thật
 # ============================================================
 
 def test_get_fundamentals_returns_real_financial_numbers():
@@ -247,9 +247,9 @@ def test_get_fundamentals_returns_real_financial_numbers():
         result = _serve_from_panwatch("get_fundamentals", "600519", {})
     assert "600519" in result
     assert "贵州茅台" in result
-    # 真实财务数据
+    # Dữ liệu tài chính thật
     assert "Real Financial Data" in result
-    # 营业总收入 5000 亿
+    # Tổng doanh thu 5000 trăm triệu
     assert "500.00 亿" in result or "1800.00 亿" in result
     # ROE
     assert "8.50%" in result or "32.00%" in result
@@ -262,13 +262,13 @@ def test_get_fundamentals_fallback_when_no_financial():
     with panwatch_data_context(_full_ctx({"financial": None})):
         result = _serve_from_panwatch("get_fundamentals", "600519", {})
     assert "Lightweight Fundamentals" in result
-    # quote 真实数据
+    # Dữ liệu quote thật
     assert "24.5" in result  # PE
     assert "0.12" in result  # Tỷ lệ vòng quay
 
 
 # ============================================================
-# 5. get_balance_sheet → 真实资产负债
+# 5. get_balance_sheet → bảng cân đối kế toán thật
 # ============================================================
 
 def test_get_balance_sheet_returns_real_equity_and_leverage():
@@ -276,14 +276,14 @@ def test_get_balance_sheet_returns_real_equity_and_leverage():
     with panwatch_data_context(_full_ctx()):
         result = _serve_from_panwatch("get_balance_sheet", "600519", {})
     assert "Balance Sheet" in result
-    # 净资产 2800 亿
+    # Vốn chủ sở hữu 2800 trăm triệu
     assert "2800.00 亿" in result or "2900.00 亿" in result
-    # 资产负债率 ~18%
+    # Tỷ lệ nợ trên tài sản ~18%
     assert "18.00%" in result or "17.50%" in result
 
 
 # ============================================================
-# 6. get_cashflow → 真实经营现金流
+# 6. get_cashflow → dòng tiền hoạt động kinh doanh thật
 # ============================================================
 
 def test_get_cashflow_returns_real_operating_cashflow():
@@ -291,9 +291,9 @@ def test_get_cashflow_returns_real_operating_cashflow():
     with panwatch_data_context(_full_ctx()):
         result = _serve_from_panwatch("get_cashflow", "600519", {})
     assert "Cash Flow Statement" in result
-    # 经营现金流 800 亿
+    # Dòng tiền hoạt động kinh doanh 800 trăm triệu
     assert "800.00 亿" in result or "220.00 亿" in result
-    # 每股现金流 ~63 元
+    # Dòng tiền trên mỗi cổ phần ~63 đồng
     assert "63.60" in result or "17.50" in result
 
 
@@ -302,7 +302,7 @@ def test_get_cashflow_does_not_match_capital_flow_branch():
     (上次 bug:method 含 'flow' 字串就误判为资金流向)"""
     with panwatch_data_context(_full_ctx()):
         result = _serve_from_panwatch("get_cashflow", "600519", {})
-    # 资金流分支会返回 "No capital flow data" — 不应该出现
+    # Nhánh dòng tiền sẽ trả "No capital flow data" — không được xuất hiện
     assert "No capital flow data" not in result
     # 应该是现金流量表
     assert "Cash Flow" in result

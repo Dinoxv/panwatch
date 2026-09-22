@@ -36,8 +36,8 @@ def source_suffix() -> str:
     return f" [src={src}]" if src else ""
 
 
-# 失败原因收集:默认 None = 不收集(生产热路径零开销)。数据源"测试"按钮用 capture_errors()
-# 包住取数调用,把 market_get / vendor 的真实失败原因收上来透到 UI,而不是只显示"无数据"。
+# Thu lý do lỗi: mặc định None = không thu (đường nóng ở môi trường thật không tốn gì). Nút "kiểm thử" nguồn dữ liệu bọc lời gọi bằng capture_errors()
+# để thu lý do lỗi thật của market_get / vendor rồi đưa lên giao diện, thay vì chỉ hiện "không có dữ liệu".
 _ERROR_SINK: contextvars.ContextVar[list | None] = contextvars.ContextVar("md_error_sink", default=None)
 
 

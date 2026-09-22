@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import src.platform.persistence.models as _models  # noqa: F401  注册 ORM
+import src.platform.persistence.models as _models  # noqa: F401  đăng ký ORM
 from src.platform.ai.ai_client import AIClient
 from src.platform.persistence.database import Base
 from src.platform.persistence.models import AIModel, AIService
@@ -152,23 +152,23 @@ def test_batch_add_skips_duplicates_and_sets_default(db, monkeypatch):
         models=[
             providers.BatchModelItem(
                 name="", model="dup", is_default=False
-            ),  # 重复,跳过
+            ),  # Trùng lặp, bỏ qua
             providers.BatchModelItem(name="新A", model="new-a", is_default=True),
             providers.BatchModelItem(name="", model="new-b", is_default=False),
         ]
     )
     res = providers.batch_add_models(
         svc.id, body, db
-    )  # 同步端点(threadpool),不阻塞事件循环
+    )  # Endpoint đồng bộ (chạy trong threadpool), không chặn event loop
     assert res["added"] == 2
 
     all_models = db.query(AIModel).filter(AIModel.service_id == svc.id).all()
     names = {m.model for m in all_models}
     assert names == {"dup", "new-a", "new-b"}
-    # new-a 设为默认后,其余(含原 dup)应被清零
+    # Sau khi đặt new-a làm mặc định, các mục còn lại (kể cả bản trùng cũ) phải bị đưa về 0
     defaults = [m.model for m in all_models if m.is_default]
     assert defaults == ["new-a"]
-    # 显示名为空的回退为 model 标识
+    # Tên hiển thị rỗng thì lùi về dùng định danh model
     assert next(m for m in all_models if m.model == "new-b").name == "new-b"
 
 
@@ -223,7 +223,7 @@ def test_test_model_omits_temperature(db, monkeypatch):
     monkeypatch.setattr(providers, "AIClient", _FakeClient)
     res = asyncio.run(providers.test_model(m.id, db))
     assert res["ok"] is True
-    assert seen["temperature"] is None  # 未带 temperature
+    assert seen["temperature"] is None  # Không kèm temperature
 
 
 def test_test_model_error_maps_to_400(db, monkeypatch):

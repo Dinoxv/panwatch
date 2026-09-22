@@ -20,7 +20,7 @@ from src.modules.paper_trading.paper_trading_engine import _is_trading_time
 from src.platform.marketdata.models import MARKETS, MarketCode
 
 
-# 22:00 giờ Bắc Kinh, thứ Năm 2026-09-17: phiên Mỹ đang mở, A股/港股 đã đóng cửa.
+# 22:00 giờ Bắc Kinh, thứ Năm 2026-09-17: phiên Mỹ đang mở, cổ phiếu A và Hồng Kông đã đóng cửa.
 _CN_EVENING = datetime(2026, 9, 17, 22, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
 
 

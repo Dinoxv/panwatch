@@ -3,7 +3,7 @@ from marketdata.types import HotBoard, HotStock
 
 
 def test_hot_stocks_maps_fcodes(monkeypatch):
-    # 东财 clist diff:f12=代码 f14=名称 f2=最新价 f3=涨跌幅 f6=成交额 f5=成交量
+    # diff của clist (EastMoney): f12 = mã, f14 = tên, f2 = giá mới nhất, f3 = biên độ, f6 = giá trị giao dịch, f5 = khối lượng
     payload = {
         "data": {
             "diff": [
@@ -32,7 +32,7 @@ def test_hot_stocks_maps_fcodes(monkeypatch):
 
 
 def test_hot_stocks_normalizes_dict_diff(monkeypatch):
-    # 东财 diff 有时是 dict(按 index 为 key)而非 list,需归一化。
+    # diff của EastMoney đôi khi là dict (khóa là index) chứ không phải list nên phải chuẩn hóa.
     payload = {
         "data": {
             "diff": {
@@ -47,7 +47,7 @@ def test_hot_stocks_normalizes_dict_diff(monkeypatch):
 
 
 def test_hot_boards_maps_fcodes(monkeypatch):
-    # 板块 diff:f12=板块代码 f14=板块名称 f3=涨跌幅 f4=涨跌额 f6=成交额
+    # diff của nhóm ngành: f12 = mã nhóm, f14 = tên nhóm, f3 = biên độ, f4 = mức tăng giảm, f6 = giá trị giao dịch
     payload = {
         "data": {
             "diff": [

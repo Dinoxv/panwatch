@@ -36,9 +36,9 @@ def test_tencent_us_kline_resolves_exchange_suffix(monkeypatch):
         param = k["params"]["param"]
         calls.append(param)
         tsym = param.split(",")[0]
-        if tsym == "usBABA.N":  # 纽交所后缀才是对的
+        if tsym == "usBABA.N":  # Hậu tố NYSE mới là đúng
             days = [[f"2026-07-{i:02d}", "1", "2", "3", "0.5", "10"] for i in range(1, 11)]
-        elif tsym in ("usBABA.OQ", "usBABA"):  # 错后缀/裸符号 → 退化 2 根
+        elif tsym in ("usBABA.OQ", "usBABA"):  # Sai hậu tố / mã trần → suy biến còn 2 cây
             days = [["2011-06-02", "1", "2", "3", "0.5", "10"],
                     ["2026-07-31", "1", "2", "3", "0.5", "10"]]
         else:
@@ -49,10 +49,10 @@ def test_tencent_us_kline_resolves_exchange_suffix(monkeypatch):
     v = kv.TencentKlineVendor()
     out = v.fetch([Symbol.parse("BABA", market="US")], {"days": 30})
     assert len(out) == 10
-    assert calls[0].startswith("usBABA.OQ")  # 先试纳斯达克
+    assert calls[0].startswith("usBABA.OQ")  # Thử Nasdaq trước
     assert kv._US_SUFFIX_CACHE.get("BABA") == ".N"
 
     calls.clear()
     out2 = v.fetch([Symbol.parse("BABA", market="US")], {"days": 30})
-    assert len(out2) == 10 and len(calls) == 1  # 记忆后缀后一次请求直达
+    assert len(out2) == 10 and len(calls) == 1  # Ghi nhớ hậu tố rồi thì một request là tới thẳng
     kv._US_SUFFIX_CACHE.clear()

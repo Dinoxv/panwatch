@@ -289,7 +289,7 @@ def test_route_to_vendor_marks_expected_upstream_outage_as_data_unavailable(monk
         raise RuntimeError("FRED_API_KEY environment variable is not set")
 
     monkeypatch.setattr(ta, "_real_route_to_vendor", boom)
-    # get_macro_indicators:首参是指标名(非 A股/港股) → 走上游 passthrough → 明确数据不可用
+    # get_macro_indicators: tham số đầu là tên chỉ báo (không phải mã A / Hồng Kông) → chuyển thẳng cho thượng nguồn → kết luận rõ là không có dữ liệu
     out = ta._patched_route_to_vendor("get_macro_indicators", "fed_funds_rate", "2026-06-18", 30)
     assert "DATA_UNAVAILABLE" in out
     assert "FRED_API_KEY" in out

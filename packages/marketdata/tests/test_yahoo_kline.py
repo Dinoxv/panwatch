@@ -2,7 +2,7 @@ import marketdata.vendors.kline as kv
 from marketdata.symbol import Symbol
 from marketdata.types import Bar
 
-# 固定时间戳(UTC),对应 2026-07-01 / 07-02 / 07-03,避免依赖当前时间
+# Dấu thời gian cố định (UTC), ứng với 2026-07-01 / 07-02 / 07-03, để khỏi phụ thuộc thời gian hiện tại
 _TS1 = 1782864000
 _TS2 = 1782950400
 _TS3 = 1783036800
@@ -47,7 +47,7 @@ def test_yahoo_kline_parses_hk(monkeypatch):
     out = kv.YahooKlineVendor().fetch([Symbol.parse("0700", market="HK")], {"days": 60})
     assert len(out) == 3
     assert out[2].date == "2026-07-03" and out[2].close == 310.0
-    # sym 应转换成 yfinance 港股格式,host_key 固定 query2
+    # sym phải được đổi sang định dạng Hồng Kông của yfinance, host_key cố định là query2
     assert "0700.HK" in captured["url"]
     assert captured["host_key"] == "query2.finance.yahoo.com"
     assert captured["params"]["range"] == "3mo"
@@ -102,7 +102,7 @@ def test_yahoo_kline_no_symbols_returns_empty():
 
 
 def test_yahoo_kline_rejects_cn_market():
-    # 不支持 CN,直接返回空,不发请求
+    # Không hỗ trợ CN, trả rỗng luôn, không gửi request
     out = kv.YahooKlineVendor().fetch([Symbol.parse("600519", market="CN")], {"days": 30})
     assert out == []
 

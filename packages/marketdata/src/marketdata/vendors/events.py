@@ -157,7 +157,7 @@ class EventsVendor(_EventsVendorBase):
             timeout=10,
             retries=1,
             parse="json",
-            verify=False,  # 对齐原 EastMoneyEventsCollector 的 verify_ssl=False(东财 ann 端点 SSL 关闭)
+            verify=False,  # Khớp verify_ssl=False của EastMoneyEventsCollector cũ (endpoint ann của EastMoney tắt kiểm tra SSL)
             log_label="事件",
         )
         if not data or not data.get("success"):

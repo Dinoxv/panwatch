@@ -101,12 +101,12 @@ class TestHexinNorthboundVendor:
         item = out[0]
         assert item.hgt_net == 8.76
         assert item.sgt_net is None
-        assert item.total_net is None  # sgt 缺失,不臆造合计
+        assert item.total_net is None  # Thiếu sgt thì không bịa ra tổng
 
     def test_sgt_extreme_magnitude_treated_as_invalid(self, monkeypatch):
         payload = _hexin_payload(
             hgt=[["10:15", 8.76]],
-            sgt=[["10:15", 123456789.0]],  # 明显超出"亿元"合理范围的脏值
+            sgt=[["10:15", 123456789.0]],  # Giá trị rác vượt xa khoảng hợp lý tính bằng trăm triệu
             date="2026-07-16",
         )
         monkeypatch.setattr(nb, "market_get", lambda *a, **k: payload)
@@ -115,7 +115,7 @@ class TestHexinNorthboundVendor:
         item = out[0]
         assert item.sgt_net is None
         assert item.total_net is None
-        assert item.hgt_net == 8.76  # hgt 不受 sgt 异常污染
+        assert item.hgt_net == 8.76  # hgt không bị giá trị bất thường của sgt làm nhiễm
 
     def test_none_response_returns_empty(self, monkeypatch):
         monkeypatch.setattr(nb, "market_get", lambda *a, **k: None)
@@ -126,7 +126,7 @@ class TestHexinNorthboundVendor:
         assert nb.HexinNorthboundVendor().fetch([], {}) == []
 
     def test_unexpected_structure_returns_empty(self, monkeypatch):
-        # data 不是 dict,或没有 hgt/sgt 键 —— 防御性返回 []
+        # data không phải dict, hoặc không có khóa hgt/sgt — phòng thủ bằng cách trả []
         monkeypatch.setattr(nb, "market_get", lambda *a, **k: {"data": "unexpected string"})
         assert nb.HexinNorthboundVendor().fetch([], {}) == []
 
@@ -138,7 +138,7 @@ class TestHexinNorthboundVendor:
         assert nb.HexinNorthboundVendor().fetch([], {}) == []
 
     def test_date_falls_back_to_config_when_missing_in_response(self, monkeypatch):
-        payload = _hexin_payload(hgt=[["10:15", 8.76]], sgt=[["10:15", 2.34]])  # 无 date 字段
+        payload = _hexin_payload(hgt=[["10:15", 8.76]], sgt=[["10:15", 2.34]])  # Không có trường date
         monkeypatch.setattr(nb, "market_get", lambda *a, **k: payload)
 
         out = nb.HexinNorthboundVendor().fetch([], {"date": "2026-07-16"})
@@ -169,7 +169,7 @@ class TestHexinNorthboundVendor:
 
 
 # ---------------------------------------------------------------------------
-# MarketData.northbound() —— 走单源 Engine 出数
+# MarketData.northbound() — lấy dữ liệu qua Engine một nguồn
 # ---------------------------------------------------------------------------
 
 class TestClientMethod:

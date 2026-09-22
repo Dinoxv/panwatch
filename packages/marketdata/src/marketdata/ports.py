@@ -13,7 +13,7 @@ class SourceConfig:
     vendor: str
     priority: int = 100
     enabled: bool = True
-    config: dict = field(default_factory=dict)   # 凭证/参数:token / cookies / proxy ...
+    config: dict = field(default_factory=dict)   # Thông tin xác thực / tham số: token / cookies / proxy ...
     supports_batch: bool = False
 
 

@@ -78,7 +78,7 @@ def _xueqiu_symbol_id(code: str) -> str:
     (照搬 XueqiuNewsCollector._get_symbol_id 的 SH/SZ/BJ 判断规则)。"""
     if len(code) == 6 and code.isdigit():
         if code.startswith("920") or code.startswith(("83", "87", "88")):
-            return code  # BJ:雪球不识别,保留原值
+            return code  # BJ: Xueqiu không nhận dạng được, giữ nguyên giá trị gốc
         prefix = "SH" if code.startswith(("5", "6")) or code.startswith("900") else "SZ"
         return f"{prefix}{code}"
     return code
@@ -136,7 +136,7 @@ class XueqiuNewsVendor(_NewsVendorBase):
                 log_label="雪球个股新闻",
             )
             if text is None:
-                continue  # market_get 失败已 record_error
+                continue  # market_get lỗi thì đã record_error rồi
 
             if _looks_like_waf(text):
                 record_error(_XUEQIU_WAF_MSG)
@@ -189,7 +189,7 @@ def _parse_xueqiu_item(item: dict, code: str) -> NewsArticle | None:
 
 
 # ---------------------------------------------------------------------------
-# eastmoney_news(东财个股新闻搜索,search-api-web JSONP)
+# eastmoney_news (tìm tin theo từng mã của EastMoney, JSONP của search-api-web)
 # ---------------------------------------------------------------------------
 
 _EM_NEWS_URL = "https://search-api-web.eastmoney.com/search/jsonp"
@@ -212,7 +212,7 @@ def _eastmoney_news_importance(title: str) -> int:
 def _build_search_params(keyword: str) -> dict:
     search_param = {
         "uid": "",
-        "keyword": keyword,  # 用名称搜索效果远好于代码(照搬原逻辑)
+        "keyword": keyword,  # Tìm theo tên cho kết quả tốt hơn hẳn tìm theo mã (giữ nguyên logic cũ)
         "type": ["cmsArticleWebOld"],
         "client": "web",
         "clientType": "web",
@@ -256,10 +256,10 @@ class EastmoneyStockNewsVendor(_NewsVendorBase):
         result: list[NewsArticle] = []
         for sym in symbols:
             code = sym.code
-            keyword = names.get(code) or code  # 缺名 fallback 用代码搜索(照老逻辑)
+            keyword = names.get(code) or code  # Thiếu tên thì dự phòng tìm theo mã (giữ nguyên logic cũ)
             for article in self._search(keyword, code):
                 if article.external_id in seen:
-                    continue  # 同一新闻可能出现在多只股票搜索结果里,去重(照老逻辑)
+                    continue  # Cùng một tin có thể xuất hiện ở kết quả tìm của nhiều mã, nên khử trùng lặp (giữ nguyên logic cũ)
                 seen.add(article.external_id)
                 result.append(article)
         return result
@@ -283,7 +283,7 @@ class EastmoneyStockNewsVendor(_NewsVendorBase):
             timeout=8,
             retries=1,
             parse="text",
-            verify=False,  # 对齐原 EastMoneyStockNewsCollector(verify_ssl=False)
+            verify=False,  # Khớp với EastMoneyStockNewsCollector cũ (verify_ssl=False)
             symbol=symbol_tag,
             log_label="东财个股新闻",
         )
@@ -333,7 +333,7 @@ def _parse_eastmoney_news_item(item: dict, symbol: str) -> NewsArticle | None:
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财公告,ann API)
+# eastmoney (công bố thông tin của EastMoney, API ann)
 # ---------------------------------------------------------------------------
 
 _EM_ANN_URL = "https://np-anotice-stock.eastmoney.com/api/security/ann"
@@ -379,7 +379,7 @@ class EastmoneyAnnNewsVendor(_NewsVendorBase):
             timeout=10,
             retries=1,
             parse="json",
-            verify=False,  # 对齐原 EastMoneyNewsCollector(verify_ssl=False,东财 ann 端点 SSL 关闭)
+            verify=False,  # Khớp với EastMoneyNewsCollector cũ (verify_ssl=False, endpoint ann của EastMoney tắt kiểm tra SSL)
             log_label="东财公告",
         )
         if not data or not data.get("success"):
@@ -423,7 +423,7 @@ def _parse_ann_item(item: dict, symbols: list[str]) -> NewsArticle | None:
         source="eastmoney",
         external_id=external_id,
         title=title,
-        content="",  # 公告通常只有标题,内容需另外获取(照搬原逻辑)
+        content="",  # Công bố thông tin thường chỉ có tiêu đề, phần nội dung phải lấy riêng (giữ nguyên logic cũ)
         publish_time=publish_time,
         symbols=symbols,
         importance=importance,

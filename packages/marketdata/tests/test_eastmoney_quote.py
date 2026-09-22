@@ -10,24 +10,24 @@ def _fake_data(code: str = "600519", name: str = "贵州茅台") -> dict:
     change_amount=20.00(=current-prev) change_pct=1.19%(≈20/1680)
     """
     return {
-        "f43": 170000,     # 最新价(raw) → /10^2 = 1700.00
-        "f44": 171000,     # 最高 → 1710.00
-        "f45": 167000,     # 最低 → 1670.00
-        "f46": 168500,     # 今开 → 1685.00
-        "f47": 12345,      # 成交量(手)
-        "f48": 6789000000, # 成交额(元)
-        "f50": 120,        # 量比(raw) → /100 = 1.20
-        "f55": 999,        # 未在本 vendor 中作为主字段使用(CN 换手率走 f168)
-        "f57": code,       # 代码
-        "f58": name,       # 名称
-        "f59": 2,          # 小数位数
-        "f60": 168000,     # 昨收 → 1680.00
-        "f116": 2100050000000,  # 总市值(raw 元)→ /1e8 = 21000.5(亿)
-        "f117": 2100050000000,  # 流通市值(raw 元)→ /1e8 = 21000.5(亿)
-        "f168": 50,        # 换手率(raw) → /100 = 0.50%
-        "f169": 2000,      # 涨跌额(raw) → /10^2 = 20.00
-        "f170": 119,       # 涨跌幅(raw) → /100 = 1.19%
-        "f171": 500,       # 振幅(未映射到 Quote,忽略)
+        "f43": 170000,     # Giá mới nhất (thô) → /10^2 = 1700,00
+        "f44": 171000,     # Cao nhất → 1710,00
+        "f45": 167000,     # Thấp nhất → 1670,00
+        "f46": 168500,     # Mở cửa → 1685,00
+        "f47": 12345,      # Khối lượng (lô)
+        "f48": 6789000000, # Giá trị giao dịch (đồng)
+        "f50": 120,        # Tỷ lệ khối lượng (thô) → /100 = 1,20
+        "f55": 999,        # Không dùng làm trường chính trong vendor này (tỷ lệ vòng quay của CN đi qua f168)
+        "f57": code,       # Mã
+        "f58": name,       # Tên
+        "f59": 2,          # Số chữ số thập phân
+        "f60": 168000,     # Đóng cửa phiên trước → 1680,00
+        "f116": 2100050000000,  # Vốn hóa (giá trị thô, đồng) → /1e8 = 21000,5 (trăm triệu)
+        "f117": 2100050000000,  # Vốn hóa lưu hành (giá trị thô, đồng) → /1e8 = 21000,5 (trăm triệu)
+        "f168": 50,        # Tỷ lệ vòng quay (thô) → /100 = 0,50%
+        "f169": 2000,      # Mức tăng giảm (thô) → /10^2 = 20,00
+        "f170": 119,       # Biên độ (thô) → /100 = 1,19%
+        "f171": 500,       # Biên dao động (chưa ánh xạ vào Quote, bỏ qua)
     }
 
 
@@ -74,7 +74,7 @@ def test_eastmoney_batch_multiple_symbols_loops_calls(monkeypatch):
     v = ev.EastmoneyQuoteVendor()
     symbols = [Symbol.parse("600519", market="CN"), Symbol.parse("000001", market="CN")]
     out = v.fetch(symbols, {})
-    assert len(calls) == 2  # 单只查询,逐只循环
+    assert len(calls) == 2  # Truy vấn từng mã, lặp lần lượt
     assert len(out) == 2
     codes = {q.symbol for q in out}
     assert codes == {"600519", "000001"}
@@ -91,7 +91,7 @@ def test_eastmoney_no_symbols_returns_empty():
 
 
 def test_eastmoney_unsupported_market_skipped(monkeypatch):
-    # 本 vendor 只做 CN;HK/US symbol 应被跳过,不发请求
+    # Vendor này chỉ phục vụ CN; symbol HK/US phải bị bỏ qua, không gửi request
     calls = {"n": 0}
 
     def fake_market_get(*a, **k):

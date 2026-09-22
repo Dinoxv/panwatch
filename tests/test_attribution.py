@@ -29,4 +29,4 @@ def test_attribution_weight_times_return(monkeypatch):
     b = next(r for r in res if r["symbol"] == "B")
     assert a["return_pct"] == 20.0 and round(a["contribution_pct"], 1) == 10.0
     assert b["return_pct"] == -10.0 and round(b["contribution_pct"], 1) == -5.0
-    assert res[0]["symbol"] == "A"  # 降序
+    assert res[0]["symbol"] == "A"  # Giảm dần
