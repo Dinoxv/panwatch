@@ -75,39 +75,39 @@ const CHANNEL_TYPE_FIELDS: Record<string, { label: string; fields: ChannelFieldD
     fields: [
       { key: 'bot_token', label: 'Bot Token', placeholder: '123456:ABC-DEF...', secret: true, required: true },
       { key: 'chat_id', label: 'Chat ID', placeholder: '-100123456789', required: true },
-      { key: 'proxy', label: '代理', placeholder: 'http://192.168.1.1:7890 或 socks5://...' },
+      { key: 'proxy', label: 'Proxy', placeholder: 'http://192.168.1.1:7890 hoặc socks5://...' },
     ],
   },
   bark: {
     label: 'Bark',
     fields: [
-      { key: 'device_key', label: 'Device Key', placeholder: '你的 Bark Device Key', required: true },
-      { key: 'server_url', label: '服务器地址', placeholder: '默认 api.day.app，自建可填' },
+      { key: 'device_key', label: 'Device Key', placeholder: 'Bark Device Key của bạn', required: true },
+      { key: 'server_url', label: 'Địa chỉ máy chủ', placeholder: 'Mặc định api.day.app, tự dựng thì điền vào' },
     ],
   },
   dingtalk: {
-    label: '钉钉机器人',
+    label: 'Bot DingTalk',
     fields: [
-      { key: 'token', label: 'Webhook Token', placeholder: 'access_token 值', secret: true, required: true },
-      { key: 'secret', label: '加签密钥', placeholder: 'SEC... (选填)', secret: true },
-      { key: 'phones', label: '@手机号', placeholder: '逗号分隔，如 13800138000,13900139000' },
-      { key: 'keyword', label: '关键字', placeholder: '若群机器人启用“关键字”，填入以自动附加' },
+      { key: 'token', label: 'Webhook Token', placeholder: 'Giá trị access_token', secret: true, required: true },
+      { key: 'secret', label: 'Khóa ký', placeholder: 'SEC... (không bắt buộc)', secret: true },
+      { key: 'phones', label: '@số điện thoại', placeholder: 'Ngăn cách bằng dấu phẩy, ví dụ 13800138000,13900139000' },
+      { key: 'keyword', label: 'Từ khóa', placeholder: 'Nếu bot nhóm có bật "từ khóa", điền vào để tự gắn kèm' },
     ],
   },
   wecom: {
-    label: '企业微信机器人',
+    label: 'Bot WeCom',
     fields: [
-      { key: 'webhook_key', label: 'Webhook Key', placeholder: 'Webhook URL 中 key= 后的值', secret: true, required: true },
+      { key: 'webhook_key', label: 'Webhook Key', placeholder: 'Giá trị sau key= trong Webhook URL', secret: true, required: true },
     ],
   },
   lark: {
-    label: '飞书机器人',
+    label: 'Bot Feishu',
     fields: [
-      { key: 'webhook_token', label: 'Webhook Token', placeholder: 'hook/ 后面的 token', secret: true, required: true },
+      { key: 'webhook_token', label: 'Webhook Token', placeholder: 'Token sau hook/', secret: true, required: true },
     ],
   },
   serverchan: {
-    label: 'Server酱',
+    label: 'ServerChan',
     fields: [
       { key: 'sendkey', label: 'SendKey', placeholder: 'SCT...', secret: true, required: true },
     ],
@@ -115,21 +115,21 @@ const CHANNEL_TYPE_FIELDS: Record<string, { label: string; fields: ChannelFieldD
   pushplus: {
     label: 'PushPlus',
     fields: [
-      { key: 'token', label: 'Token', placeholder: '你的 PushPlus Token', secret: true, required: true },
-      { key: 'topic', label: '群组编码', placeholder: '选填，群组推送时填写' },
+      { key: 'token', label: 'Token', placeholder: 'PushPlus Token của bạn', secret: true, required: true },
+      { key: 'topic', label: 'Mã nhóm', placeholder: 'Không bắt buộc, điền khi đẩy theo nhóm' },
     ],
   },
   discord: {
     label: 'Discord',
     fields: [
-      { key: 'webhook_id', label: 'Webhook ID', placeholder: 'Webhook URL 中的 ID', required: true },
-      { key: 'webhook_token', label: 'Webhook Token', placeholder: 'Webhook URL 中的 Token', secret: true, required: true },
+      { key: 'webhook_id', label: 'Webhook ID', placeholder: 'ID trong Webhook URL', required: true },
+      { key: 'webhook_token', label: 'Webhook Token', placeholder: 'Token trong Webhook URL', secret: true, required: true },
     ],
   },
   pushover: {
     label: 'Pushover',
     fields: [
-      { key: 'user_key', label: 'User Key', placeholder: '用户 Key', required: true },
+      { key: 'user_key', label: 'User Key', placeholder: 'Key người dùng', required: true },
       { key: 'app_token', label: 'App Token', placeholder: '应用 Token', secret: true, required: true },
     ],
   },
@@ -163,7 +163,7 @@ export default function SettingsPage() {
   const [modelForm, setModelForm] = useState<ModelForm>(emptyModelForm)
   const [editModelId, setEditModelId] = useState<number | null>(null)
 
-  // 批量选择嗅探到的模型
+  // Chọn hàng loạt các mô hình dò được
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchServiceId, setBatchServiceId] = useState<number | null>(null)
   const [batchCandidates, setBatchCandidates] = useState<string[]>([])
@@ -180,7 +180,7 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState<number | null>(null)
   const [testingModel, setTestingModel] = useState<number | null>(null)
 
-  // 头像
+  // Ảnh đại diện
   const avatar = useAvatar()
   const avatarFileRef = useRef<HTMLInputElement | null>(null)
   const [avatarSaving, setAvatarSaving] = useState(false)
@@ -337,7 +337,7 @@ export default function SettingsPage() {
 
   const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    e.target.value = '' // 允许重复选择同一文件
+    e.target.value = '' // Cho phép chọn lại cùng một tệp
     if (!file) return
     setAvatarSaving(true)
     try {
@@ -426,7 +426,7 @@ export default function SettingsPage() {
     }
   }
 
-  // 手动对某服务商嗅探并打开批量选择框(排除已添加的模型)
+  // Dò tay theo một nhà cung cấp rồi mở hộp chọn hàng loạt (bỏ các mô hình đã thêm)
   const discoverForService = async (serviceId: number) => {
     setDiscoveringService(serviceId)
     try {
@@ -621,7 +621,7 @@ export default function SettingsPage() {
     setTesting(id)
     try {
       await fetchAPI(`/channels/${id}/test`, { method: 'POST' })
-      toast('测试通知已发送', 'success')
+      toast('Đã gửi thông báo thử', 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Chạy thử thất bại', 'error')
     } finally {
@@ -648,7 +648,7 @@ export default function SettingsPage() {
     return (s.description || '').toLowerCase().includes(q) || (s.key || '').toLowerCase().includes(q)
   })
 
-  // 按“重要性”排序：常用优先，低频靠后
+  // Xếp theo "mức quan trọng": thứ hay dùng lên trước, thứ ít dùng xuống sau
   const jumpItems: Array<{ id: string; label: string; hint?: string }> = [
     { id: 'sec-ai', label: 'AI', hint: `${services.length} 服务 / ${allModels.length} 模型` },
     { id: 'sec-notify', label: 'Thông báo', hint: `${enabledChannels.length}/${channels.length} 启用` },
@@ -681,7 +681,7 @@ export default function SettingsPage() {
                 className="group relative h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/70 text-white shadow-sm flex items-center justify-center ring-1 ring-border/40 hover:ring-primary/40 transition-all shrink-0"
               >
                 {avatar ? (
-                  <img src={avatar} alt="头像" className="w-full h-full object-cover" />
+                  <img src={avatar} alt="Ảnh đại diện" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-4 h-4" />
                 )}
@@ -1097,7 +1097,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        {/* MCP 访问令牌 */}
+        {/* Mã truy cập MCP */}
         <PatSection />
 
       </div>
@@ -1208,7 +1208,7 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 批量选择嗅探到的模型 */}
+      {/* Chọn hàng loạt các mô hình dò được */}
       <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
         <DialogContent>
           <DialogHeader>

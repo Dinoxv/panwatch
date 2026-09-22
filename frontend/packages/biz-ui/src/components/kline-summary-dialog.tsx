@@ -205,7 +205,7 @@ export function KlineSummaryDialog({
         </DialogHeader>
 
         {!initialSummary && loading ? (
-          <div className="text-[12px] text-muted-foreground">加载中...</div>
+          <div className="text-[12px] text-muted-foreground">Đang tải...</div>
         ) : error ? (
           <div className="text-[12px] text-rose-500">{error}</div>
         ) : !effectiveSummary ? (

@@ -1862,11 +1862,11 @@ export default function StocksPage() {
                 >
                   {refreshingStockList ? (
                     <span className="flex items-center gap-1">
-                      <RefreshCw className="w-3 h-3 animate-spin" /> 刷新中...
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Đang làm mới...
                     </span>
                   ) : (
                     <span className="flex items-center gap-1">
-                      <RefreshCw className="w-3 h-3" /> 刷新列表
+                      <RefreshCw className="w-3 h-3" /> Làm mới danh sách
                     </span>
                   )}
                 </button>
@@ -1908,7 +1908,7 @@ export default function StocksPage() {
             </div>
             <div className="mt-6 flex items-center gap-3 justify-end">
               <Button type="button" variant="ghost" onClick={() => { setShowStockForm(false); setSearchQuery('') }}>Hủy</Button>
-              <Button type="submit" disabled={!stockForm.symbol}>确认添加</Button>
+              <Button type="submit" disabled={!stockForm.symbol}>Xác nhận thêm</Button>
             </div>
           </form>
         </DialogContent>
@@ -1921,8 +1921,8 @@ export default function StocksPage() {
             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Building2 className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-[15px] font-semibold text-foreground">还没有账户</p>
-            <p className="text-[13px] text-muted-foreground mt-1.5">点击"Thêm tài khoản"创建你的第一个交易账户</p>
+            <p className="text-[15px] font-semibold text-foreground">Chưa có tài khoản nào</p>
+            <p className="text-[13px] text-muted-foreground mt-1.5">Bấm "Thêm tài khoản" để mở tài khoản giao dịch đầu tiên</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -1948,24 +1948,24 @@ export default function StocksPage() {
                 <div className="flex items-center justify-between md:justify-end gap-2 md:gap-6 pl-6 md:pl-0">
                   <div className="flex items-center gap-2.5 md:gap-6 min-w-0">
                     <div className="text-left md:text-right">
-                      <div className="text-[10px] md:text-[11px] text-muted-foreground">市值</div>
+                      <div className="text-[10px] md:text-[11px] text-muted-foreground">Giá trị</div>
                       <div className="text-[12px] md:text-[13px] font-mono font-medium whitespace-nowrap">{formatMoney(account.total_market_value)}</div>
                     </div>
                     <div className="text-left md:text-right">
-                      <div className="text-[10px] md:text-[11px] text-muted-foreground">盈亏</div>
+                      <div className="text-[10px] md:text-[11px] text-muted-foreground">Lãi lỗ</div>
                       <div className={`text-[12px] md:text-[13px] font-mono font-medium whitespace-nowrap ${account.total_pnl >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                         {account.total_pnl >= 0 ? '+' : ''}{formatMoney(account.total_pnl)}
                         <span className="text-[10px] md:text-[11px] ml-1 hidden md:inline">({account.total_pnl_pct >= 0 ? '+' : ''}{account.total_pnl_pct.toFixed(2)}%)</span>
                       </div>
                     </div>
                     <div className="text-left md:text-right">
-                      <div className="text-[10px] md:text-[11px] text-muted-foreground">今日</div>
+                      <div className="text-[10px] md:text-[11px] text-muted-foreground">Hôm nay</div>
                       <div className={`text-[12px] md:text-[13px] font-mono font-medium whitespace-nowrap ${account.total_daily_pnl >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                         {account.total_daily_pnl >= 0 ? '+' : ''}{formatMoney(account.total_daily_pnl)}
                       </div>
                     </div>
                     <div className="text-left md:text-right hidden sm:block">
-                      <div className="text-[10px] md:text-[11px] text-muted-foreground">可用</div>
+                      <div className="text-[10px] md:text-[11px] text-muted-foreground">Khả dụng</div>
                       <div className="text-[12px] md:text-[13px] font-mono whitespace-nowrap">{formatMoney(account.available_funds)}</div>
                     </div>
                   </div>
@@ -1987,7 +1987,7 @@ export default function StocksPage() {
               {expandedAccounts.has(account.id) && (
                 <div className="border-t border-border/30">
                   {account.positions.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground text-center py-8">暂无持仓，点击 + 添加</p>
+                    <p className="text-[13px] text-muted-foreground text-center py-8">Chưa có vị thế, bấm + để thêm</p>
                   ) : (
                     <>
                       {/* Desktop Table */}
@@ -1995,17 +1995,17 @@ export default function StocksPage() {
                         <table className="w-full">
                           <thead>
                             <tr className="border-b border-border/30 bg-accent/20">
-                              <th className="text-left px-4 py-2 text-[11px] font-semibold text-muted-foreground">股票</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">现价</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">涨跌</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">成本</th>
+                              <th className="text-left px-4 py-2 text-[11px] font-semibold text-muted-foreground">Mã</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Giá hiện tại</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Tăng giảm</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Giá vốn</th>
                               <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Vị thế</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">市值</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">盈亏</th>
-                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">今日</th>
-                              <th className="text-center px-4 py-2 text-[11px] font-semibold text-muted-foreground">风格</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Giá trị</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Lãi lỗ</th>
+                              <th className="text-right px-4 py-2 text-[11px] font-semibold text-muted-foreground">Hôm nay</th>
+                              <th className="text-center px-4 py-2 text-[11px] font-semibold text-muted-foreground">Khẩu vị</th>
                               <th className="text-left px-4 py-2 text-[11px] font-semibold text-muted-foreground">Agent</th>
-                              <th className="text-center px-4 py-2 text-[11px] font-semibold text-muted-foreground">操作</th>
+                              <th className="text-center px-4 py-2 text-[11px] font-semibold text-muted-foreground">Thao tác</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -2138,7 +2138,7 @@ export default function StocksPage() {
                                                   {isRunning && (
                                                     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
                                                       <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                                                      执行中
+                                                      Đang chạy
                                                     </span>
                                                   )}
                                                 </span>
@@ -2146,7 +2146,7 @@ export default function StocksPage() {
                                             })}
                                           </div>
                                         ) : (
-                                          <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1"><Bot className="w-3 h-3" /> 未配置</span>
+                                          <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1"><Bot className="w-3 h-3" /> Chưa cấu hình</span>
                                         )}
                                       </button>
                                     )}
@@ -2266,15 +2266,15 @@ export default function StocksPage() {
                               {/* Row 3: Stats grid (4 cols, whitespace-nowrap to prevent "vạn" wrapping) */}
                               <div className="grid grid-cols-4 gap-2 text-[11px]">
                                 <div className="min-w-0">
-                                  <div className="text-[10px] text-muted-foreground">成本</div>
+                                  <div className="text-[10px] text-muted-foreground">Giá vốn</div>
                                   <div className="font-mono text-foreground truncate" title={String(pos.cost_price)}>{formatPrice(pos.cost_price)}</div>
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-[10px] text-muted-foreground">数量</div>
+                                  <div className="text-[10px] text-muted-foreground">Số lượng</div>
                                   <div className="font-mono text-foreground truncate" title={String(pos.quantity)}>{pos.quantity}</div>
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-[10px] text-muted-foreground">盈亏</div>
+                                  <div className="text-[10px] text-muted-foreground">Lãi lỗ</div>
                                   <div className={`font-mono whitespace-nowrap ${pnlColor}`}>
                                     {pos.pnl != null ? `${pos.pnl >= 0 ? '+' : ''}${formatMoney(pos.pnl)}` : '—'}
                                   </div>
@@ -2285,7 +2285,7 @@ export default function StocksPage() {
                                   )}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-[10px] text-muted-foreground">今日</div>
+                                  <div className="text-[10px] text-muted-foreground">Hôm nay</div>
                                   <div className={`font-mono whitespace-nowrap ${pos.daily_pnl != null ? (pos.daily_pnl >= 0 ? 'text-rose-500' : 'text-emerald-500') : 'text-muted-foreground'}`}>
                                     {pos.daily_pnl != null ? `${pos.daily_pnl >= 0 ? '+' : ''}${formatMoney(pos.daily_pnl)}` : '—'}
                                   </div>
@@ -2305,7 +2305,7 @@ export default function StocksPage() {
                                             {isRunning && (
                                               <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
                                                 <span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                                                执行中
+                                                Đang chạy
                                               </span>
                                             )}
                                           </span>
@@ -2356,7 +2356,7 @@ export default function StocksPage() {
       {viewTab === 'watchlist' && (
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[13px] font-semibold text-foreground">关注列表</h3>
+            <h3 className="text-[13px] font-semibold text-foreground">Danh mục theo dõi</h3>
             <div className="flex items-center gap-1">
               {[
                 { value: '', label: 'Tất cả', count: stocks.length },
@@ -2380,7 +2380,7 @@ export default function StocksPage() {
           </div>
 
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[11px] text-muted-foreground">筛选</div>
+            <div className="text-[11px] text-muted-foreground">Lọc</div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setWatchlistOnlyAlerts(!watchlistOnlyAlerts)}
@@ -2391,14 +2391,14 @@ export default function StocksPage() {
                 }`}
                 title="Chỉ hiện mã cần chú ý/cảnh báo"
               >
-                仅预警
+                Chỉ cảnh báo
               </button>
             </div>
           </div>
           {stocks.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="text-[13px] text-muted-foreground">还没有添加关注股票</div>
-              <div className="mt-2 text-[11px] text-muted-foreground/70">点击右上角“添加股票”开始</div>
+              <div className="text-[13px] text-muted-foreground">Chưa thêm mã theo dõi nào</div>
+              <div className="mt-2 text-[11px] text-muted-foreground/70">Bấm "Thêm mã" ở góc trên phải để bắt đầu</div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -2492,7 +2492,7 @@ export default function StocksPage() {
                           hasPosition={false}
                         />
                       ) : (
-                        <div className="text-[11px] text-muted-foreground/70 py-2">暂无技术面/AI 分析</div>
+                        <div className="text-[11px] text-muted-foreground/70 py-2">Chưa có phân tích kỹ thuật/AI</div>
                       )}
                     </div>
 
@@ -2501,7 +2501,7 @@ export default function StocksPage() {
                         {stock.agents && stock.agents.length > 0 ? (
                           <Badge variant="secondary" className="text-[10px]">{stock.agents.length} Agent</Badge>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground/60">未配置 Agent</span>
+                          <span className="text-[10px] text-muted-foreground/60">Chưa cấu hình Agent</span>
                         )}
                         {runningAgents[stock.id] && (
                           <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
@@ -2615,7 +2615,7 @@ export default function StocksPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Xóa mã</DialogTitle>
-            <DialogDescription>删除后将从系统中移除该股票及其关注配置</DialogDescription>
+            <DialogDescription>Xóa xong sẽ gỡ mã này cùng cấu hình theo dõi của nó khỏi hệ thống</DialogDescription>
           </DialogHeader>
           {removeWatchStock && (
             <div className="space-y-4 mt-2">
@@ -2651,11 +2651,11 @@ export default function StocksPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editAccountId ? 'Sửa tài khoản' : 'Thêm tài khoản'}</DialogTitle>
-            <DialogDescription>设置交易账户信息</DialogDescription>
+            <DialogDescription>Đặt thông tin tài khoản giao dịch</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label>账户名称</Label>
+              <Label>Tên tài khoản</Label>
               <Input
                 value={accountForm.name}
                 onChange={e => setAccountForm({ ...accountForm, name: e.target.value })}
@@ -2663,7 +2663,7 @@ export default function StocksPage() {
               />
             </div>
             <div>
-              <Label>可用资金（元）</Label>
+              <Label>Tiền khả dụng (đồng)</Label>
               <Input
                 value={accountForm.available_funds}
                 onChange={e => setAccountForm({ ...accountForm, available_funds: e.target.value })}
@@ -2790,7 +2790,7 @@ export default function StocksPage() {
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>成本价</Label>
+                <Label>Giá vốn</Label>
                 <Input
                   value={positionForm.cost_price}
                   onChange={e => setPositionForm({ ...positionForm, cost_price: e.target.value })}
@@ -2800,7 +2800,7 @@ export default function StocksPage() {
                 />
               </div>
               <div>
-                <Label>持仓数量</Label>
+                <Label>Số lượng nắm giữ</Label>
                 <Input
                   value={positionForm.quantity}
                   onChange={e => setPositionForm({ ...positionForm, quantity: e.target.value })}
@@ -2812,7 +2812,7 @@ export default function StocksPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>投入资金 <span className="text-muted-foreground/60 text-[11px]">(选填)</span></Label>
+                <Label>Vốn bỏ vào <span className="text-muted-foreground/60 text-[11px]">(không bắt buộc)</span></Label>
                 <Input
                   value={positionForm.invested_amount}
                   onChange={e => setPositionForm({ ...positionForm, invested_amount: e.target.value })}
@@ -2822,7 +2822,7 @@ export default function StocksPage() {
                 />
               </div>
               <div>
-                <Label>交易风格 <span className="text-muted-foreground font-normal">(选填)</span></Label>
+                <Label>Khẩu vị giao dịch <span className="text-muted-foreground font-normal">(không bắt buộc)</span></Label>
                 <Select
                   value={positionForm.trading_style}
                   onValueChange={val => setPositionForm({ ...positionForm, trading_style: val === '__none__' ? '' : val })}
@@ -2832,9 +2832,9 @@ export default function StocksPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Không đặt</SelectItem>
-                    <SelectItem value="short">短线 (1-5天)</SelectItem>
-                    <SelectItem value="swing">波段 (1-4周)</SelectItem>
-                    <SelectItem value="long">长线 (数月)</SelectItem>
+                    <SelectItem value="short">Lướt sóng (1-5 ngày)</SelectItem>
+                    <SelectItem value="swing">Đánh sóng (1-4 tuần)</SelectItem>
+                    <SelectItem value="long">Dài hạn (vài tháng)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2856,14 +2856,14 @@ export default function StocksPage() {
       <Dialog open={!!agentDialogStock} onOpenChange={open => !open && setAgentDialogStock(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>配置监控 Agent</DialogTitle>
+            <DialogTitle>Cấu hình Agent giám sát</DialogTitle>
             <DialogDescription>
               为 {agentDialogStock?.name}（{agentDialogStock?.symbol}）选择要监控的 Agent
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
             {agents.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground py-4 text-center">暂无可用 Agent</p>
+              <p className="text-[13px] text-muted-foreground py-4 text-center">Chưa có Agent nào dùng được</p>
             ) : (
               agents.map(agent => {
                 const stockAgent = agentDialogStock?.agents?.find(a => a.agent_name === agent.name)
@@ -2893,7 +2893,7 @@ export default function StocksPage() {
                     {isAssigned && isBatchMode && (
                       <div className="px-3.5 pb-3.5 pt-0">
                         <p className="text-[11px] text-muted-foreground">
-                          调度、AI模型、通知渠道请在 <a href="/agents" className="text-primary hover:underline">Agent 配置</a> 页面统一设置
+                          Lịch chạy, mô hình AI, kênh thông báo xin đặt tập trung ở trang <a href="/agents" className="text-primary hover:underline">Cấu hình Agent</a> 
                         </p>
                       </div>
                     )}
@@ -2910,16 +2910,16 @@ export default function StocksPage() {
                               <SelectValue placeholder="Khoảng cách chạy" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__default__">跟随全局</SelectItem>
-                              <SelectItem value="*/1 9-15 * * 1-5">每 1 分钟</SelectItem>
-                              <SelectItem value="*/3 9-15 * * 1-5">每 3 分钟</SelectItem>
+                              <SelectItem value="__default__">Theo cấu hình chung</SelectItem>
+                              <SelectItem value="*/1 9-15 * * 1-5">Mỗi 1 phút</SelectItem>
+                              <SelectItem value="*/3 9-15 * * 1-5">Mỗi 3 phút</SelectItem>
                               <SelectItem value="*/5 9-15 * * 1-5">Mỗi 5 phút</SelectItem>
                               <SelectItem value="*/10 9-15 * * 1-5">Mỗi 10 phút</SelectItem>
                               <SelectItem value="*/15 9-15 * * 1-5">Mỗi 15 phút</SelectItem>
                               <SelectItem value="*/30 9-15 * * 1-5">Mỗi 30 phút</SelectItem>
                             </SelectContent>
                           </Select>
-                          <span className="text-[10px] text-muted-foreground">交易时段</span>
+                          <span className="text-[10px] text-muted-foreground">Giờ giao dịch</span>
                         </div>
 
                         {/* Schedule Preview */}
@@ -2933,7 +2933,7 @@ export default function StocksPage() {
                             <div className="ml-[22px] rounded-lg border border-border/40 bg-background/30 px-2.5 py-2">
                               <div className="flex items-center justify-between">
                                 <div className="text-[11px] text-muted-foreground">
-                                  未来触发时间预览{isFollowingGlobal ? <span className="ml-1 opacity-70">(跟随全局)</span> : null}
+                                  未来触发时间预览{isFollowingGlobal ? <span className="ml-1 opacity-70">(theo cấu hình chung)</span> : null}
                                 </div>
                                 {isLoading && (
                                   <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -3042,12 +3042,12 @@ export default function StocksPage() {
             <DialogTitle className="text-base">{agentResultDialog?.title}</DialogTitle>
             <DialogDescription className="flex items-center gap-2 pt-1">
               {agentResultDialog?.should_alert ? (
-                <Badge variant="default" className="text-[10px]">建议关注</Badge>
+                <Badge variant="default" className="text-[10px]">Nên chú ý</Badge>
               ) : (
-                <Badge variant="secondary" className="text-[10px]">无需关注</Badge>
+                <Badge variant="secondary" className="text-[10px]">Chưa cần chú ý</Badge>
               )}
               {agentResultDialog?.notified && (
-                <Badge variant="outline" className="text-[10px]">已发送通知</Badge>
+                <Badge variant="outline" className="text-[10px]">Đã gửi thông báo</Badge>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -3058,7 +3058,7 @@ export default function StocksPage() {
           </div>
           <div className="flex justify-end mt-2">
             <Button variant="outline" size="sm" onClick={() => setAgentResultDialog(null)}>
-              关闭
+              Đóng
             </Button>
           </div>
         </DialogContent>
@@ -3070,7 +3070,7 @@ export default function StocksPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Newspaper className="w-5 h-5 text-blue-500" />
-              相关资讯
+              Tin liên quan
             </DialogTitle>
             <DialogDescription>
               {newsDialogSymbol
@@ -3082,7 +3082,7 @@ export default function StocksPage() {
 
           {/* Bộ lọc mã */}
           <div className="flex items-center gap-2 flex-wrap py-2 border-b">
-            <span className="text-[12px] text-muted-foreground">筛选:</span>
+            <span className="text-[12px] text-muted-foreground">Lọc:</span>
             <button
               onClick={() => { setNewsDialogSymbol(''); loadNews() }}
               className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
@@ -3091,7 +3091,7 @@ export default function StocksPage() {
                   : 'bg-accent/50 text-muted-foreground hover:bg-accent'
               }`}
             >
-              全部
+              Tất cả
             </button>
             {stocks.slice(0, 10).map(stock => (
               <button
@@ -3116,11 +3116,11 @@ export default function StocksPage() {
             {newsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <span className="ml-2 text-[13px] text-muted-foreground">加载中...</span>
+                <span className="ml-2 text-[13px] text-muted-foreground">Đang tải...</span>
               </div>
             ) : news.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-[13px]">
-                暂无相关资讯
+                Chưa có tin liên quan
               </div>
             ) : (
               <div className="space-y-2">
@@ -3141,7 +3141,7 @@ export default function StocksPage() {
                           </span>
                           {item.importance >= 2 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500">
-                              重要
+                              Quan trọng
                             </span>
                           )}
                           <span className="text-[10px] text-muted-foreground">

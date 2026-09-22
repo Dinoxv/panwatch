@@ -195,7 +195,7 @@ export default function AnalysisDetailPage() {
   }, [result, toc.length])
 
   if (loading) {
-    return <div className="p-12 text-center text-muted-foreground">加载中...</div>
+    return <div className="p-12 text-center text-muted-foreground">Đang tải...</div>
   }
   if (!result) {
     return (

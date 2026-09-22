@@ -433,7 +433,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                   disabled={!hasMore || loadingMore}
                   onClick={() => load({ append: true, cursor: beforeId })}
                 >
-                  {loadingMore ? '加载中...' : hasMore ? '加载更多' : '没有更多了'}
+                  {loadingMore ? 'Đang tải...' : hasMore ? '加载更多' : '没有更多了'}
                 </Button>
               </div>
             </div>

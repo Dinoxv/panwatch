@@ -682,7 +682,7 @@ export default function OpportunitiesPage() {
             </SelectContent>
           </Select>
           <Button size="sm" className="h-8 text-[12px]" onClick={load} disabled={loading}>
-            {loading ? '加载中...' : '应用筛选'}
+            {loading ? 'Đang tải...' : '应用筛选'}
           </Button>
           <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={resetFilters}>
             清空筛选
@@ -770,7 +770,7 @@ export default function OpportunitiesPage() {
                   </div>
                   <div>风险: {item.risk_level_label || item.risk_level || '--'}</div>
                   <div>市场状态: {marketRegime.regime_label || marketRegime.regime || '--'}</div>
-                  <div>持仓: {item.is_holding_snapshot ? '持仓中' : '未持仓'}</div>
+                  <div>持仓: {item.is_holding_snapshot ? 'Đang nắm giữ' : '未持仓'}</div>
                   <div>市场: {marketLabel(item.stock_market)}</div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">

@@ -1023,7 +1023,7 @@ export default function StockInsightModal(props: {
   <text x="76" y="150" fill="#f8fafc" font-size="42" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(trim(`${resolvedName}（${symbol} · ${marketLabel}）`, 28))}</text>
   <text x="76" y="198" fill="#94a3b8" font-size="22" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(ts)}</text>
 
-  <text x="76" y="284" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">现价</text>
+  <text x="76" y="284" fill="#94a3b8" font-size="24" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">Giá hiện tại</text>
   <text x="180" y="284" fill="#f8fafc" font-size="52" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(price)}</text>
   <text x="380" y="284" fill="${changeColor}" font-size="36" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif">${esc(chg)}</text>
 
@@ -1310,7 +1310,7 @@ export default function StockInsightModal(props: {
                   disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
                   title={hasHolding && watchingStock ? '持仓中的股票无法取消关注' : undefined}
                 >
-                  {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
+                  {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : '取消关注') : '快速关注')}
                 </Button>
                 <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
                 <Button variant="secondary" size="sm" className="h-8 px-2.5" onClick={handleSetAlert} disabled={alerting}>
@@ -1351,7 +1351,7 @@ export default function StockInsightModal(props: {
                 onClick={toggleWatch}
                 disabled={watchToggleLoading || (hasHolding && !!watchingStock)}
               >
-                {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? '持仓中' : '取消关注') : '快速关注')}
+                {watchToggleLoading ? 'Đang xử lý...' : (watchingStock ? (hasHolding ? 'Đang nắm giữ' : '取消关注') : '快速关注')}
               </Button>
               <StockPriceAlertPanel mode="inline" symbol={symbol} market={market} stockName={resolvedName} />
               <Button variant="secondary" size="sm" className="h-8 px-2.5 shrink-0" onClick={handleSetAlert} disabled={alerting}>
@@ -1448,7 +1448,7 @@ export default function StockInsightModal(props: {
                       {holdingAgg ? (
                         <div className="grid grid-cols-2 gap-2 text-[12px]">
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">
-                            <div className="text-[10px] text-muted-foreground">持仓数量</div>
+                            <div className="text-[10px] text-muted-foreground">Số lượng nắm giữ</div>
                             <div className="font-mono">{holdingAgg.quantity}</div>
                           </div>
                           <div className="rounded bg-emerald-500/10 px-2 py-1.5">

@@ -219,7 +219,7 @@ export default function PriceAlertFormDialog(props: {
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <div className="text-[12px] text-muted-foreground mb-1">股票</div>
+              <div className="text-[12px] text-muted-foreground mb-1">Mã</div>
               <Select value={String(form.stock_id || '')} onValueChange={(v) => setForm(prev => ({ ...prev, stock_id: Number(v) }))}>
                 <SelectTrigger><SelectValue placeholder="选择股票" /></SelectTrigger>
                 <SelectContent>
@@ -466,7 +466,7 @@ export default function PriceAlertFormDialog(props: {
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" onClick={() => props.onOpenChange(false)}>Hủy</Button>
             <Button onClick={submit} disabled={props.submitting}>
-              {props.submitting ? '保存中...' : (props.submitLabel || 'Lưu quy tắc')}
+              {props.submitting ? 'Đang lưu...' : (props.submitLabel || 'Lưu quy tắc')}
             </Button>
           </div>
         </div>
