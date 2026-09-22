@@ -151,7 +151,7 @@ class ChartAnalystAgent(BaseAgent):
         else:
             lines.append("- 无截图")
 
-        # 账户资金概况
+        # Tổng quan vốn tài khoản
         if context.portfolio.accounts:
             lines.append("\n## 资金状况")
             total_funds = context.portfolio.total_available_funds
@@ -199,13 +199,13 @@ class ChartAnalystAgent(BaseAgent):
                 images=image_paths,
             )
 
-        # 构建标题
+        # Dựng tiêu đề
         stock_names = "、".join(s.name for s in context.watchlist[:5])
         if len(context.watchlist) > 5:
             stock_names += f" 等{len(context.watchlist)}只"
         title = f"【{self.display_name}】{stock_names}"
 
-        # 附 AI 模型信息
+        # Kèm thông tin mô hình AI
         if context.model_label:
             content = content.rstrip() + f"\n\n---\nAI: {context.model_label}"
 
@@ -230,7 +230,7 @@ class ChartAnalystAgent(BaseAgent):
 
         用于逐只分析场景，每只股票独立截图、分析和通知
         """
-        # 过滤只保留指定股票
+        # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist
         context.config.watchlist = [
             s for s in original_watchlist if s.symbol == stock_symbol

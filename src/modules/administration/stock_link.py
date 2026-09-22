@@ -12,7 +12,7 @@ from src.platform.persistence.models import AppSettings
 
 logger = logging.getLogger(__name__)
 
-# 支持的平台 {code: 中文名}
+# Các nền tảng được hỗ trợ {code: tên hiển thị}
 PLATFORMS = {
     "xueqiu": "雪球",
 }
@@ -47,7 +47,7 @@ def stock_url(symbol: str, market: str, platform: str = "") -> str:
     if platform == "xueqiu":
         return _xueqiu_url(symbol, m)
 
-    # 兜底
+    # Phương án dự phòng
     return _xueqiu_url(symbol, m)
 
 
@@ -59,7 +59,7 @@ def stock_link_markdown(symbol: str, market: str, platform: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# 各平台 URL 生成
+# Sinh URL cho từng nền tảng
 # ---------------------------------------------------------------------------
 
 def _xueqiu_url(symbol: str, market: str) -> str:
@@ -67,7 +67,7 @@ def _xueqiu_url(symbol: str, market: str) -> str:
         return f"https://xueqiu.com/S/{symbol}"
     if market == "HK":
         return f"https://xueqiu.com/S/{symbol}"
-    # CN A股
+    # CN cổ phiếu A
     from src.platform.marketdata.cn_symbol import get_cn_prefix
     prefix = get_cn_prefix(symbol, upper=True)
     return f"https://xueqiu.com/S/{prefix}{symbol}"

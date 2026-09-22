@@ -123,7 +123,7 @@ class Position(Base):
     sort_order = Column(Integer, default=0)
     trading_style = Column(
         String, default="swing"
-    )  # short: 短线, swing: 波段, long: 长线
+    )  # short: lướt sóng, swing: trung hạn, long: dài hạn
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -263,7 +263,7 @@ class NewsCache(Base):
     content = Column(String, default="")
     publish_time = Column(DateTime, nullable=False)
     symbols = Column(JSON, default=[])  # 关联股票代码列表
-    importance = Column(Integer, default=0)  # 0-3 重要性
+    importance = Column(Integer, default=0)  # Mức quan trọng 0-3
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -399,7 +399,7 @@ class AgentPredictionOutcome(Base):
     horizon_days = Column(Integer, nullable=False, default=1)  # 1/5/10...
     # 同一次建议的各 horizon 共用 UUID；历史记录为空时由查询侧兼容聚合。
     prediction_group_id = Column(String, nullable=True)
-    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
     horizon_unit = Column(String, nullable=False, default="trading_days")
     action = Column(String, nullable=False, default="watch")
     action_label = Column(String, nullable=False, default="观望")
@@ -579,7 +579,7 @@ class EntryCandidateOutcome(Base):
     candidate_source = Column(String, nullable=False, default="watchlist")
     strategy_tags = Column(JSON, default=[])
     horizon_days = Column(Integer, nullable=False, default=1)
-    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
     horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
@@ -700,7 +700,7 @@ class StrategyOutcome(Base):
     stock_market = Column(String, nullable=False, default="CN")
     source_pool = Column(String, default="watchlist")
     horizon_days = Column(Integer, nullable=False, default=1)
-    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    # Dữ liệu cũ đánh giá theo ngày tự nhiên; bản ghi mới thống nhất đếm theo phiên giao dịch thực tế trên chuỗi nến.
     horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
@@ -1308,7 +1308,7 @@ class PersonalAccessToken(Base):
     token_hash = Column(String(128), nullable=False, unique=True, index=True)
     prefix = Column(String(32), nullable=False, default="")  # 明文前缀,列表展示用
     scopes_json = Column(Text, nullable=False, default="[]")  # JSON: ["mcp:read"]
-    expires_at = Column(DateTime, nullable=True)  # None = 永不过期
+    expires_at = Column(DateTime, nullable=True)  # None = không bao giờ hết hạn
     last_used_at = Column(DateTime, nullable=True)
     last_used_ip = Column(String, nullable=True)
     revoked_at = Column(DateTime, nullable=True)  # 非空即已吊销

@@ -17,20 +17,20 @@ from src.platform.persistence.models import AppSettings
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
 
-# JWT 配置
+# Cấu hình JWT
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
 
-# 环境变量配置（Docker 部署用）
+# Cấu hình qua biến môi trường (dùng khi triển khai Docker)
 ENV_AUTH_USERNAME = os.getenv("AUTH_USERNAME")
 ENV_AUTH_PASSWORD = os.getenv("AUTH_PASSWORD")
 
-# 设置项 key
+# Khóa của mục cài đặt
 AUTH_USERNAME_KEY = "auth_username"
 PASSWORD_HASH_KEY = "auth_password_hash"
 JWT_SECRET_KEY = "jwt_secret"
 
-# JWT Secret 缓存
+# Bộ đệm JWT Secret
 _jwt_secret: str | None = None
 
 
@@ -40,12 +40,12 @@ def get_jwt_secret() -> str:
     if _jwt_secret:
         return _jwt_secret
 
-    # 环境变量优先
+    # Biến môi trường được ưu tiên
     if os.getenv("JWT_SECRET"):
         _jwt_secret = os.getenv("JWT_SECRET")
         return _jwt_secret
 
-    # 从数据库读取或首次生成
+    # Đọc từ cơ sở dữ liệu, hoặc sinh mới lần đầu
     db = SessionLocal()
     try:
         setting = db.query(AppSettings).filter(AppSettings.key == JWT_SECRET_KEY).first()
@@ -147,11 +147,11 @@ def init_auth_from_env(db: Session) -> bool:
     if not ENV_AUTH_USERNAME or not ENV_AUTH_PASSWORD:
         return False
 
-    # 如果已有账号，不覆盖
+    # Đã có tài khoản thì không ghi đè
     if get_password_hash(db):
         return False
 
-    # 从环境变量创建账号
+    # Tạo tài khoản từ biến môi trường
     set_stored_username(db, ENV_AUTH_USERNAME)
     set_password_hash(db, hash_password(ENV_AUTH_PASSWORD))
     return True
@@ -162,13 +162,13 @@ async def get_current_user(
     db: Session = Depends(get_db),
 ):
     """验证当前用户（用作依赖）"""
-    # 检查是否已设置密码
+    # Kiểm tra đã đặt mật khẩu hay chưa
     password_hash = get_password_hash(db)
     if not password_hash:
-        # 未设置密码，允许访问（初始状态）
+        # Chưa đặt mật khẩu thì cho truy cập (trạng thái khởi tạo)
         return None
 
-    # 已设置密码，需要验证 token
+    # Đã đặt mật khẩu thì phải xác thực token
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

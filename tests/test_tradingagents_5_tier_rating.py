@@ -185,9 +185,9 @@ def test_halfwidth_colon_still_works():
 def test_parse_rating_label_covers_both_colons():
     """_parse_rating_label 全角(：)半角(:)冒号都能解析"""
     assert _parse_rating_label("最终交易决策：Buy") == "buy"   # 全角
-    assert _parse_rating_label("最终交易决策: Buy") == "buy"   # 半角
+    assert _parse_rating_label("最终交易决策: Buy") == "buy"   # Ký tự nửa chiều rộng
     assert _parse_rating_label("评级：卖出") == "sell"          # 全角中文
-    assert _parse_rating_label("评级: Sell") == "sell"         # 半角
+    assert _parse_rating_label("评级: Sell") == "sell"         # Ký tự nửa chiều rộng
     assert _parse_rating_label("FINAL TRANSACTION PROPOSAL: **BUY**") == "buy"
 
 

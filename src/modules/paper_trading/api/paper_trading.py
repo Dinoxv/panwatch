@@ -49,7 +49,7 @@ class ToggleBody(BaseModel):
 
 
 class UpdateSettingsBody(BaseModel):
-    excluded_markets: list[str] | None = None  # 兼容旧字段
+    excluded_markets: list[str] | None = None  # Tương thích trường cũ
     market_allocations: dict[str, float] | None = None  # {"CN":0.5,...}，合计 ≤ 1
     initial_capital: float | None = None  # 总资金（>0 时按差额增/减资）
 

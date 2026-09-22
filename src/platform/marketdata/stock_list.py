@@ -106,7 +106,7 @@ def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
 def _fetch_from_eastmoney() -> list[dict]:
     """东方财富 A 股列表（HTTP 分页并发获取）"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
-        # 第一页: 获取总数
+        # Trang đầu: lấy tổng số
         params = {**EASTMONEY_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
         data = resp.json()
@@ -119,7 +119,7 @@ def _fetch_from_eastmoney() -> list[dict]:
         if total <= PAGE_SIZE:
             return stocks
 
-        # 剩余页并发获取
+        # Các trang còn lại lấy song song
         pages_needed = (total + PAGE_SIZE - 1) // PAGE_SIZE
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             futures = {pool.submit(_fetch_page, client, pn): pn for pn in range(2, pages_needed + 1)}
@@ -182,7 +182,7 @@ def _fetch_bj_page(client: httpx.Client, page: int) -> list[dict]:
 def _fetch_bj_from_eastmoney() -> list[dict]:
     """东方财富北交所列表（HTTP 分页并发获取）"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
-        # 第一页: 获取总数
+        # Trang đầu: lấy tổng số
         params = {**EASTMONEY_BJ_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
         data = resp.json()
@@ -195,7 +195,7 @@ def _fetch_bj_from_eastmoney() -> list[dict]:
         if total <= PAGE_SIZE:
             return stocks
 
-        # 剩余页并发获取
+        # Các trang còn lại lấy song song
         pages_needed = (total + PAGE_SIZE - 1) // PAGE_SIZE
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             futures = {pool.submit(_fetch_bj_page, client, pn): pn for pn in range(2, pages_needed + 1)}

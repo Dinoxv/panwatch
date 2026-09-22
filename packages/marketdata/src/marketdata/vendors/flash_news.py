@@ -84,7 +84,7 @@ def _extract_symbols(raw) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# cls(财联社)
+# cls (Cailianshe)
 # ---------------------------------------------------------------------------
 
 _CLS_URL = "https://www.cls.cn/v1/roll/get_roll_list"
@@ -252,7 +252,7 @@ class SinaFlashNewsVendor(_FlashNewsVendorBase):
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财快讯)
+# eastmoney (tin nhanh EastMoney)
 # ---------------------------------------------------------------------------
 
 _EM_URL = "https://np-weblist.eastmoney.com/comm/web/getFastNewsList"

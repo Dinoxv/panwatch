@@ -1602,7 +1602,7 @@ def evaluate_strategy_outcomes(
 
         today = date.today()
         kline_cache: dict[tuple[str, str], list] = {}
-        pending = 0  # 分批提交计数,缩短写事务窗口
+        pending = 0  # Đếm để commit theo lô, rút ngắn cửa sổ giao dịch ghi
 
         for s in signals:
             snap_day = _parse_day(s.snapshot_date)
@@ -1717,7 +1717,7 @@ def evaluate_strategy_outcomes(
                 existing.add((s.id, horizon))
                 pending += 1
 
-            # 分批提交:累计到阈值即落盘,缩短写事务,避免与 60s 调度器并发写长时间持锁
+            # Commit theo lô: đủ ngưỡng là ghi xuống, rút ngắn giao dịch ghi, tránh giữ khóa lâu khi chạy song song với bộ lập lịch 60s
             if pending >= 50:
                 db.commit()
                 pending = 0

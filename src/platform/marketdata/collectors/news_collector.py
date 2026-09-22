@@ -18,7 +18,7 @@ class NewsItem:
     content: str
     publish_time: datetime
     symbols: list[str] = field(default_factory=list)  # 关联股票代码
-    importance: int = 0   # 0-3 重要性
+    importance: int = 0   # Mức quan trọng 0-3
     url: str = ""         # 原文链接
 
 

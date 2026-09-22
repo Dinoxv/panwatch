@@ -114,7 +114,7 @@ class KlineData:
 class TechnicalIndicators:
     """技术指标"""
 
-    # 均线
+    # Đường trung bình
     ma5: float | None = None
     ma10: float | None = None
     ma20: float | None = None
@@ -123,7 +123,7 @@ class TechnicalIndicators:
     macd_dif: float | None = None
     macd_dea: float | None = None
     macd_hist: float | None = None
-    macd_cross: str | None = None  # 金叉/死叉
+    macd_cross: str | None = None  # Giao cắt vàng / giao cắt tử
     macd_cross_days: int | None = None  # 距离上次交叉天数
     # RSI
     rsi6: float | None = None
@@ -133,24 +133,24 @@ class TechnicalIndicators:
     kdj_k: float | None = None
     kdj_d: float | None = None
     kdj_j: float | None = None
-    kdj_cross: str | None = None  # 金叉/死叉
-    # 布林带
+    kdj_cross: str | None = None  # Giao cắt vàng / giao cắt tử
+    # Dải Bollinger
     boll_upper: float | None = None
     boll_mid: float | None = None
     boll_lower: float | None = None
     boll_width: float | None = None  # 带宽百分比
-    # 量能
+    # Sức khối lượng
     volume_ratio: float | None = None  # 量比（今日成交量/5日均量）
     volume_ma5: float | None = None
     volume_ma10: float | None = None
     volume_trend: str | None = None  # 放量/缩量/平量
-    # 涨跌幅
+    # Biên độ
     change_5d: float | None = None
     change_20d: float | None = None
-    # 振幅
+    # Biên dao động
     amplitude: float | None = None  # 今日振幅
     amplitude_avg5: float | None = None  # 5日平均振幅
-    # 波动率(ATR)
+    # Độ biến động (ATR)
     atr: float | None = None  # 平均真实波幅(绝对值)
     atr_pct: float | None = None  # ATR / 最新收盘 * 100(相对波动率%)
     # 支撑压力（多级别）
@@ -160,10 +160,10 @@ class TechnicalIndicators:
     resistance_s: float | None = None  # 短期压力
     resistance_m: float | None = None  # 中期压力
     resistance_l: float | None = None  # 长期压力
-    # 兼容旧字段
+    # Tương thích trường cũ
     support: float | None = None
     resistance: float | None = None
-    # K线形态
+    # Mẫu hình nến
     kline_pattern: str | None = None  # 十字星/锤子线/吞没等
 
 
@@ -477,7 +477,7 @@ class KlineCollector:
         closes = [k.close for k in klines]
         volumes = [k.volume for k in klines]
 
-        # 均线
+        # Đường trung bình
         ma5 = _calculate_ma(closes, 5)
         ma10 = _calculate_ma(closes, 10)
         ma20 = _calculate_ma(closes, 20)
@@ -519,7 +519,7 @@ class KlineCollector:
             else:
                 kdj_cross = "死叉"
 
-        # 布林带
+        # Dải Bollinger
         boll_upper, boll_mid, boll_lower, boll_width = None, None, None, None
         boll_result = _calculate_boll(closes)
         if boll_result:
@@ -539,7 +539,7 @@ class KlineCollector:
             else:
                 volume_trend = "平量"
 
-        # 涨跌幅
+        # Biên độ
         change_5d = None
         change_20d = None
         if len(closes) >= 6:
@@ -547,7 +547,7 @@ class KlineCollector:
         if len(closes) >= 21:
             change_20d = (closes[-1] - closes[-21]) / closes[-21] * 100
 
-        # 振幅
+        # Biên dao động
         amplitude = None
         amplitude_avg5 = None
         if klines:
@@ -581,11 +581,11 @@ class KlineCollector:
             support_l = min(k.low for k in klines[-60:])
             resistance_l = max(k.high for k in klines[-60:])
 
-        # 兼容旧字段
+        # Tương thích trường cũ
         support = support_m
         resistance = resistance_m
 
-        # K线形态
+        # Mẫu hình nến
         kline_pattern = _detect_kline_pattern(klines)
 
         return TechnicalIndicators(
@@ -737,39 +737,39 @@ class KlineCollector:
             "kdj_d": indicators.kdj_d,
             "kdj_j": indicators.kdj_j,
             "kdj_status": kdj_status,
-            # 布林带
+            # Dải Bollinger
             "boll_upper": indicators.boll_upper,
             "boll_mid": indicators.boll_mid,
             "boll_lower": indicators.boll_lower,
             "boll_width": indicators.boll_width,
             "boll_status": boll_status,
-            # 量能
+            # Sức khối lượng
             "volume_ratio": indicators.volume_ratio,
             "volume_trend": indicators.volume_trend,
-            # 均线
+            # Đường trung bình
             "ma5": indicators.ma5,
             "ma10": indicators.ma10,
             "ma20": indicators.ma20,
             "ma60": indicators.ma60,
-            # 涨跌幅
+            # Biên độ
             "change_5d": indicators.change_5d,
             "change_20d": indicators.change_20d,
-            # 振幅
+            # Biên dao động
             "amplitude": indicators.amplitude,
             "amplitude_avg5": indicators.amplitude_avg5,
-            # 波动率(ATR)
+            # Độ biến động (ATR)
             "atr": indicators.atr,
             "atr_pct": indicators.atr_pct,
-            # 多级支撑压力
+            # Hỗ trợ / kháng cự nhiều tầng
             "support_s": indicators.support_s,
             "support_m": indicators.support_m,
             "support_l": indicators.support_l,
             "resistance_s": indicators.resistance_s,
             "resistance_m": indicators.resistance_m,
             "resistance_l": indicators.resistance_l,
-            # 兼容旧字段
+            # Tương thích trường cũ
             "support": indicators.support,
             "resistance": indicators.resistance,
-            # K线形态
+            # Mẫu hình nến
             "kline_pattern": indicators.kline_pattern,
         }

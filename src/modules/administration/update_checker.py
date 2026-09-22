@@ -137,7 +137,7 @@ def _fetch_latest_docker_tag(repo: str, proxy: str | None = None) -> tuple[str |
     latest, release_url, err = _fetch_latest_from_hub(repo, proxy=proxy)
     if latest:
         return latest, release_url, None
-    # Hub 网络失败时，回退到 registry 链路（通常和 docker pull 一致，更稳定）
+    # Khi mạng tới Hub lỗi, lùi về tuyến registry (thường trùng với docker pull, ổn định hơn)
     if err in {"hub_timeout", "hub_unreachable", "hub_request_failed"} or str(err).startswith("hub_http_"):
         r_latest, r_url, r_err = _fetch_latest_from_registry(repo, proxy=proxy)
         if r_latest:

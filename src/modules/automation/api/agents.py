@@ -948,7 +948,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
     if cached is not None:
         return cached
 
-    # 获取持仓信息
+    # Lấy thông tin vị thế
     portfolio = load_portfolio_for_agent(agent_name)
 
     # 按市场分组采集行情
@@ -1055,7 +1055,7 @@ async def scan_intraday(analyze: bool = False, db: Session = Depends(get_db)):
         change_pct = quote.change_pct or 0
         market = stock_market_map.get(quote.symbol, MarketCode.CN)
 
-        # 获取持仓信息
+        # Lấy thông tin vị thế
         positions = portfolio.get_positions_for_stock(quote.symbol)
         has_position = len(positions) > 0
         cost_price = positions[0].cost_price if positions else None

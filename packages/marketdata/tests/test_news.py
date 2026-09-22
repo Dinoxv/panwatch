@@ -23,7 +23,7 @@ def _jsonp(payload: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# xueqiu(雪球个股新闻)
+# xueqiu (tin từng mã của Xueqiu)
 # ---------------------------------------------------------------------------
 
 def test_xueqiu_parses_item_and_importance(monkeypatch):

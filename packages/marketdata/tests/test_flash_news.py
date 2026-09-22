@@ -15,7 +15,7 @@ from marketdata.types import FlashNews
 
 
 # ---------------------------------------------------------------------------
-# cls(财联社)
+# cls (Cailianshe)
 # ---------------------------------------------------------------------------
 
 def test_cls_sign_is_deterministic():
@@ -180,7 +180,7 @@ def test_sina_tolerates_broken_ext_json(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# eastmoney(东财快讯)
+# eastmoney (tin nhanh EastMoney)
 # ---------------------------------------------------------------------------
 
 def test_eastmoney_parses_title_summary_time(monkeypatch):

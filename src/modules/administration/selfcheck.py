@@ -16,8 +16,8 @@ from src.platform.persistence.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-SLOW_MS = 4000          # 超过算「慢」
-PROBE_TIMEOUT_S = 20    # 单项探测超时
+SLOW_MS = 4000          # Vượt mức này thì tính là «chậm»
+PROBE_TIMEOUT_S = 20    # Thời gian chờ tối đa cho một lần thăm dò
 
 
 def classify_hint(category: str, error: str | None) -> str:
@@ -120,7 +120,7 @@ async def probe_notify_channel(channel, *, send: bool = False) -> dict:
     t0 = time.monotonic()
     try:
         notifier = NotifierManager()
-        notifier.add_channel(channel.type, channel.config or {})  # URI 非法会抛
+        notifier.add_channel(channel.type, channel.config or {})  # URI không hợp lệ sẽ ném lỗi
         if not send:
             latency = int((time.monotonic() - t0) * 1000)
             return _item("notify", f"nc:{channel.id}", name, "ok", latency,
@@ -215,7 +215,7 @@ async def _guard(coro, fallback: dict) -> dict:
     except asyncio.TimeoutError:
         return _item(fallback["category"], fallback["key"], fallback["name"],
                      "fail", PROBE_TIMEOUT_S * 1000, f"探测超时(>{PROBE_TIMEOUT_S}s)")
-    except Exception as e:  # pragma: no cover - 防御
+    except Exception as e:  # pragma: no cover - nhánh phòng thủ
         return _item(fallback["category"], fallback["key"], fallback["name"],
                      "fail", 0, str(e))
 
@@ -236,7 +236,7 @@ def _enumerate(db, include_system: bool = True) -> list[dict]:
         service = db.query(AIService).filter(AIService.id == model.service_id).first()
         if not service:
             continue
-        # group = 服务商名,供前端做「服务商 → 模型」两级层级
+        # group = tên nhà cung cấp, để giao diện dựng cây hai cấp «nhà cung cấp → mô hình»
         targets.append({"category": "ai", "key": f"ai:{model.id}", "name": model.name or model.model,
                         "group": service.name, "_kind": "ai", "_obj": model, "_service": service})
     for ch in db.query(NotifyChannel).filter(NotifyChannel.enabled.is_(True)).all():

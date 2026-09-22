@@ -176,7 +176,7 @@ def test_revoked_pat_rejected(client_and_session):
     create = client.post("/api/pats", json={"name": "tmp"}).json()
     token = create["token"]
     pat_id = create["id"]
-    # 吊销
+    # Thu hồi
     assert client.delete(f"/api/pats/{pat_id}").status_code == 200
     r = client.post(
         "/mcp",

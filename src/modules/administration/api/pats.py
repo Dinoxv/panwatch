@@ -25,7 +25,7 @@ _ALLOWED_SCOPES = {SCOPE_MCP_READ}
 class CreatePatBody(BaseModel):
     name: str = Field("", max_length=100)
     scopes: list[str] | None = None  # 默认 ["mcp:read"]
-    expires_in_days: int | None = Field(90, ge=1, le=3650)  # None = 永不过期
+    expires_in_days: int | None = Field(90, ge=1, le=3650)  # None = không bao giờ hết hạn
 
 
 def _iso(dt: datetime | None) -> str | None:

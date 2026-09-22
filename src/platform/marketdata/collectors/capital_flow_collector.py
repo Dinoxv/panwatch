@@ -15,15 +15,15 @@ class CapitalFlow:
     name: str
 
     # 今日资金流（单位：元）
-    main_net_inflow: float      # 主力净流入
-    main_net_inflow_pct: float  # 主力净流入占比
-    super_net_inflow: float     # 超大单净流入
-    big_net_inflow: float       # 大单净流入
-    mid_net_inflow: float       # 中单净流入
-    small_net_inflow: float     # 小单净流入
+    main_net_inflow: float      # Dòng tiền lớn vào ròng
+    main_net_inflow_pct: float  # Tỷ trọng dòng tiền lớn vào ròng
+    super_net_inflow: float     # Lệnh siêu lớn vào ròng
+    big_net_inflow: float       # Lệnh lớn vào ròng
+    mid_net_inflow: float       # Lệnh vừa vào ròng
+    small_net_inflow: float     # Lệnh nhỏ vào ròng
 
     # 5日资金流
-    main_net_5d: float | None = None  # 5日主力净流入
+    main_net_5d: float | None = None  # Dòng tiền lớn vào ròng 5 phiên
 
 
 def get_market_data():

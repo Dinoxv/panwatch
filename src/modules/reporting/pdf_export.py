@@ -18,7 +18,7 @@ import markdown as _markdown
 logger = logging.getLogger(__name__)
 
 
-# ---- WeasyPrint(主)----
+# ---- WeasyPrint (engine chính) ----
 
 _REPORT_CSS = """
 @page {
@@ -67,7 +67,7 @@ def _render_weasyprint(title: str, body_html: str) -> bytes:
     return HTML(string=doc).write_pdf()
 
 
-# ---- xhtml2pdf(回退,纯库无系统依赖)----
+# ---- xhtml2pdf (dự phòng, thuần thư viện, không cần thư viện hệ thống) ----
 
 _FALLBACK_CSS = """
 @page { size: A4; margin: 1.6cm 1.5cm; }
@@ -170,6 +170,6 @@ def render_analysis_pdf(title: str, markdown_text: str) -> bytes:
     body_html = _md_to_html(markdown_text)
     try:
         return _render_weasyprint(title, body_html)
-    except Exception as e:  # WeasyPrint 缺系统库/渲染异常 → 保底
+    except Exception as e:  # WeasyPrint thiếu thư viện hệ thống / lỗi kết xuất → dùng phương án dự phòng
         logger.warning("[PDF导出] WeasyPrint 不可用,回退 xhtml2pdf: %s", e)
         return _render_xhtml2pdf(title, body_html)

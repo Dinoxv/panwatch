@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import src.platform.persistence.models  # noqa: F401  注册所有 ORM 模型到 Base.metadata
+import src.platform.persistence.models  # noqa: F401  đăng ký toàn bộ mô hình ORM vào Base.metadata
 from src.platform.persistence.database import Base
 
 

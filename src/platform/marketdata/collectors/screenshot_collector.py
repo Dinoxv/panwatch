@@ -17,7 +17,7 @@ SCREENSHOT_DIR.mkdir(exist_ok=True)
 # 默认配置
 DEFAULT_CONFIG = {
     "viewport": {"width": 1280, "height": 900},
-    "wait_selector": ".quote_title",  # 等待页面主体加载
+    "wait_selector": ".quote_title",  # Chờ phần thân trang tải xong
     "extra_wait_ms": 3000,  # 等待图表渲染
 }
 
@@ -90,7 +90,7 @@ class ScreenshotCollector:
         """新浪财经 URL"""
         if market.upper() == "HK":
             return f"https://stock.finance.sina.com.cn/hkstock/quotes/{symbol}.html"
-        # A股
+        # Cổ phiếu A
         prefix = get_cn_prefix(symbol)
         return f"https://finance.sina.com.cn/realstock/company/{prefix}{symbol}/nc.shtml"
 
@@ -98,7 +98,7 @@ class ScreenshotCollector:
         """东方财富 URL"""
         if market.upper() == "HK":
             return f"https://quote.eastmoney.com/hk/{symbol}.html"
-        # A股
+        # Cổ phiếu A
         prefix = get_cn_prefix(symbol)
         return f"https://quote.eastmoney.com/{prefix}{symbol}.html"
 
@@ -106,7 +106,7 @@ class ScreenshotCollector:
         """雪球 URL"""
         if market.upper() == "HK":
             return f"https://xueqiu.com/S/{symbol}"
-        # A股
+        # Cổ phiếu A
         prefix = get_cn_prefix(symbol, upper=True)
         return f"https://xueqiu.com/S/{prefix}{symbol}"
 
@@ -158,7 +158,7 @@ class ScreenshotCollector:
             logger.debug(f"正在加载 {name}({symbol}) K线图: {url}")
             await page.goto(url, wait_until="domcontentloaded", timeout=30000)
 
-            # 等待页面主体加载
+            # Chờ phần thân trang tải xong
             try:
                 await page.wait_for_selector(
                     self.config["wait_selector"],
@@ -197,7 +197,7 @@ class ScreenshotCollector:
 
     async def _capture_xueqiu(self, page, filepath: str, period: str):
         """雪球截图逻辑"""
-        # 等待页面加载
+        # Chờ trang tải xong
         await page.wait_for_timeout(1000)
 
         # 关闭所有可能的弹窗
@@ -227,7 +227,7 @@ class ScreenshotCollector:
 
     async def _capture_sina(self, page, filepath: str, period: str):
         """新浪财经截图逻辑"""
-        # 等待页面加载
+        # Chờ trang tải xong
         try:
             await page.wait_for_selector("#kline_container", timeout=10000)
         except Exception:

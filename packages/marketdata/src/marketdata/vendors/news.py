@@ -64,7 +64,7 @@ def _parse_datetime_str(s, fmt: str = "%Y-%m-%d %H:%M:%S") -> datetime:
 
 
 # ---------------------------------------------------------------------------
-# xueqiu(雪球个股新闻)
+# xueqiu (tin từng mã của Xueqiu)
 # ---------------------------------------------------------------------------
 
 _XUEQIU_URL = "https://xueqiu.com/statuses/stock_timeline.json"

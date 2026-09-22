@@ -211,7 +211,7 @@ def get_quotes(db: Session = Depends(get_db)):
     if not stocks:
         return {}
 
-    # 按市场分组
+    # Gom nhóm theo thị trường
     market_stocks: dict[str, list[Stock]] = {}
     for s in stocks:
         market_stocks.setdefault(s.market, []).append(s)

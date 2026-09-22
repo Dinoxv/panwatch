@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 
 class MarketCode(str, Enum):
-    CN = "CN"  # A股
+    CN = "CN"  # Cổ phiếu A
     HK = "HK"  # 港股
     US = "US"  # 美股
 

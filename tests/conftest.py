@@ -82,7 +82,7 @@ def _ensure_db_schema():
     data/panwatch.db 无表会报 'no such table: stocks'。这里在会话开始时幂等建表
     (本地已有表则无副作用),与各用例自建的内存库互不影响。
     """
-    import src.platform.persistence.models  # noqa: F401  注册所有 ORM 模型到 Base.metadata
+    import src.platform.persistence.models  # noqa: F401  đăng ký toàn bộ mô hình ORM vào Base.metadata
     from src.platform.persistence.database import Base, engine
 
     Base.metadata.create_all(engine)

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import src.modules.administration.api.datasources as ds
-import src.platform.persistence.models as M  # noqa: F401  确保模型注册到 Base.metadata
+import src.platform.persistence.models as M  # noqa: F401  bảo đảm mô hình được đăng ký vào Base.metadata
 from src.platform.persistence.database import Base, get_db
 from src.platform.persistence.models import DataSource
 

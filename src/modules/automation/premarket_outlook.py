@@ -217,7 +217,7 @@ class PremarketOutlookAgent(BaseAgent):
         """构建盘前分析 Prompt"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
@@ -354,7 +354,7 @@ class PremarketOutlookAgent(BaseAgent):
             if tech.get("kline_pattern"):
                 lines.append(f"- 形态：{tech.get('kline_pattern')}")
 
-            # 资金流向（仅A股，若可用）
+            # Dòng tiền (chỉ cổ phiếu A, nếu có dữ liệu)
             flow = (pack.capital_flow if pack else None) or {}
             if (
                 getattr(stock, "market", None) == MarketCode.CN
@@ -411,7 +411,7 @@ class PremarketOutlookAgent(BaseAgent):
             if history_topic.get("summary"):
                 lines.append(f"- 历史新闻记忆(近30天)：{history_topic.get('summary')}")
 
-            # 事件快照（近 N 天，来自公告结构化）
+            # Ảnh chụp sự kiện (N ngày gần nhất, bóc từ công bố thông tin)
             events = pack.events.items if (pack and pack.events) else []
             important_events = [e for e in events if (e.get("importance") or 0) >= 2]
             if important_events:
@@ -460,7 +460,7 @@ class PremarketOutlookAgent(BaseAgent):
                 if kline_history.get("breakout_state") and kline_history.get("breakout_state") != "none":
                     lines.append(f"- 突破状态：{kline_history.get('breakout_state')}")
 
-            # 持仓信息
+            # Thông tin vị thế
             position = context.portfolio.get_aggregated_position(stock.symbol)
             if position:
                 style_labels = {"short": "短线", "swing": "波段", "long": "长线"}
@@ -694,7 +694,7 @@ class PremarketOutlookAgent(BaseAgent):
             raw_data={**data, "structured": structured} if structured else data,
         )
 
-        # 解析个股建议
+        # Bóc khuyến nghị cho từng mã
         suggestions = self._parse_suggestions_json(structured, context.watchlist)
         suggestion_source = "json"
         if not suggestions:
@@ -710,7 +710,7 @@ class PremarketOutlookAgent(BaseAgent):
             dict(action_dist),
         )
 
-        # 保存各股票建议到建议池
+        # Lưu khuyến nghị từng mã vào kho khuyến nghị
         stock_map = {s.symbol: s for s in context.watchlist}
         packs = data.get("signal_packs", {}) or {}
         symbol_contexts = data.get("symbol_contexts", {}) or {}

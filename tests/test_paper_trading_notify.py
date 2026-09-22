@@ -194,7 +194,7 @@ class TestMessageFormat(unittest.TestCase):
         self.assertIn("130.00", body)
         self.assertIn("100.0", body)  # rank_score
         self.assertIn("趋势延续", body)  # 中文策略名
-        self.assertIn("xueqiu.com", body)  # 股票链接
+        self.assertIn("xueqiu.com", body)  # Liên kết cổ phiếu
 
     def test_entry_message_no_signal(self):
         """建仓通知 — 无信号时不报错"""
@@ -234,7 +234,7 @@ class TestMessageFormat(unittest.TestCase):
         self.assertIn("113.00", body)
         self.assertIn("120.00", body)
         self.assertIn("3天", body)
-        self.assertIn("xueqiu.com", body)  # 股票链接
+        self.assertIn("xueqiu.com", body)  # Liên kết cổ phiếu
 
     def test_exit_message_loss(self):
         """平仓通知 — 亏损时显示负号和止损"""

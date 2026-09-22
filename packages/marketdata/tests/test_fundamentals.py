@@ -62,8 +62,8 @@ class TestEastmoneyFundamentalsCN:
     def _payload(self, code="600519", name="贵州茅台"):
         return {"data": {
             "f57": code, "f58": name,
-            "f84": 1256197800,     # 总股本(股)
-            "f85": 1256197800,     # 流通股本(股)
+            "f84": 1256197800,     # Tổng số cổ phần (cổ phiếu)
+            "f85": 1256197800,     # Số cổ phần lưu hành (cổ phiếu)
             "f116": 2100050000000,  # 总市值(raw 元) → /1e8 = 21000.5(亿)
             "f117": 2100050000000,  # 流通市值(raw 元) → /1e8 = 21000.5(亿)
         }}

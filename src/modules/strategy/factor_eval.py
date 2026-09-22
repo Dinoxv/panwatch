@@ -24,8 +24,8 @@ FACTOR_FIELDS = (
     "alpha_score",
     "catalyst_score",
     "quality_score",
-    "risk_penalty",   # 惩罚项,IC 预期为负
-    "crowd_penalty",  # 惩罚项,IC 预期为负
+    "risk_penalty",   # Thành phần phạt, kỳ vọng IC âm
+    "crowd_penalty",  # Thành phần phạt, kỳ vọng IC âm
     "final_score",
 )
 

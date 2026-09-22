@@ -135,7 +135,7 @@ class DailyReportAgent(BaseAgent):
         """构建日报 Prompt"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
@@ -318,7 +318,7 @@ class DailyReportAgent(BaseAgent):
             if history_topic.get("summary"):
                 lines.append(f"- 历史新闻记忆(近30天)：{history_topic.get('summary')}")
 
-            # 事件快照（近 N 天，来自公告结构化）
+            # Ảnh chụp sự kiện (N ngày gần nhất, bóc từ công bố thông tin)
             events = pack.events.items if (pack and pack.events) else []
             important_events = [e for e in events if (e.get("importance") or 0) >= 2]
             if important_events:
@@ -332,7 +332,7 @@ class DailyReportAgent(BaseAgent):
                         f"  - [{time_str}] ({et}) {title}{(' ' + link) if link else ''}"
                     )
 
-            # 持仓信息
+            # Thông tin vị thế
             position = None
             if pack and pack.position and pack.position.aggregated:
                 position = pack.position.aggregated
@@ -380,7 +380,7 @@ class DailyReportAgent(BaseAgent):
                 if memory.get("latest_history_topic"):
                     lines.append(f"- 历史记忆主题：{memory.get('latest_history_topic')}")
 
-        # 账户资金概况
+        # Tổng quan vốn tài khoản
         if context.portfolio.accounts:
             lines.append("\n## 账户概况")
             for acc in context.portfolio.accounts:
@@ -419,7 +419,7 @@ class DailyReportAgent(BaseAgent):
             symbol_map[sym.upper()] = sym
             if getattr(s, "market", None) == MarketCode.HK and sym.isdigit():
                 try:
-                    symbol_map[str(int(sym))] = sym  # 兼容去掉前导 0（如 00700 -> 700）
+                    symbol_map[str(int(sym))] = sym  # Tương thích trường hợp mất số 0 đứng đầu (ví dụ 00700 -> 700)
                 except ValueError:
                     pass
                 symbol_map[f"HK{sym}"] = sym
@@ -445,11 +445,11 @@ class DailyReportAgent(BaseAgent):
             if not action_text:
                 continue
 
-            # 1) 优先匹配「...」/【...】里的代码
+            # 1) Ưu tiên khớp mã nằm trong 「...」/【...】
             m = re.search(r"[「【\[]\s*(?P<sym>[A-Za-z]{1,5}|\d{3,6})\s*[」】\]]", line)
             sym_raw = m.group("sym") if m else ""
 
-            # 2) 再匹配括号里的代码（如 腾讯控股(00700)）
+            # 2) Kế đến khớp mã trong ngoặc đơn (ví dụ 腾讯控股(00700))
             if not sym_raw:
                 m = re.search(r"\(\s*(?P<sym>[A-Za-z]{1,5}|\d{3,6})\s*\)", line)
                 sym_raw = m.group("sym") if m else ""
@@ -466,7 +466,7 @@ class DailyReportAgent(BaseAgent):
                         sym_raw = k
                         break
 
-            # 5) 名称兜底
+            # 5) Dự phòng cuối: khớp theo tên
             if not sym_raw:
                 for name, sym in name_map.items():
                     if name and name in line:
@@ -484,7 +484,7 @@ class DailyReportAgent(BaseAgent):
             if not canonical or canonical not in symbol_set:
                 continue
 
-            # 提取理由：从“建议类型”后截取
+            # Bóc lý do: cắt phần đứng sau “loại khuyến nghị”
             reason = ""
             m_reason = re.search(
                 rf"{re.escape(action_text)}\s*[：:：\-—]?\s*(?P<r>.+)$", line
@@ -601,13 +601,13 @@ class DailyReportAgent(BaseAgent):
             raw_data={**data, "structured": structured} if structured else data,
         )
 
-        # 解析个股建议
+        # Bóc khuyến nghị cho từng mã
         suggestions = self._parse_suggestions_json(structured, context.watchlist)
         if not suggestions:
             suggestions = self._parse_suggestions(result.content, context.watchlist)
         result.raw_data["suggestions"] = suggestions
 
-        # 保存各股票建议到建议池
+        # Lưu khuyến nghị từng mã vào kho khuyến nghị
         stock_map = {s.symbol: s for s in context.watchlist}
         packs = data.get("signal_packs", {}) or {}
         symbol_contexts = data.get("symbol_contexts", {}) or {}

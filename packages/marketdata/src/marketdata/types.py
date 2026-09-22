@@ -66,13 +66,13 @@ class CapitalFlow:
 
     symbol: str
     name: str
-    main_net_inflow: float | None = None      # 主力净流入
-    main_net_inflow_pct: float | None = None   # 主力净流入占比
-    super_net_inflow: float | None = None      # 超大单净流入
-    big_net_inflow: float | None = None        # 大单净流入
-    mid_net_inflow: float | None = None        # 中单净流入
-    small_net_inflow: float | None = None      # 小单净流入
-    main_net_5d: float | None = None           # 5日主力净流入
+    main_net_inflow: float | None = None      # Dòng tiền lớn vào ròng
+    main_net_inflow_pct: float | None = None   # Tỷ trọng dòng tiền lớn vào ròng
+    super_net_inflow: float | None = None      # Lệnh siêu lớn vào ròng
+    big_net_inflow: float | None = None        # Lệnh lớn vào ròng
+    mid_net_inflow: float | None = None        # Lệnh vừa vào ròng
+    small_net_inflow: float | None = None      # Lệnh nhỏ vào ròng
+    main_net_5d: float | None = None           # Dòng tiền lớn vào ròng 5 phiên
 
 
 @dataclass(frozen=True)
@@ -129,8 +129,8 @@ class Fundamentals:
     total_market_value: float | None = None         # 总市值(亿)
     circulating_market_value: float | None = None   # 流通市值(亿)
     dividend_yield: float | None = None             # 股息率(%)
-    total_shares: float | None = None               # 总股本(股)
-    float_shares: float | None = None                # 流通股本(股)
+    total_shares: float | None = None               # Tổng số cổ phần (cổ phiếu)
+    float_shares: float | None = None                # Số cổ phần lưu hành (cổ phiếu)
     # —— 财报类 ——
     eps: float | None = None                        # 每股收益
     bps: float | None = None                        # 每股净资产
@@ -153,7 +153,7 @@ class DragonTigerItem:
     symbol: str
     name: str = ""
     reason: str | None = None          # 上榜原因
-    close: float | None = None         # 收盘价
+    close: float | None = None         # Giá đóng cửa
     change_pct: float | None = None    # 涨跌幅(%)
     net_buy: float | None = None       # 龙虎榜净买额(元)
     buy_amt: float | None = None       # 龙虎榜买入额(元)

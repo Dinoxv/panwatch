@@ -148,7 +148,7 @@ def test_serve_fundamentals_uses_real_quote_data():
         result = _serve_from_panwatch("get_fundamentals", "601127", {})
     assert "25.5" in result  # PE
     assert "125000000000" in result or "1.25e" in result.lower()  # 市值
-    assert "3.2" in result  # 换手率
+    assert "3.2" in result  # Tỷ lệ vòng quay
     assert "Lightweight Fundamentals" in result
 
 

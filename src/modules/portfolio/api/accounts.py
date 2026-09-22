@@ -28,11 +28,11 @@ def get_hkd_cny_rate() -> float:
     """获取港币兑人民币汇率"""
     global _hkd_rate_cache
 
-    # 检查缓存
+    # Kiểm tra bộ đệm
     if time.time() - _hkd_rate_cache["ts"] < EXCHANGE_RATE_TTL:
         return _hkd_rate_cache["rate"]
 
-    # 从新浪财经获取汇率
+    # Lấy tỷ giá từ Sina Finance
     try:
         resp = httpx.get(
             "https://hq.sinajs.cn/list=fx_shkdcny",
@@ -62,11 +62,11 @@ def get_usd_cny_rate() -> float:
     """获取美元兑人民币汇率"""
     global _usd_rate_cache
 
-    # 检查缓存
+    # Kiểm tra bộ đệm
     if time.time() - _usd_rate_cache["ts"] < EXCHANGE_RATE_TTL:
         return _usd_rate_cache["rate"]
 
-    # 从新浪财经获取汇率
+    # Lấy tỷ giá từ Sina Finance
     try:
         resp = httpx.get(
             "https://hq.sinajs.cn/list=fx_susdcny",
@@ -121,7 +121,7 @@ class PositionCreate(BaseModel):
     cost_price: float
     quantity: int
     invested_amount: float | None = None
-    trading_style: str | None = None  # short: 短线, swing: 波段, long: 长线
+    trading_style: str | None = None  # short: lướt sóng, swing: trung hạn, long: dài hạn
 
 
 class PositionUpdate(BaseModel):
@@ -588,7 +588,7 @@ def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
     if not stocks:
         return {}
 
-    # 按市场分组
+    # Gom nhóm theo thị trường
     market_stocks: dict[str, list[Stock]] = {}
     for s in stocks:
         market_stocks.setdefault(s.market, []).append(s)

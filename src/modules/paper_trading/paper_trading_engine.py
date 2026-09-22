@@ -294,7 +294,7 @@ class PaperTradingEngine:
                 StrategySignalRun.entry_high.isnot(None),
             )
         )
-        # 按投资比例排除不投入（比例为 0）的市场
+        # Loại các thị trường không giải ngân (tỷ trọng bằng 0)
         alloc = market_allocations_or_default(account)
         excluded = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
         if excluded:
@@ -330,7 +330,7 @@ class PaperTradingEngine:
         if not candidates:
             return 0, new_keys, entry_events
 
-        # 批量获取报价
+        # Lấy báo giá hàng loạt
         syms = [(s.stock_symbol, s.stock_market) for s in candidates]
         quotes = self._fetch_quotes_map(syms)
 
@@ -516,7 +516,7 @@ class PaperTradingEngine:
         if not positions:
             return 0, exit_events
 
-        # 批量获取报价
+        # Lấy báo giá hàng loạt
         syms = [(p.stock_symbol, p.stock_market) for p in positions]
         quotes = self._fetch_quotes_map(syms)
 

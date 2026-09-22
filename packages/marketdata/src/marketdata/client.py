@@ -34,21 +34,21 @@ from marketdata.vendors.news import EastmoneyStockNewsVendor
 # 指数 secid(东财):指数与个股 secid 前缀规则不同,必须显式映射,否则按个股规则会取错标的。
 # 美股指数东财K线不支持,未列入 → index_klines 返回空,fail-soft。
 INDEX_SECID: dict[str, str] = {
-    "000300": "1.000300",   # 沪深300
-    "000001": "1.000001",   # 上证指数
-    "399001": "0.399001",   # 深证成指
-    "399006": "0.399006",   # 创业板指
-    "HSI": "100.HSI",       # 恒生指数
+    "000300": "1.000300",   # Chỉ số CSI 300
+    "000001": "1.000001",   # Chỉ số Thượng Hải
+    "399001": "0.399001",   # Chỉ số Thâm Quyến
+    "399006": "0.399006",   # Chỉ số ChiNext
+    "HSI": "100.HSI",       # Chỉ số Hang Seng
 }
 
 # 指数的原始腾讯符号(index_klines 的腾讯兜底路径;美股指数东财无 secid,只能走这里,
 # 腾讯对美股指数只返最近几根,短但可用)。
 INDEX_TENCENT: dict[str, str] = {
-    "000001": "sh000001",   # 上证指数
-    "399001": "sz399001",   # 深证成指
-    "399006": "sz399006",   # 创业板指
-    "000300": "sh000300",   # 沪深300
-    "HSI": "hkHSI",         # 恒生指数
+    "000001": "sh000001",   # Chỉ số Thượng Hải
+    "399001": "sz399001",   # Chỉ số Thâm Quyến
+    "399006": "sz399006",   # Chỉ số ChiNext
+    "000300": "sh000300",   # Chỉ số CSI 300
+    "HSI": "hkHSI",         # Chỉ số Hang Seng
     "IXIC": "usIXIC",       # 纳斯达克
     "DJI": "usDJI",         # 道琼斯
     "INX": "usINX",         # 标普500

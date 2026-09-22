@@ -182,7 +182,7 @@ class IntradayMonitorAgent(BaseAgent):
         """构建盘中分析 Prompt"""
         system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-        # 辅助函数：安全获取数值，None 转为默认值
+        # Hàm phụ: lấy số an toàn, None quy về giá trị mặc định
         def safe_num(value, default=0):
             return value if value is not None else default
 
@@ -341,7 +341,7 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- KDJ：K={kdj_k:.1f} D={kdj_d:.1f} J={kdj_j:.1f}（{kdj_status}）"
                 )
 
-            # 布林带
+            # Dải Bollinger
             boll_status = kline.get("boll_status")
             boll_upper, boll_lower = kline.get("boll_upper"), kline.get("boll_lower")
             if boll_status and boll_upper is not None:
@@ -349,7 +349,7 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- 布林带：上轨={format_num(boll_upper)} 下轨={format_num(boll_lower)}（{boll_status}）"
                 )
 
-            # 量能
+            # Sức khối lượng
             volume_trend = kline.get("volume_trend")
             volume_ratio = kline.get("volume_ratio")
             if volume_trend:
@@ -379,12 +379,12 @@ class IntradayMonitorAgent(BaseAgent):
                 )
                 lines.append(f"- {atr_line}")
 
-            # 均线
+            # Đường trung bình
             lines.append(
                 f"- MA5：{format_num(kline.get('ma5'))} | MA10：{format_num(kline.get('ma10'))} | MA20：{format_num(kline.get('ma20'))} | MA60：{format_num(kline.get('ma60'))}"
             )
 
-        # 资金流向（仅A股，若可用）
+        # Dòng tiền (chỉ cổ phiếu A, nếu có dữ liệu)
         pack = data.get("signal_pack")
         flow = getattr(pack, "capital_flow", None) if pack else None
         if (
@@ -410,7 +410,7 @@ class IntradayMonitorAgent(BaseAgent):
             except Exception:
                 pass
 
-            # 多级支撑压力
+            # Hỗ trợ / kháng cự nhiều tầng
             support_m, resistance_m = kline.get("support_m"), kline.get("resistance_m")
             if support_m and resistance_m:
                 lines.append(
@@ -423,12 +423,12 @@ class IntradayMonitorAgent(BaseAgent):
                     f"- 短期支撑：{format_num(support_s)} | 短期压力：{format_num(resistance_s)}"
                 )
 
-            # K线形态
+            # Mẫu hình nến
             kline_pattern = kline.get("kline_pattern")
             if kline_pattern:
                 lines.append(f"- K线形态：{kline_pattern}")
 
-            # 振幅
+            # Biên dao động
             amplitude = kline.get("amplitude")
             amplitude_avg5 = kline.get("amplitude_avg5")
             if amplitude is not None:
@@ -847,10 +847,10 @@ class IntradayMonitorAgent(BaseAgent):
             quality={"score": quality_score or 0},
         )
 
-        # 构建标题
+        # Dựng tiêu đề
         title = f"【{self.display_name}】{stock.name} {stock.change_pct:+.2f}%"
 
-        # 附 AI 模型信息
+        # Kèm thông tin mô hình AI
         if context.model_label:
             content = content.rstrip() + f"\n\n---\nAI: {context.model_label}"
 
@@ -989,7 +989,7 @@ class IntradayMonitorAgent(BaseAgent):
 
         用于实时监控场景，每只股票独立分析和通知
         """
-        # 过滤只保留指定股票
+        # Lọc giữ lại đúng các mã được chỉ định
         original_watchlist = context.config.watchlist
         context.config.watchlist = [
             s for s in original_watchlist if s.symbol == stock_symbol

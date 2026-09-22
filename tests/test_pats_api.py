@@ -78,7 +78,7 @@ def test_revoke_then_mcp_rejects(monkeypatch):
     )
     assert ok.status_code == 200
 
-    # 吊销
+    # Thu hồi
     dele = client.delete(f"/api/pats/{pat_id}")
     assert dele.status_code == 200
 

@@ -177,8 +177,8 @@ def save_suggestion(
             agent_name=agent_name,
             agent_label=agent_label,
             expires_at=expires_at,
-            prompt_context=prompt_context[:2000] if prompt_context else "",  # 限制长度
-            ai_response=ai_response[:2000] if ai_response else "",  # 限制长度
+            prompt_context=prompt_context[:2000] if prompt_context else "",  # Giới hạn độ dài
+            ai_response=ai_response[:2000] if ai_response else "",  # Giới hạn độ dài
             meta=to_jsonable(meta or {}),
         )
         db.add(suggestion)

@@ -149,7 +149,7 @@ def test_get_stock_data_returns_kline_csv_for_maotai():
     assert "600519" in result
     assert "贵州茅台" in result
     assert "2026-05-15" in result
-    assert "1480.5" in result  # 收盘价
+    assert "1480.5" in result  # Giá đóng cửa
 
 
 # ============================================================
@@ -253,7 +253,7 @@ def test_get_fundamentals_returns_real_financial_numbers():
     assert "500.00 亿" in result or "1800.00 亿" in result
     # ROE
     assert "8.50%" in result or "32.00%" in result
-    # 毛利率 91%
+    # Biên lợi nhuận gộp 91%
     assert "91.00%" in result or "91.50%" in result
 
 
@@ -264,7 +264,7 @@ def test_get_fundamentals_fallback_when_no_financial():
     assert "Lightweight Fundamentals" in result
     # quote 真实数据
     assert "24.5" in result  # PE
-    assert "0.12" in result  # 换手率
+    assert "0.12" in result  # Tỷ lệ vòng quay
 
 
 # ============================================================
@@ -319,7 +319,7 @@ def test_get_income_statement_returns_real_revenue_and_profit():
     assert "Income Statement" in result
     # 营收 1800 亿
     assert "1800.00 亿" in result or "500.00 亿" in result
-    # 毛利率 91%
+    # Biên lợi nhuận gộp 91%
     assert "91.00%" in result or "91.50%" in result
 
 

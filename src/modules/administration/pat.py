@@ -18,10 +18,10 @@ import hmac
 import secrets
 
 PAT_PREFIX = "pwmcp_"
-PAT_RANDOM_BYTES = 32          # token_urlsafe 后约 43 字符,256bit 熵
-PAT_DISPLAY_PREFIX_LEN = 14    # 明文前 14 字符,如 pwmcp_a1b2c3d4
+PAT_RANDOM_BYTES = 32          # sau token_urlsafe khoảng 43 ký tự, entropy 256 bit
+PAT_DISPLAY_PREFIX_LEN = 14    # 14 ký tự đầu của bản rõ, ví dụ pwmcp_a1b2c3d4
 
-# MCP scope(全只读)
+# Phạm vi MCP (toàn bộ chỉ đọc)
 SCOPE_MCP_READ = "mcp:read"
 
 

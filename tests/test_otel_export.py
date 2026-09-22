@@ -50,7 +50,7 @@ def _fake_openai_response(content: str, prompt_tokens: int, completion_tokens: i
 
 # ---- no-op 降级 -----------------------------------------------------------
 
-def test_未配置endpoint时init返回False且不启用():
+def test_chua_cau_hinh_endpoint_init_tra_ve_false():
     """未配置 OTEL_EXPORTER_OTLP_ENDPOINT 时 init_otel 返回 False 且保持关闭。"""
     otel.reset()
     with patch.dict(os.environ, {}, clear=False):
@@ -60,7 +60,7 @@ def test_未配置endpoint时init返回False且不启用():
     otel.reset()
 
 
-def test_关闭时span接口全部no_op不报错():
+def test_span_api_no_op_khi_tat_khong_loi():
     """OTel 关闭时,所有 span 接口均为 no-op,既不抛错也不产 span。"""
     otel.reset()
     assert otel.is_enabled() is False
@@ -73,11 +73,11 @@ def test_关闭时span接口全部no_op不报错():
     assert otel.capture_context() is None
     s = otel.start_detached_span("x", attributes={"a": 1})
     assert s is None
-    otel.set_span_attributes(s, {"b": 2})  # None 安全
-    otel.end_span(s)  # None 安全
+    otel.set_span_attributes(s, {"b": 2})  # An toàn với None
+    otel.end_span(s)  # An toàn với None
 
 
-def test_关闭时ai_client正常工作无span():
+def test_ai_client_chay_binh_thuong_khi_tat_span():
     """OTel 关闭时,ai_client.chat 正常返回且不产生任何 span。"""
     otel.reset()
     from src.platform.ai.ai_client import AIClient
@@ -94,7 +94,7 @@ def test_关闭时ai_client正常工作无span():
 
 # ---- 启用后的 span 断言 ---------------------------------------------------
 
-def test_agent运行映射为root_span(in_memory_exporter):
+def test_agent_run_maps_to_root_span(in_memory_exporter):
     """Agent 一次运行映射为 root span,带 agent 名与 trace_id 属性。"""
     with otel.agent_run_span("daily_report", trace_id="trace-123", trigger_source="schedule"):
         pass
@@ -108,7 +108,7 @@ def test_agent运行映射为root_span(in_memory_exporter):
     assert root.attributes[otel.ATTR_TRIGGER_SOURCE] == "schedule"
 
 
-def test_llm调用产生带genai属性的子span(in_memory_exporter):
+def test_llm_call_emits_child_span_with_genai_attrs(in_memory_exporter):
     """LLM 调用映射为 gen_ai 子 span,带 GenAI 语义约定属性,且挂在 root span 之下。"""
     from src.platform.ai.ai_client import AIClient
 
@@ -144,7 +144,7 @@ def test_llm调用产生带genai属性的子span(in_memory_exporter):
     assert llm.context.trace_id == root.context.trace_id
 
 
-def test_游离span可挂到捕获的父上下文(in_memory_exporter):
+def test_span_roi_gan_duoc_vao_ngu_canh_cha(in_memory_exporter):
     """start_detached_span 用捕获的父上下文,可把节点 span 挂到 root span 下(模拟跨线程)。"""
     with otel.agent_run_span("tradingagents", trace_id="ta-1"):
         parent_ctx = otel.capture_context()

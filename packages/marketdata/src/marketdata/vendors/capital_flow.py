@@ -107,13 +107,13 @@ class EastmoneyCapitalFlowVendor(CapitalFlowVendor):
         return [CapitalFlow(
             symbol=str(d.get("code") or sym.code),
             name=str(d.get("name") or ""),
-            main_net_inflow=_safe_float(parts[1]),      # 主力净流入
-            main_net_inflow_pct=_safe_float(parts[6]),  # 主力净流入占比
-            super_net_inflow=_safe_float(parts[5]),      # 超大单净流入
-            big_net_inflow=_safe_float(parts[4]),        # 大单净流入
-            mid_net_inflow=_safe_float(parts[3]),         # 中单净流入
-            small_net_inflow=_safe_float(parts[2]),       # 小单净流入
-            main_net_5d=main_net_5d,                      # 5日主力净流入
+            main_net_inflow=_safe_float(parts[1]),      # Dòng tiền lớn vào ròng
+            main_net_inflow_pct=_safe_float(parts[6]),  # Tỷ trọng dòng tiền lớn vào ròng
+            super_net_inflow=_safe_float(parts[5]),      # Lệnh siêu lớn vào ròng
+            big_net_inflow=_safe_float(parts[4]),        # Lệnh lớn vào ròng
+            mid_net_inflow=_safe_float(parts[3]),         # Lệnh vừa vào ròng
+            small_net_inflow=_safe_float(parts[2]),       # Lệnh nhỏ vào ròng
+            main_net_5d=main_net_5d,                      # Dòng tiền lớn vào ròng 5 phiên
         )]
 
 
@@ -177,11 +177,11 @@ class SinaCapitalFlowVendor(CapitalFlowVendor):
         return [CapitalFlow(
             symbol=sym.code,
             name="",  # 新浪该端点不返回股票名称
-            main_net_inflow=_safe_float(latest.get("netamount")),       # 主力净流入
-            main_net_inflow_pct=_safe_float(latest.get("ratioamount")),  # 主力净流入占比
-            super_net_inflow=_safe_float(latest.get("r0_net")),          # 超大单净流入
+            main_net_inflow=_safe_float(latest.get("netamount")),       # Dòng tiền lớn vào ròng
+            main_net_inflow_pct=_safe_float(latest.get("ratioamount")),  # Tỷ trọng dòng tiền lớn vào ròng
+            super_net_inflow=_safe_float(latest.get("r0_net")),          # Lệnh siêu lớn vào ròng
             big_net_inflow=0.0,     # 新浪该端点无大单细分
             mid_net_inflow=0.0,     # 新浪该端点无中单细分
             small_net_inflow=0.0,   # 新浪该端点无小单细分
-            main_net_5d=main_net_5d,  # 5日主力净流入
+            main_net_5d=main_net_5d,  # Dòng tiền lớn vào ròng 5 phiên
         )]

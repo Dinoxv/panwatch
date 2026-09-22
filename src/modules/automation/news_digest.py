@@ -166,7 +166,7 @@ class NewsDigestAgent(BaseAgent):
         return {
             "news": news_list,  # 全部新闻
             "related_news": related_news,  # 自选股相关
-            "important_news": important_news,  # 重要市场新闻
+            "important_news": important_news,  # Tin thị trường quan trọng
             "watchlist": context.watchlist,
             "signal_packs": packs,
             "timestamp": datetime.now().isoformat(),
@@ -242,7 +242,7 @@ class NewsDigestAgent(BaseAgent):
         else:
             lines.append("- 暂无自选股相关新闻")
 
-        # 重要市场新闻
+        # Tin thị trường quan trọng
         important_news: list[NewsItem] = data.get("important_news", [])
         lines.append(f"\n## 重要市场新闻 ({len(important_news)} 条)")
         if important_news:
@@ -302,7 +302,7 @@ class NewsDigestAgent(BaseAgent):
 
             if getattr(s, "market", None) == MarketCode.HK and sym.isdigit():
                 try:
-                    symbol_map[str(int(sym))] = sym  # 兼容去掉前导 0（如 00700 -> 700）
+                    symbol_map[str(int(sym))] = sym  # Tương thích trường hợp mất số 0 đứng đầu (ví dụ 00700 -> 700)
                 except ValueError:
                     pass
                 symbol_map[f"HK{sym}"] = sym
@@ -330,14 +330,14 @@ class NewsDigestAgent(BaseAgent):
             if not action_text:
                 continue
 
-            # 1) 优先匹配「...」/【...】里的代码
+            # 1) Ưu tiên khớp mã nằm trong 「...」/【...】
             m = re.search(
                 r"[「【\[]\s*(?P<sym>[A-Za-z][A-Za-z0-9\.\-]{0,9}|\d{3,6})\s*[」】\]]",
                 line,
             )
             sym_raw = m.group("sym") if m else ""
 
-            # 2) 再匹配括号里的代码（如 腾讯控股(00700)）
+            # 2) Kế đến khớp mã trong ngoặc đơn (ví dụ 腾讯控股(00700))
             if not sym_raw:
                 m = re.search(
                     r"\(\s*(?P<sym>[A-Za-z][A-Za-z0-9\.\-]{0,9}|\d{3,6})\s*\)", line
@@ -356,7 +356,7 @@ class NewsDigestAgent(BaseAgent):
                         sym_raw = k
                         break
 
-            # 5) 名称兜底
+            # 5) Dự phòng cuối: khớp theo tên
             if not sym_raw:
                 for name, sym in name_map.items():
                     if name and name in line:
@@ -374,7 +374,7 @@ class NewsDigestAgent(BaseAgent):
             if not canonical or canonical not in symbol_set:
                 continue
 
-            # 提取理由：从“建议类型”后截取
+            # Bóc lý do: cắt phần đứng sau “loại khuyến nghị”
             reason = ""
             m_reason = re.search(
                 rf"{re.escape(action_text)}\s*[：:：\\-—]?\s*(?P<r>.+)$", line

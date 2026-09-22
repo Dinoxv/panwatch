@@ -32,21 +32,21 @@ from src.platform.persistence.models import MCPCallLog, PersonalAccessToken
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# 协议版本(客户端未协商时的默认值)
+# Phiên bản giao thức (giá trị mặc định khi máy khách không thương lượng)
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SERVER_INFO = {"name": "PanWatch", "version": "0.1.0"}
 
-# 只读工具白名单(复用 chat 的工具定义,新增工具自动纳入)
+# Danh sách trắng công cụ chỉ đọc (tái dùng định nghĩa công cụ của chat, công cụ mới tự động được tính vào)
 READ_TOOL_NAMES = {t["function"]["name"] for t in CHAT_TOOLS}
 
-# last_used 写入节流窗口(秒),避免每次 tool call 都写库
+# Cửa sổ giãn ghi last_used (giây), tránh ghi xuống cơ sở dữ liệu ở mỗi lần gọi công cụ
 _LAST_USED_THROTTLE_S = 60
-# 审计摘要长度上限
+# Giới hạn độ dài phần tóm tắt nhật ký kiểm toán
 _ARG_SUMMARY_MAX = 200
 _ARG_VALUE_MAX = 40
 
 
-# ──────────────── PAT 鉴权 ────────────────
+# ──────────────── Xác thực PAT ────────────────
 
 
 def _to_utc(dt: datetime | None) -> datetime | None:
@@ -103,7 +103,7 @@ def authenticate_pat(request: Request, db: Session) -> dict:
     }
 
 
-# ──────────────── 审计日志 ────────────────
+# ──────────────── Nhật ký kiểm toán ────────────────
 
 
 def _summarize_args(args: dict) -> str | None:
@@ -184,7 +184,7 @@ def prune_mcp_logs(retention_days: int = MCP_LOG_RETENTION_DAYS) -> int:
         db.close()
 
 
-# ──────────────── JSON-RPC 处理 ────────────────
+# ──────────────── Xử lý JSON-RPC ────────────────
 
 
 def _mcp_tools() -> list[dict]:
@@ -234,7 +234,7 @@ async def _handle_tools_call(params: dict, db: Session, pat: dict, req_id) -> JS
             req_id,
             {"content": [{"type": "text", "text": text}], "isError": is_error},
         )
-    except Exception as e:  # noqa: BLE001 — 兜底,不让异常穿透协议层
+    except Exception as e:  # noqa: BLE001 — bắt dự phòng, không để ngoại lệ xuyên qua tầng giao thức
         err = str(e)
         return _rpc_error(req_id, -32603, f"工具执行异常: {e}")
     finally:
@@ -268,7 +268,7 @@ async def mcp_endpoint(request: Request, db: Session = Depends(get_db)):
     req_id = payload.get("id")
     params = payload.get("params") or {}
 
-    # 通知类消息(无 id)不需要响应,返回 202
+    # Thông điệp dạng notification (không có id) không cần phản hồi, trả 202
     if req_id is None and isinstance(method, str) and method.startswith("notifications/"):
         return Response(status_code=202)
 

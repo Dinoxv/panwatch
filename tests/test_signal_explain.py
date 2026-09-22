@@ -9,7 +9,7 @@ def test_ai_score_mapping():
     assert to_ai_score(50) == 5
     assert to_ai_score(100) == 10
     assert to_ai_score(30) == 3
-    assert to_ai_score(None) == 1  # 兜底
+    assert to_ai_score(None) == 1  # Phương án dự phòng
 
 
 def test_explain_factors_splits_positive_negative():
