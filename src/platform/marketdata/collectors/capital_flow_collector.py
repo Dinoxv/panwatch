@@ -1,4 +1,4 @@
-"""资金流向采集器 - 经 marketdata 包统一接入"""
+"""Bộ thu thập dòng tiền - nối thống nhất qua gói marketdata"""
 from dataclasses import dataclass
 
 from src.platform.marketdata.collectors.market_http import TTLCache
@@ -10,7 +10,7 @@ _FLOW_CACHE = TTLCache(default_ttl_sec=600.0)
 
 @dataclass
 class CapitalFlow:
-    """资金流向数据"""
+    """Dữ liệu dòng tiền"""
     symbol: str
     name: str
 
@@ -33,13 +33,13 @@ def get_market_data():
 
 
 class CapitalFlowCollector:
-    """资金流向采集器"""
+    """Bộ thu thập dòng tiền"""
 
     def __init__(self, market: MarketCode):
         self.market = market
 
     def get_capital_flow(self, symbol: str) -> CapitalFlow | None:
-        """获取单只股票的资金流向(经 marketdata 包统一接入 + TTL缓存)。"""
+        """Lấy dòng tiền của một mã (nối thống nhất qua gói marketdata + đệm TTL)."""
         cache_key = f"{self.market.value}:{symbol}"
         cached = _FLOW_CACHE.get(cache_key)
         if cached is not None:
@@ -63,7 +63,7 @@ class CapitalFlowCollector:
         return capital_flow
 
     def get_capital_flow_summary(self, symbol: str) -> dict:
-        """获取资金流向摘要（用于 prompt）"""
+        """Lấy tóm tắt dòng tiền (dùng cho prompt)"""
         flow = self.get_capital_flow(symbol)
 
         if not flow:

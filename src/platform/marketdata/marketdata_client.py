@@ -1,9 +1,9 @@
-"""PanWatch ↔ marketdata 接线:DB 配置端口 + 单例 + flag 门控的报价兼容层。
+"""Đấu nối PanWatch ↔ marketdata: cổng cấu hình DB + đơn nhất + tầng tương thích báo giá có cổng chặn bằng flag.
 
-- DbConfigProvider:把 DataSource 表映射成 marketdata 的 SourceConfig(实现 ConfigProvider 端口)。
-- get_market_data():进程级单例(无状态 vendor + 现查 DB 的配置端口)。
-- md_quote_rows():新包 MarketData.quotes 转 dict,返回 list[dict](与旧 orchestrator 输出同形)。
-- md_news()/md_news_by_keyword():新包 MarketData.news/news_by_keyword 转 host NewsItem。
+- DbConfigProvider: ánh xạ bảng DataSource thành SourceConfig của marketdata (hiện thực cổng ConfigProvider).
+- get_market_data(): đơn nhất ở cấp tiến trình (vendor không trạng thái + cổng cấu hình tra DB tại chỗ).
+- md_quote_rows(): đổi MarketData.quotes của gói mới sang dict, trả về list[dict] (cùng hình dạng đầu ra với orchestrator cũ).
+- md_news()/md_news_by_keyword(): đổi MarketData.news/news_by_keyword của gói mới sang NewsItem của host.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class DbConfigProvider:
-    """ConfigProvider 端口实现:从 DataSource 表按 priority 读某类型的启用源。"""
+    """Hiện thực cổng ConfigProvider: đọc các nguồn đang bật của một loại từ bảng DataSource theo priority."""
 
     def _query_rows(self, datatype: str) -> list:
         from src.platform.persistence.database import SessionLocal
@@ -65,7 +65,7 @@ _md: MarketData | None = None
 
 
 def get_market_data() -> MarketData:
-    """进程级单例。vendor 无状态、配置现查 DB,故无需失效钩子。"""
+    """Đơn nhất ở cấp tiến trình. Vendor không trạng thái, cấu hình tra DB tại chỗ, nên không cần móc làm mất hiệu lực."""
     global _md
     if _md is None:
         _md = MarketData(config=DbConfigProvider())
@@ -73,13 +73,13 @@ def get_market_data() -> MarketData:
 
 
 def reset_market_data() -> None:
-    """测试或热重载时重置单例。"""
+    """Đặt lại đơn nhất khi test hoặc khi nạp nóng."""
     global _md
     _md = None
 
 
 def _quote_to_row(q: Quote) -> dict:
-    """marketdata.Quote → 旧 orchestrator 同形 dict。"""
+    """marketdata.Quote → dict cùng hình dạng với orchestrator cũ."""
     return {
         "symbol": q.symbol,
         "name": q.name,
@@ -102,9 +102,9 @@ def _quote_to_row(q: Quote) -> dict:
 
 
 def md_quote_rows(symbols: list[str], market: str) -> list[dict]:
-    """批量报价,返回 list[dict](与旧 orchestrator 输出同形)。
+    """Báo giá hàng loạt, trả về list[dict] (cùng hình dạng đầu ra với orchestrator cũ).
 
-    同步函数;async 调用方用 `await asyncio.to_thread(md_quote_rows, ...)`。
+    Hàm đồng bộ; bên gọi async dùng `await asyncio.to_thread(md_quote_rows, ...)`.
     """
     syms = list(symbols)
     if not syms:
@@ -114,10 +114,10 @@ def md_quote_rows(symbols: list[str], market: str) -> list[dict]:
 
 
 def _article_to_newsitem(a):
-    """marketdata.NewsArticle → host NewsItem(同名字段直拷)。
+    """marketdata.NewsArticle → NewsItem của host (chép thẳng các trường cùng tên).
 
-    lazy import 避免与 news_collector 的模块级循环引用(news_collector 会
-    在模块级 import 本模块的 md_news)。
+    lazy import để tránh vòng tham chiếu ở cấp module với news_collector (news_collector
+    import md_news của module này ở cấp module).
     """
     from src.platform.marketdata.collectors.news_collector import NewsItem
 
@@ -136,12 +136,12 @@ def _article_to_newsitem(a):
 def md_news(
     symbols: list[str], since_hours: int = 2, names: dict[str, str] | None = None
 ) -> list:
-    """聚合新闻(个股新闻 + 公告),返回 list[NewsItem](与旧 NewsCollector.fetch_all 同形)。
+    """Gộp tin tức (tin cổ phiếu riêng lẻ + công bố), trả về list[NewsItem] (cùng hình dạng với NewsCollector.fetch_all cũ).
 
-    host 侧可以用 datetime.now() 做 since 过滤(包内不允许偷偷调 datetime.now(),
-    必须由调用方显式传 now)。
+    Phía host dùng datetime.now() để lọc since được (bên trong gói không được lén gọi
+    datetime.now(), bắt buộc bên gọi truyền now tường minh).
 
-    同步函数;async 调用方用 `await asyncio.to_thread(md_news, ...)`。
+    Hàm đồng bộ; bên gọi async dùng `await asyncio.to_thread(md_news, ...)`.
     """
     from datetime import datetime, timezone
 
@@ -155,13 +155,13 @@ def md_news(
 
 
 def md_news_by_keyword(keyword: str) -> list:
-    """按关键词(行业/主题词)搜中文新闻,返回 list[NewsItem]。同步。"""
+    """Tìm tin tiếng Trung theo từ khóa (từ ngành/chủ đề), trả về list[NewsItem]. Đồng bộ."""
     arts = get_market_data().news_by_keyword(keyword)
     return [_article_to_newsitem(a) for a in arts]
 
 
 def md_stock_data(symbols: list[str], market: str) -> list:
-    """返回 list[StockData](旧 AkshareCollector.get_stock_data 同形)。同步。"""
+    """Trả về list[StockData] (cùng hình dạng với AkshareCollector.get_stock_data cũ). Đồng bộ."""
     from src.platform.marketdata.models import MarketCode, StockData
 
     syms = list(symbols)

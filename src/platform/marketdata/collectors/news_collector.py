@@ -1,8 +1,9 @@
-"""新闻数据结构 + 聚合采集器薄 shim。
+"""Cấu trúc dữ liệu tin tức + shim mỏng cho bộ thu thập gộp.
 
-实际抓取(雪球个股新闻 / 东财个股新闻搜索 / 东财公告)已收口进 marketdata 包
-(packages/marketdata),本文件只保留消费方仍在用的 NewsItem 数据结构，以及
-一个转发到包的 NewsCollector shim，对消费方零改动。
+Phần lấy dữ liệu thật (tin cổ phiếu riêng lẻ của Xueqiu / tìm tin cổ phiếu riêng lẻ của
+Đông Tài / công bố Đông Tài) đã gom vào gói marketdata (packages/marketdata), tệp này chỉ
+giữ cấu trúc dữ liệu NewsItem mà bên tiêu thụ vẫn dùng, cùng một shim NewsCollector
+chuyển tiếp vào gói, để bên tiêu thụ không phải sửa gì.
 """
 import asyncio
 from dataclasses import dataclass, field
@@ -11,7 +12,7 @@ from datetime import datetime
 
 @dataclass
 class NewsItem:
-    """新闻数据结构"""
+    """Cấu trúc dữ liệu tin tức"""
     source: str           # "xueqiu" / "eastmoney_news" / "eastmoney"
     external_id: str      # ID duy nhất phía nguồn
     title: str
@@ -23,11 +24,11 @@ class NewsItem:
 
 
 class NewsCollector:
-    """聚合新闻采集器 —— 薄 shim，实际抓取/聚合/去重逻辑已收口进 marketdata 包。"""
+    """Bộ thu thập tin tức gộp — shim mỏng, phần lấy dữ liệu/gộp/gộp trùng thật đã gom vào gói marketdata."""
 
     @classmethod
     def from_database(cls) -> "NewsCollector":
-        """配置现由包内 DbConfigProvider 按需读 DataSource 表，这里直接返回实例。"""
+        """Cấu hình nay do DbConfigProvider trong gói đọc bảng DataSource khi cần, ở đây trả thẳng thực thể."""
         return cls()
 
     async def fetch_all(
@@ -37,15 +38,15 @@ class NewsCollector:
         symbol_names: dict[str, str] | None = None,
     ) -> list[NewsItem]:
         """
-        聚合所有已启用新闻数据源的新闻（聚合/去重/排序均在 marketdata 包内完成）。
+        Gộp tin tức của mọi nguồn tin đang bật (phần gộp/gộp trùng/sắp xếp đều làm bên trong gói marketdata).
 
         Args:
-            symbols: 股票代码列表
-            since_hours: 获取最近 N 小时的新闻（公告类源的窗口由包内自动放宽）
-            symbol_names: 股票代码到名称的映射（可选，eastmoney_news 用名称搜索效果更好）
+            symbols: danh sách mã cổ phiếu
+            since_hours: lấy tin trong N giờ gần nhất (cửa sổ của nguồn dạng công bố do gói tự nới)
+            symbol_names: ánh xạ mã cổ phiếu sang tên (tùy chọn, eastmoney_news tìm bằng tên hiệu quả hơn)
 
         Returns:
-            按时间倒序排列的新闻列表
+            danh sách tin xếp theo thời gian giảm dần
         """
         from src.platform.marketdata.marketdata_client import md_news
 

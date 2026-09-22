@@ -1,9 +1,9 @@
-"""marketdata 异常类型。"""
+"""Các kiểu ngoại lệ của marketdata."""
 
 
 class MarketDataError(Exception):
-    """本包所有异常的基类。"""
+    """Lớp cơ sở cho mọi ngoại lệ của gói này."""
 
 
 class VendorError(MarketDataError):
-    """单个 vendor 抓取失败(Engine 捕获后转移到下一个源)。"""
+    """Một vendor lấy dữ liệu hỏng (Engine bắt rồi chuyển sang nguồn kế tiếp)."""

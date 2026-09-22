@@ -12,14 +12,14 @@ class MarketCode(str, Enum):
 
 @dataclass
 class TradingSession:
-    """一个交易时段"""
+    """Một phiên giao dịch"""
     start: time
     end: time
 
 
 @dataclass
 class MarketDef:
-    """市场定义"""
+    """Định nghĩa thị trường"""
     code: MarketCode
     name: str
     timezone: str
@@ -30,7 +30,7 @@ class MarketDef:
         return ZoneInfo(self.timezone)
 
     def is_trading_time(self, dt: datetime | None = None) -> bool:
-        """判断给定时间是否在交易时段内"""
+        """Xét xem thời điểm cho trước có nằm trong phiên giao dịch không"""
         if dt is None:
             dt = datetime.now(self.get_tz())
         else:
@@ -86,7 +86,7 @@ MARKETS: dict[MarketCode, MarketDef] = {
 
 @dataclass
 class StockData:
-    """标准化行情数据"""
+    """Dữ liệu bảng giá đã chuẩn hóa"""
     symbol: str
     name: str
     market: MarketCode
@@ -104,7 +104,7 @@ class StockData:
 
 @dataclass
 class IndexData:
-    """大盘指数数据"""
+    """Dữ liệu chỉ số chung"""
     symbol: str
     name: str
     market: MarketCode

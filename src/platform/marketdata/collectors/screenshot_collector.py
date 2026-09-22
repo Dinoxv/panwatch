@@ -1,4 +1,4 @@
-"""K线图截图采集器 - 基于 Playwright"""
+"""Bộ thu thập ảnh chụp đồ thị nến - dựa trên Playwright"""
 import logging
 import os
 import tempfile
@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
 
 @dataclass
 class ChartScreenshot:
-    """K线图截图"""
+    """Ảnh chụp đồ thị nến"""
     symbol: str
     name: str
     market: str
@@ -39,12 +39,12 @@ class ChartScreenshot:
 
 class ScreenshotCollector:
     """
-    K线图截图采集器
+    Bộ thu thập ảnh chụp đồ thị nến
 
-    使用 Playwright 截取东方财富 K 线图
-    URL 格式:
-    - A股: https://quote.eastmoney.com/{sh|sz}{symbol}.html
-    - 港股: https://quote.eastmoney.com/hk/{symbol}.html
+    Dùng Playwright chụp đồ thị nến của Đông Tài
+    Định dạng URL:
+    - Cổ phiếu A: https://quote.eastmoney.com/{sh|sz}{symbol}.html
+    - Cổ phiếu HK: https://quote.eastmoney.com/hk/{symbol}.html
     """
 
     def __init__(self, config: dict | None = None):
@@ -53,7 +53,7 @@ class ScreenshotCollector:
         self._playwright = None
 
     async def _ensure_browser(self):
-        """懒加载初始化 Playwright（带反检测设置）"""
+        """Khởi tạo Playwright theo kiểu nạp lười (kèm thiết lập chống phát hiện)"""
         if self._browser is not None:
             return
 
@@ -78,7 +78,7 @@ class ScreenshotCollector:
             raise
 
     def _get_url(self, symbol: str, market: str, provider: str = "xueqiu") -> str:
-        """生成 K 线图页面 URL"""
+        """Dựng URL trang đồ thị nến"""
         if provider == "sina":
             return self._get_sina_url(symbol, market)
         elif provider == "xueqiu":
@@ -87,7 +87,7 @@ class ScreenshotCollector:
             return self._get_eastmoney_url(symbol, market)
 
     def _get_sina_url(self, symbol: str, market: str) -> str:
-        """新浪财经 URL"""
+        """URL Sina Finance"""
         if market.upper() == "HK":
             return f"https://stock.finance.sina.com.cn/hkstock/quotes/{symbol}.html"
         # Cổ phiếu A
@@ -95,7 +95,7 @@ class ScreenshotCollector:
         return f"https://finance.sina.com.cn/realstock/company/{prefix}{symbol}/nc.shtml"
 
     def _get_eastmoney_url(self, symbol: str, market: str) -> str:
-        """东方财富 URL"""
+        """URL Đông Tài"""
         if market.upper() == "HK":
             return f"https://quote.eastmoney.com/hk/{symbol}.html"
         # Cổ phiếu A
@@ -103,7 +103,7 @@ class ScreenshotCollector:
         return f"https://quote.eastmoney.com/{prefix}{symbol}.html"
 
     def _get_xueqiu_url(self, symbol: str, market: str) -> str:
-        """雪球 URL"""
+        """URL Xueqiu"""
         if market.upper() == "HK":
             return f"https://xueqiu.com/S/{symbol}"
         # Cổ phiếu A
@@ -119,17 +119,17 @@ class ScreenshotCollector:
         provider: str = "xueqiu",
     ) -> ChartScreenshot | None:
         """
-        截取单只股票的 K 线图
+        Chụp đồ thị nến của một mã
 
         Args:
-            symbol: 股票代码
-            name: 股票名称
-            market: 市场 (CN/HK)
-            period: K线周期 (daily/weekly/monthly)
-            provider: 数据源 (xueqiu/eastmoney)
+            symbol: mã cổ phiếu
+            name: tên cổ phiếu
+            market: thị trường (CN/HK)
+            period: chu kỳ nến (daily/weekly/monthly)
+            provider: nguồn dữ liệu (xueqiu/eastmoney)
 
         Returns:
-            ChartScreenshot 或 None（失败时）
+            ChartScreenshot hoặc None (khi hỏng)
         """
         await self._ensure_browser()
 
@@ -196,7 +196,7 @@ class ScreenshotCollector:
             return None
 
     async def _capture_xueqiu(self, page, filepath: str, period: str):
-        """雪球截图逻辑"""
+        """Phần chụp màn hình cho Xueqiu"""
         # Chờ trang tải xong
         await page.wait_for_timeout(1000)
 
@@ -226,7 +226,7 @@ class ScreenshotCollector:
         logger.debug("雪球 K 线图截图完成")
 
     async def _capture_sina(self, page, filepath: str, period: str):
-        """新浪财经截图逻辑"""
+        """Phần chụp màn hình cho Sina Finance"""
         # Chờ trang tải xong
         try:
             await page.wait_for_selector("#kline_container", timeout=10000)
@@ -245,7 +245,7 @@ class ScreenshotCollector:
         await page.screenshot(path=filepath, full_page=False)
 
     async def _capture_eastmoney(self, page, filepath: str, period: str):
-        """东方财富截图逻辑"""
+        """Phần chụp màn hình cho Đông Tài"""
         # Cuộn tới vùng biểu đồ nến
         try:
             kline_area = await page.query_selector("#app > div > div > div.quote_title.self_clearfix")
@@ -271,7 +271,7 @@ class ScreenshotCollector:
         await page.screenshot(path=filepath, full_page=False)
 
     async def _close_xueqiu_popups(self, page):
-        """关闭雪球所有弹窗"""
+        """Đóng mọi hộp thoại bật lên của Xueqiu"""
         # Thử nhiều lần để đóng các loại hộp thoại
         for _ in range(5):
             closed = False
@@ -329,7 +329,7 @@ class ScreenshotCollector:
             await page.wait_for_timeout(300)
 
     async def _switch_to_daily_kline(self, page):
-        """雪球切换到日K线图"""
+        """Xueqiu chuyển sang đồ thị nến ngày"""
         try:
             # Bấm nút "nến ngày"
             daily_btn = await page.query_selector('text="日K"')
@@ -341,7 +341,7 @@ class ScreenshotCollector:
             logger.debug(f"切换日K失败: {e}")
 
     async def _switch_period_xueqiu(self, page, period: str):
-        """雪球切换K线周期"""
+        """Xueqiu đổi chu kỳ nến"""
         period_text = {"weekly": "周K", "monthly": "月K"}.get(period)
         if not period_text:
             return
@@ -355,7 +355,7 @@ class ScreenshotCollector:
             pass
 
     async def _close_popups(self, page):
-        """关闭弹窗广告"""
+        """Đóng quảng cáo bật lên"""
         # Các selector nút đóng thường gặp
         close_selectors = [
             'text="关闭"',
@@ -388,7 +388,7 @@ class ScreenshotCollector:
             pass
 
     async def _switch_period(self, page, period: str):
-        """切换K线周期"""
+        """Đổi chu kỳ nến"""
         period_map = {
             "weekly": ["周K", "周线", "week"],
             "monthly": ["月K", "月线", "month"],
@@ -412,15 +412,15 @@ class ScreenshotCollector:
         provider: str = "xueqiu",
     ) -> list[ChartScreenshot]:
         """
-        批量截取K线图
+        Chụp đồ thị nến hàng loạt
 
         Args:
-            stocks: 股票列表，每项包含 symbol, name, market
-            period: K线周期
-            provider: 数据源 (xueqiu/eastmoney)
+            stocks: danh sách mã, mỗi mục gồm symbol, name, market
+            period: chu kỳ nến
+            provider: nguồn dữ liệu (xueqiu/eastmoney)
 
         Returns:
-            ChartScreenshot 列表
+            danh sách ChartScreenshot
         """
         results = []
         for stock in stocks:
@@ -437,7 +437,7 @@ class ScreenshotCollector:
         return results
 
     def cleanup_old_screenshots(self, max_age_hours: int = 24):
-        """清理过期截图"""
+        """Dọn ảnh chụp đã hết hạn"""
         cutoff = datetime.now().timestamp() - max_age_hours * 3600
         cleaned = 0
 
@@ -453,7 +453,7 @@ class ScreenshotCollector:
             logger.info(f"清理了 {cleaned} 张过期截图")
 
     async def close(self):
-        """关闭浏览器"""
+        """Đóng trình duyệt"""
         if self._browser:
             await self._browser.close()
             self._browser = None

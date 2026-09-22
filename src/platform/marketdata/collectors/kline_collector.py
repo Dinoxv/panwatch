@@ -1,4 +1,4 @@
-"""K线和技术指标采集器 - 基于腾讯 API（更稳定）"""
+"""Bộ thu thập nến và chỉ báo kỹ thuật - dựa trên API Tencent (ổn định hơn)"""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ _FAIL_COOLDOWN_CLOSED_S = 900.0  # Sau khi đóng cửa: dữ liệu đã chốt
 
 
 def _fail_cooldown(market: MarketCode) -> float:
-    """取数失败/不足时的冷却时长:交易时段短(尽快重试),收盘后长(重试无意义且易刷屏)。"""
+    """Thời gian nghỉ nguội khi lấy dữ liệu hỏng/thiếu: trong phiên thì ngắn (thử lại sớm), sau phiên thì dài (thử lại vô nghĩa mà dễ ngập nhật ký)."""
     try:
         md = MARKETS.get(market)
         if md and md.is_trading_time():
@@ -58,7 +58,7 @@ _FETCH_LOCKS_GUARD = threading.Lock()
 
 
 def _get_fetch_lock(cache_key: str) -> threading.Lock:
-    """返回某 cache_key 的取数锁(进程内复用),用于合并同标的并发请求。"""
+    """Trả về khóa lấy dữ liệu của một cache_key (dùng lại trong tiến trình), để gộp các yêu cầu song song cùng một mã."""
     with _FETCH_LOCKS_GUARD:
         lk = _FETCH_LOCKS.get(cache_key)
         if lk is None:
@@ -78,14 +78,15 @@ def _kline_cache_ttl(market: MarketCode) -> float:
 
 
 def clear_kline_cache() -> None:
-    """清空 K线内存缓存与失败冷却标记(测试隔离用)。"""
+    """Xóa sạch đệm nến trong bộ nhớ và dấu nghỉ nguội khi hỏng (dùng để cô lập khi test)."""
     _KLINE_CACHE.clear()
     _FAIL_UNTIL.clear()
 
 
 def get_index_klines(index_code: str, market: MarketCode, days: int = 120) -> list[KlineData]:
-    """取大盘/指数日K:走 marketdata 包 index_klines(INDEX_SECID 显式映射,未映射如美股指数
-    → 空列表,fail-soft;见 packages/marketdata/src/marketdata/client.py)。
+    """Lấy nến ngày của chỉ số chung: đi qua index_klines của gói marketdata (INDEX_SECID ánh xạ
+    tường minh, chưa ánh xạ như chỉ số Mỹ → danh sách rỗng, fail-soft; xem
+    packages/marketdata/src/marketdata/client.py).
     """
     try:
         bars = get_market_data().index_klines(index_code, market=market.value, days=days)
@@ -100,7 +101,7 @@ def get_index_klines(index_code: str, market: MarketCode, days: int = 120) -> li
 
 @dataclass
 class KlineData:
-    """K线数据"""
+    """Dữ liệu nến"""
 
     date: str
     open: float
@@ -112,7 +113,7 @@ class KlineData:
 
 @dataclass
 class TechnicalIndicators:
-    """技术指标"""
+    """Chỉ báo kỹ thuật"""
 
     # Đường trung bình
     ma5: float | None = None
@@ -174,7 +175,7 @@ def _calculate_ma(closes: list[float], period: int) -> float | None:
 
 
 def _ema(data: list[float], period: int) -> list[float]:
-    """计算 EMA"""
+    """Tính EMA"""
     if not data:
         return []
     result = [data[0]]
@@ -185,14 +186,15 @@ def _ema(data: list[float], period: int) -> list[float]:
 
 
 def _calculate_atr(klines: list[KlineData], period: int = 14) -> float | None:
-    """计算 ATR(平均真实波幅)。
+    """Tính ATR (biên độ thực bình quân).
 
-    TR = max(high-low, |high-prevClose|, |low-prevClose|)。
-    与本模块其它指标一致,取最近 period 个 TR 的简单均值(非 Wilder 递归平滑),
-    便于复现与手算校验。
+    TR = max(high-low, |high-prevClose|, |low-prevClose|).
+    Nhất quán với các chỉ báo khác trong module này, lấy trung bình cộng đơn giản của
+    period giá trị TR gần nhất (không dùng làm mượt đệ quy kiểu Wilder), để dễ dựng lại
+    và kiểm bằng tay.
 
-    需要至少 period+1 根 K 线(才能算出 period 个含前收的 TR);
-    数据不足或异常一律返回 None,不抛异常(fail-soft)。
+    Cần ít nhất period+1 cây nến (mới tính được period giá trị TR có kèm giá tham chiếu);
+    thiếu dữ liệu hoặc gặp lỗi thì nhất loạt trả None, không ném lỗi (fail-soft).
     """
     try:
         if not klines or len(klines) < period + 1:
@@ -217,7 +219,7 @@ def _calculate_atr(klines: list[KlineData], period: int = 14) -> float | None:
 def _calculate_macd(
     closes: list[float], fast: int = 12, slow: int = 26, signal: int = 9
 ) -> tuple[list[float], list[float], list[float]] | None:
-    """计算 MACD，返回完整序列用于判断交叉"""
+    """Tính MACD, trả về trọn chuỗi để xét điểm cắt"""
     if len(closes) < slow + signal:
         return None
 
@@ -230,7 +232,7 @@ def _calculate_macd(
 
 
 def _calculate_rsi(closes: list[float], period: int) -> float | None:
-    """计算 RSI"""
+    """Tính RSI"""
     if len(closes) < period + 1:
         return None
 
@@ -258,7 +260,7 @@ def _calculate_rsi(closes: list[float], period: int) -> float | None:
 def _calculate_kdj(
     klines: list[KlineData], n: int = 9, m1: int = 3, m2: int = 3
 ) -> tuple[list[float], list[float], list[float]] | None:
-    """计算 KDJ，返回完整序列"""
+    """Tính KDJ, trả về trọn chuỗi"""
     if len(klines) < n:
         return None
 
@@ -296,7 +298,7 @@ def _calculate_kdj(
 def _calculate_boll(
     closes: list[float], period: int = 20, num_std: int = 2
 ) -> tuple[float, float, float, float] | None:
-    """计算布林带：上轨、中轨、下轨、带宽"""
+    """Tính dải Bollinger: dải trên, dải giữa, dải dưới, bề rộng dải"""
     if len(closes) < period:
         return None
 
@@ -313,7 +315,7 @@ def _calculate_boll(
 
 
 def _detect_kline_pattern(klines: list[KlineData]) -> str | None:
-    """检测 K 线形态"""
+    """Nhận diện hình mẫu nến"""
     if len(klines) < 2:
         return None
 
@@ -377,7 +379,7 @@ def _detect_kline_pattern(klines: list[KlineData]) -> str | None:
 def _find_cross_days(
     series1: list[float], series2: list[float], cross_type: str
 ) -> int | None:
-    """找到最近一次交叉距今的天数"""
+    """Tìm xem lần cắt gần nhất cách đây bao nhiêu ngày"""
     if len(series1) < 2 or len(series2) < 2:
         return None
 
@@ -395,16 +397,18 @@ def _find_cross_days(
 
 
 class KlineCollector:
-    """K线数据采集器（腾讯 API）"""
+    """Bộ thu thập dữ liệu nến (API Tencent)"""
 
     def __init__(self, market: MarketCode):
         self.market = market
 
     def get_klines(self, symbol: str, days: int = 60) -> list[KlineData]:
-        """获取日K线数据。
+        """Lấy dữ liệu nến ngày.
 
-        正缓存(按市场状态 TTL)+ 同标的并发合并(只联网一次)+ 失败负缓存
-        (源短暂故障时冷却窗口内不再联网),避免多消费者并发把数据源打爆。
+        Đệm dương (TTL theo trạng thái thị trường) + gộp các yêu cầu song song cùng mã
+        (chỉ gọi mạng một lần) + đệm âm khi hỏng (nguồn hỏng chốc lát thì trong cửa sổ
+        nghỉ nguội không gọi mạng nữa), tránh việc nhiều bên tiêu thụ chạy song song làm
+        vỡ nguồn dữ liệu.
         """
         cache_key = f"{self.market.value}:{symbol}"
         need = max(1, int(days or 1))
@@ -442,7 +446,7 @@ class KlineCollector:
             return klines[-need:] if len(klines) > need else klines
 
     def _cache_hit(self, cache_key: str, need: int) -> list[KlineData] | None:
-        """命中新鲜正缓存(TTL 内且条数足够)则返回切片,否则 None。"""
+        """Trúng đệm dương còn tươi (trong TTL và đủ số bản ghi) thì trả lát cắt, không thì None."""
         cached = _KLINE_CACHE.get(cache_key)
         if (
             cached
@@ -454,8 +458,9 @@ class KlineCollector:
         return None
 
     def _fetch_all_sources(self, symbol: str, days: int) -> list[KlineData]:
-        """走 marketdata 包取数(不含缓存/合并逻辑):Engine 按 DataSource 优先级 +
-        min_count 取数(条数不足则换源/取最长,tencent → stooq(US) / eastmoney(CN/HK))。
+        """Lấy dữ liệu qua gói marketdata (không kèm phần đệm/gộp): Engine lấy theo priority của
+        DataSource + min_count (thiếu số bản ghi thì đổi nguồn/lấy nguồn dài nhất, tencent →
+        stooq(US) / eastmoney(CN/HK)).
         """
         need = (max(10, min(days, 30)) if self.market == MarketCode.US
                 else (max(120, int(days * 0.6)) if self.market in (MarketCode.CN, MarketCode.HK) else 1))
@@ -467,7 +472,7 @@ class KlineCollector:
     def get_technical_indicators(
         self, symbol: str = "", klines: list[KlineData] | None = None
     ) -> TechnicalIndicators:
-        """计算技术指标(可传入已取的 klines 复用,避免重复联网)。"""
+        """Tính chỉ báo kỹ thuật (truyền vào klines đã lấy để dùng lại, tránh gọi mạng lặp)."""
         if klines is None:
             klines = self.get_klines(symbol, days=120)
 
@@ -631,7 +636,7 @@ class KlineCollector:
         )
 
     def get_kline_summary(self, symbol: str) -> dict:
-        """获取 K 线摘要（用于 prompt 和前端展示）"""
+        """Lấy tóm tắt nến (dùng cho prompt và phần hiển thị ở frontend)"""
         klines = self.get_klines(symbol, days=120)
         if not klines:
             return {"error": "无K线数据"}

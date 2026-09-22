@@ -1,4 +1,4 @@
-"""对象式入口:注入 ConfigProvider(+可选 MetricsSink),对外提供 quotes()/health()。"""
+"""Lối vào dạng đối tượng: tiêm ConfigProvider (+ MetricsSink tùy chọn), phơi ra ngoài quotes()/health()."""
 
 from __future__ import annotations
 
@@ -142,15 +142,15 @@ class MarketData:
         )
 
     def klines(self, symbol: str, *, market: str, days: int = 120, min_count: int = 1) -> list:
-        """按 priority 主备取日K(不足则试下一个,全不足取最长)。返回 list[Bar]。
-        不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Lấy nến ngày theo chính-phụ dựa trên priority (thiếu thì thử nguồn kế, thiếu hết thì lấy nguồn dài nhất). Trả về list[Bar].
+        Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=(symbol,), market=market, timeframe="day", limit=days,
                       extra=(("days", days),))
         resp = self._kline_engine.fetch(req, min_count=min_count, cache_ttl_sec=0)
         return resp.data or []
 
     def quotes(self, symbols: list[str | Symbol], *, market: str | None = None) -> list[Quote]:
-        """批量报价。symbols 可跨市场:未显式给 market 时按代码自动识别并分组。"""
+        """Báo giá hàng loạt. symbols nằm ở nhiều thị trường được: không ghi market tường minh thì tự nhận diện theo mã rồi gom nhóm."""
         groups: dict[str, list[Symbol]] = {}
         for raw in symbols:
             sym = raw if isinstance(raw, Symbol) else Symbol.parse(raw, market)
@@ -165,19 +165,22 @@ class MarketData:
         return out
 
     def index_quotes(self, tencent_symbols: list[str]) -> list[dict]:
-        """按原始腾讯指数符号(sh000001/hkHSI/usDJI…)取行情,不经 Symbol.parse。
+        """Lấy bảng giá theo ký hiệu chỉ số gốc của Tencent (sh000001/hkHSI/usDJI…), không qua Symbol.parse.
 
-        指数代码可能与个股代码撞号(如 000001 既是平安银行又是上证指数),故走显式符号路径。
-        返回 list[dict]。
+        Mã chỉ số có thể trùng số với mã cổ phiếu (như 000001 vừa là Ping An Bank vừa là
+        chỉ số Thượng Hải), nên đi đường ký hiệu tường minh.
+        Trả về list[dict].
         """
         from marketdata.vendors.tencent import fetch_raw
         return fetch_raw(list(tencent_symbols)) if tencent_symbols else []
 
     def index_klines(self, code: str, *, market: str, days: int = 120) -> list:
-        """指数日K:东财 secid 主源;失败/未映射(如美股指数)走腾讯原始符号兜底;都无 → []。
+        """Nến ngày của chỉ số: secid Đông Tài là nguồn chính; hỏng/chưa ánh xạ (như chỉ số Mỹ) thì lùi về ký hiệu gốc của Tencent; không có gì cả → [].
 
-        腾讯兜底修两类缺口:①东财 push2his 被代理/风控掐时 CN/HK 指数仍有数;
-        ②美股指数(IXIC/DJI/INX)东财无 secid,腾讯可出(仅最近几根,短但可用)。返回 list[Bar]。
+        Phần hứng bằng Tencent lấp hai chỗ hụt: ① khi push2his của Đông Tài bị proxy/kiểm
+        soát rủi ro chặn thì chỉ số CN/HK vẫn có dữ liệu; ② chỉ số Mỹ (IXIC/DJI/INX) Đông
+        Tài không có secid, Tencent thì ra được (chỉ vài cây gần nhất, ngắn nhưng dùng được).
+        Trả về list[Bar].
         """
         c = str(code).strip()
         secid = INDEX_SECID.get(c) or INDEX_SECID.get(c.upper())
@@ -193,21 +196,21 @@ class MarketData:
         return []
 
     def capital_flow(self, symbol: str, *, market: str = "CN") -> CapitalFlow | None:
-        """单只股票资金流向。不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Dòng tiền của một mã. Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=(symbol,), market=market)
         resp = self._capital_flow_engine.fetch(req, cache_ttl_sec=0)
         data = resp.data or []
         return data[0] if data else None
 
     def events(self, symbols: list[str], *, market: str = "CN", since_days: int = 7) -> list[EventItem]:
-        """结构化事件(东财公告)。批量 symbols。不在包内缓存(cache_ttl_sec=0);宿主自行缓存。"""
+        """Sự kiện có cấu trúc (công bố Đông Tài). Nhiều symbols cùng lúc. Không đệm trong gói (cache_ttl_sec=0); host tự lo đệm."""
         req = Request(symbols=tuple(symbols), market=market, since_hours=since_days * 24,
                       extra=(("since_days", since_days),))
         resp = self._events_engine.fetch(req, cache_ttl_sec=0)
         return resp.data or []
 
     def flash_news(self, *, market: str = "CN", limit: int = 50, keyword: str | None = None) -> list[FlashNews]:
-        """快讯(7×24)。市场级,symbols 恒空。不在包内缓存额外一层——用 Engine 默认 30s TTL。"""
+        """Tin nhanh (7×24). Cấp thị trường, symbols luôn rỗng. Không đệm thêm một lớp trong gói — dùng TTL 30s mặc định của Engine."""
         req = Request(symbols=(), market=market, limit=limit)
         resp = self._flash_news_engine.fetch(req)
         data = resp.data or []
@@ -224,18 +227,21 @@ class MarketData:
         names: dict[str, str] | None = None,
         now: datetime | None = None,
     ) -> list[NewsArticle]:
-        """新闻资讯(个股新闻 + 公告)—— 聚合语义,非失败转移:查询所有已启用源、结果合并去重,
-        而非"找到一个就停"(这与 quotes()/klines() 的主备语义不同),故不经 Engine。
+        """Tin tức (tin cổ phiếu riêng lẻ + công bố) — ngữ nghĩa gộp, không phải chuyển khi hỏng:
+        tra mọi nguồn đang bật rồi gộp kết quả và gộp trùng, chứ không phải "tìm được một
+        cái là dừng" (khác ngữ nghĩa chính-phụ của quotes()/klines()), nên không đi qua Engine.
 
-        对齐 PanWatch NewsCollector.fetch_all 的聚合语义:
-        - 公告源(vendor="eastmoney")用 max(since_hours, 72) 更宽窗口(公告发布频率低,
-          窗口太窄容易一条都捞不到);其余源用 since_hours。窗口值会透传进 vendor 的
-          config(当前 3 个 vendor 均未读取——真正的 since 过滤在本方法做,vendor 内
-          不允许调用无参 datetime.now())。
-        - 合并后按 external_id 去重,保留先出现的(即优先级更高的源优先保留)。
-        - 按 publish_time 倒序排列。
-        - since 过滤需要"当下"锚点:传 now 才过滤(每条按其来源选窗口,规则同上);
-          不传 now 则不过滤,原样返回全部合并结果(包内绝不偷偷调 datetime.now())。
+        Khớp với ngữ nghĩa gộp của NewsCollector.fetch_all bên PanWatch:
+        - Nguồn công bố (vendor="eastmoney") dùng cửa sổ rộng hơn max(since_hours, 72) (công
+          bố phát hành thưa, cửa sổ hẹp quá thì dễ không vớt được bản nào); các nguồn khác
+          dùng since_hours. Giá trị cửa sổ được chuyển thẳng vào config của vendor (hiện cả
+          3 vendor đều chưa đọc — phần lọc since thật làm ở chính phương thức này, bên trong
+          vendor không được gọi datetime.now() không tham số).
+        - Gộp xong thì gộp trùng theo external_id, giữ bản xuất hiện trước (tức nguồn có ưu tiên cao hơn được giữ).
+        - Xếp theo publish_time giảm dần.
+        - Lọc since cần mốc "lúc này": truyền now thì mới lọc (mỗi bản chọn cửa sổ theo nguồn
+          của nó, quy tắc như trên); không truyền now thì không lọc, trả nguyên toàn bộ kết
+          quả đã gộp (bên trong gói tuyệt đối không lén gọi datetime.now()).
         """
         syms = [Symbol.parse(s, market) for s in symbols]
         srcs = sorted(self.config.sources_for("news", market), key=lambda s: s.priority)

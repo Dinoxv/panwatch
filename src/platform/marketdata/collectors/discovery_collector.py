@@ -32,7 +32,7 @@ def get_market_data():
 
 
 class EastMoneyDiscoveryCollector:
-    """Discovery ranks (CN/HK/US),经 marketdata 包统一取数。"""
+    """Discovery ranks (CN/HK/US), lấy dữ liệu thống nhất qua gói marketdata."""
 
     def __init__(self, *, proxy: str | None = None):
         self.proxy = proxy

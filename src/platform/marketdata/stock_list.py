@@ -312,7 +312,7 @@ def refresh_stock_list() -> list[dict]:
 
 
 def get_stock_list() -> list[dict]:
-    """获取股票列表(优先缓存)"""
+    """Lấy danh sách mã (ưu tiên đệm)"""
     cached = _load_cache()
     if cached:
         return cached
@@ -320,7 +320,7 @@ def get_stock_list() -> list[dict]:
 
 
 def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """东方财富实时搜索 API"""
+    """API tìm kiếm thời gian thực của Đông Tài"""
     import urllib.parse
     # Nâng count để phủ thêm ứng viên (gồm cả sàn Bắc Kinh)
     url = f"https://searchapi.eastmoney.com/api/suggest/get?input={urllib.parse.quote(query)}&type=14&count={limit * 5}"
@@ -398,7 +398,7 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
 
 
 def search_stocks(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """搜索股票 - 优先使用实时搜索，失败则使用缓存"""
+    """Tìm mã - ưu tiên tìm thời gian thực, hỏng thì dùng đệm"""
     q = query.strip()
     if not q:
         return []
@@ -428,7 +428,7 @@ def search_stocks(query: str, market: str = "", limit: int = 20) -> list[dict]:
 
 
 def _cached_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
-    """从缓存中模糊搜索股票"""
+    """Tìm mã theo kiểu mờ trong đệm"""
     stocks = get_stock_list()
     if not stocks:
         return []

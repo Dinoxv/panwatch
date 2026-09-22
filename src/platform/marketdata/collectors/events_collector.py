@@ -30,15 +30,15 @@ def fetch_announcement_fulltext(
     timeout_s: float = 8.0,
     proxy: str | None = None,
 ) -> str:
-    """按 art_code 取东方财富公告全文(纯文本)。
+    """Lấy toàn văn công bố Đông Tài theo art_code (văn bản thuần).
 
-    成功返回 ``data.notice_content`` 去空白后的纯文本;任何失败(网络/解析/空)
-    返回空串 —— 调用方据此 fail-soft 只保留标题。
+    Thành công thì trả ``data.notice_content`` đã bỏ khoảng trắng; hỏng kiểu gì (mạng/đọc
+    dữ liệu/rỗng) cũng trả chuỗi rỗng — bên gọi dựa vào đó để fail-soft chỉ giữ tiêu đề.
 
     Args:
-        art_code: 公告唯一编号(EventItem.external_id)
-        timeout_s: 请求超时
-        proxy: 显式代理(默认不走 env 代理)
+        art_code: số hiệu duy nhất của công bố (EventItem.external_id)
+        timeout_s: thời gian chờ của yêu cầu
+        proxy: proxy tường minh (mặc định không đi qua proxy trong env)
     """
     if not art_code:
         return ""

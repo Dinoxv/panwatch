@@ -1,13 +1,13 @@
-"""统一 API 响应格式中间件"""
+"""Middleware định dạng phản hồi API thống nhất"""
 import json
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 
 class ResponseWrapperMiddleware:
-    """将所有 /api/ 响应包装为标准格式: {code, success, data, message}
+    """Bọc mọi phản hồi /api/ thành định dạng chuẩn: {code, success, data, message}
 
-    使用纯 ASGI 实现，避免 BaseHTTPMiddleware 的已知 streaming hang 问题。
+    Cài đặt bằng ASGI thuần, tránh lỗi treo streaming đã biết của BaseHTTPMiddleware.
     """
 
     def __init__(self, app: ASGIApp):
