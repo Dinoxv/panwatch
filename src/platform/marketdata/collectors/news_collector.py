@@ -13,13 +13,13 @@ from datetime import datetime
 class NewsItem:
     """新闻数据结构"""
     source: str           # "xueqiu" / "eastmoney_news" / "eastmoney"
-    external_id: str      # 来源侧唯一ID
+    external_id: str      # ID duy nhất phía nguồn
     title: str
     content: str
     publish_time: datetime
-    symbols: list[str] = field(default_factory=list)  # 关联股票代码
+    symbols: list[str] = field(default_factory=list)  # Mã cổ phiếu liên quan
     importance: int = 0   # Mức quan trọng 0-3
-    url: str = ""         # 原文链接
+    url: str = ""         # Liên kết bài gốc
 
 
 class NewsCollector:

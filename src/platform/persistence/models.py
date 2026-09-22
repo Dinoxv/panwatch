@@ -437,20 +437,20 @@ class StockSuggestion(Base):
     agent_name = Column(
         String, nullable=False
     )  # intraday_monitor/daily_report/premarket_outlook
-    agent_label = Column(String, default="")  # 盘中监测/盘后日报/盘前分析
+    agent_label = Column(String, default="")  # Giám sát trong phiên / Báo cáo sau phiên / Phân tích trước phiên
 
-    # 上下文信息
-    prompt_context = Column(String, default="")  # Prompt 上下文摘要
-    ai_response = Column(String, default="")  # AI 原始响应
+    # Thông tin ngữ cảnh
+    prompt_context = Column(String, default="")  # Tóm tắt ngữ cảnh của prompt
+    ai_response = Column(String, default="")  # Phản hồi gốc của AI
 
-    # 元数据（输入快照/触发原因等）
+    # Siêu dữ liệu (ảnh chụp đầu vào / lý do kích hoạt...)
     meta = Column(JSON, default={})
 
-    # 时间信息
+    # Thông tin thời gian
     created_at = Column(DateTime, server_default=func.now())
-    expires_at = Column(DateTime, nullable=True)  # 建议过期时间
+    expires_at = Column(DateTime, nullable=True)  # Thời điểm khuyến nghị hết hạn
 
-    # 索引：按市场+股票+时间快速查询
+    # Chỉ mục: truy vấn nhanh theo thị trường + mã + thời gian
     __table_args__ = (
         Index(
             "ix_suggestion_market_symbol_time",
@@ -804,8 +804,8 @@ class FactorWeight(Base):
     factor_code = Column(String, nullable=False)
     market = Column(String, nullable=False, default="CN")  # CN/HK/US
     weight = Column(Float, nullable=False, default=1.0)
-    is_pinned = Column(Boolean, nullable=False, default=False)  # 手动锁定,标定跳过
-    auto_calibrate = Column(Boolean, nullable=False, default=True)  # 关掉则标定跳过
+    is_pinned = Column(Boolean, nullable=False, default=False)  # Khóa thủ công, phép hiệu chỉnh sẽ bỏ qua
+    auto_calibrate = Column(Boolean, nullable=False, default=True)  # Tắt thì phép hiệu chỉnh bỏ qua
     reason = Column(String, default="")
     meta = Column(JSON, default={})
     effective_from = Column(DateTime, server_default=func.now())
@@ -1018,8 +1018,8 @@ class PaperTradingAccount(Base):
     max_drawdown_pct = Column(Float, nullable=False, default=0.0)
     peak_capital = Column(Float, nullable=False, default=1000000.0)
     enabled = Column(Boolean, default=True)
-    excluded_markets = Column(JSON, default=[])  # 排除的市场，如 ["US"]（兼容旧字段，由 market_allocations 派生）
-    # 各市场投资比例 {"CN":0.5,"HK":0.3,"US":0.2}，比例 0~1、合计 ≤ 1；比例 0 表示不投入该市场
+    excluded_markets = Column(JSON, default=[])  # Các thị trường bị loại, ví dụ ["US"] (trường cũ giữ để tương thích, suy ra từ market_allocations)
+    # Tỷ trọng giải ngân từng thị trường {"CN":0.5,"HK":0.3,"US":0.2}, mỗi tỷ trọng 0~1, tổng ≤ 1; bằng 0 nghĩa là không giải ngân vào thị trường đó
     market_allocations = Column(JSON, default={})
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -1043,7 +1043,7 @@ class PaperTradingPosition(Base):
     stop_loss = Column(Float, nullable=True)
     target_price = Column(Float, nullable=True)
     current_price = Column(Float, nullable=True)
-    highest_price = Column(Float, nullable=True)  # 持仓期最高价(移动止损用)
+    highest_price = Column(Float, nullable=True)  # Giá cao nhất trong kỳ nắm giữ (dùng cho cắt lỗ động)
     unrealized_pnl = Column(Float, nullable=False, default=0.0)
     status = Column(String, nullable=False, default="open")  # open/closed
     signal_run_id = Column(Integer, nullable=True)
@@ -1304,14 +1304,14 @@ class PersonalAccessToken(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False, default="")  # 用户可读的用途备注
+    name = Column(String, nullable=False, default="")  # Ghi chú mục đích để người dùng đọc
     token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    prefix = Column(String(32), nullable=False, default="")  # 明文前缀,列表展示用
+    prefix = Column(String(32), nullable=False, default="")  # Tiền tố bản rõ, dùng để hiển thị trong danh sách
     scopes_json = Column(Text, nullable=False, default="[]")  # JSON: ["mcp:read"]
     expires_at = Column(DateTime, nullable=True)  # None = không bao giờ hết hạn
     last_used_at = Column(DateTime, nullable=True)
     last_used_ip = Column(String, nullable=True)
-    revoked_at = Column(DateTime, nullable=True)  # 非空即已吊销
+    revoked_at = Column(DateTime, nullable=True)  # Khác rỗng nghĩa là đã bị thu hồi
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -1325,12 +1325,12 @@ class MCPCallLog(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    pat_id = Column(Integer, nullable=True)  # 软引用,PAT 删除后仍保留历史
+    pat_id = Column(Integer, nullable=True)  # Tham chiếu mềm, xóa PAT rồi vẫn giữ được lịch sử
     pat_prefix = Column(String, nullable=True)
     tool_name = Column(String, nullable=False, default="")
     status = Column(String, nullable=False, default="ok")  # ok / error
     error_message = Column(Text, nullable=True)
-    args_summary = Column(Text, nullable=True)  # 脱敏摘要,截断
+    args_summary = Column(Text, nullable=True)  # Tóm tắt đã che thông tin nhạy cảm, có cắt bớt
     duration_ms = Column(Integer, default=0)
     client_ip = Column(String, nullable=True)
     called_at = Column(DateTime, server_default=func.now())

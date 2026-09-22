@@ -31,8 +31,8 @@ from typing import Any, Iterator, Optional
 logger = logging.getLogger(__name__)
 
 
-# ---- GenAI 语义约定属性名 -------------------------------------------------
-# 参考: OpenTelemetry Semantic Conventions for Generative AI
+# ---- Tên thuộc tính theo quy ước ngữ nghĩa GenAI --------------------------
+# Tham chiếu: OpenTelemetry Semantic Conventions for Generative AI
 GEN_AI_SYSTEM = "gen_ai.system"
 GEN_AI_OPERATION_NAME = "gen_ai.operation.name"
 GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
@@ -40,7 +40,7 @@ GEN_AI_RESPONSE_MODEL = "gen_ai.response.model"
 GEN_AI_USAGE_INPUT_TOKENS = "gen_ai.usage.input_tokens"
 GEN_AI_USAGE_OUTPUT_TOKENS = "gen_ai.usage.output_tokens"
 
-# PanWatch 自定义属性(桥接自建 trace 模型,便于在 APM 里与 agent_runs 对齐)
+# Thuộc tính riêng của PanWatch (bắc cầu sang mô hình trace tự dựng, để đối chiếu với agent_runs trong APM)
 ATTR_AGENT_NAME = "panwatch.agent.name"
 ATTR_TRACE_ID = "panwatch.trace_id"
 ATTR_TRIGGER_SOURCE = "panwatch.trigger_source"
@@ -49,7 +49,7 @@ ATTR_TA_STAGE = "panwatch.tradingagents.stage"
 _SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "panwatch")
 _INSTRUMENTATION_SCOPE = "panwatch.otel"
 
-# 模块级状态(单进程内单例)
+# Trạng thái cấp module (thực thể duy nhất trong một tiến trình)
 _enabled: bool = False
 _initialized: bool = False
 _provider: Any = None
@@ -70,7 +70,7 @@ def _import_sdk():
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
         return trace, Resource, TracerProvider, BatchSpanProcessor
-    except Exception:  # pragma: no cover - 仅在未装 SDK 时命中
+    except Exception:  # pragma: no cover - chỉ chạm tới khi chưa cài SDK
         return None
 
 
@@ -89,7 +89,7 @@ def _build_otlp_exporter():
         return OTLPSpanExporter()
     except Exception:
         pass
-    try:  # pragma: no cover - 环境相关
+    try:  # pragma: no cover - phụ thuộc môi trường
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
             OTLPSpanExporter as GrpcOTLPSpanExporter,
         )
@@ -112,7 +112,7 @@ def init_otel(*, force: bool = False) -> bool:
 
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "").strip()
     if not endpoint:
-        # 未配置 endpoint —— 默认关闭,零副作用。
+        # Chưa cấu hình endpoint — mặc định tắt, không gây tác dụng phụ nào.
         _initialized = True
         _enabled = False
         return False
@@ -143,7 +143,7 @@ def init_otel(*, force: bool = False) -> bool:
         resource = Resource.create({"service.name": _SERVICE_NAME})
         provider = TracerProvider(resource=resource)
         provider.add_span_processor(BatchSpanProcessor(exporter))
-        # 设为全局 provider(供上下文传播);span 创建仍走本模块持有的 tracer。
+        # Đặt làm provider toàn cục (để lan truyền ngữ cảnh); việc tạo span vẫn đi qua tracer mà module này giữ.
         trace.set_tracer_provider(provider)
         _provider = provider
         _tracer = provider.get_tracer(_INSTRUMENTATION_SCOPE)
@@ -151,14 +151,14 @@ def init_otel(*, force: bool = False) -> bool:
         _initialized = True
         logger.info("OTel 导出已启用,endpoint=%s service=%s", endpoint, _SERVICE_NAME)
         return True
-    except Exception as e:  # pragma: no cover - 初始化异常兜底
+    except Exception as e:  # pragma: no cover - bắt dự phòng lỗi khởi tạo
         logger.warning("OTel 初始化失败,降级为 no-op: %s", e)
         _enabled = False
         _initialized = True
         return False
 
 
-# ---- 供测试:用 InMemorySpanExporter 同步导出 -----------------------------
+# ---- Dành cho kiểm thử: xuất đồng bộ bằng InMemorySpanExporter ------------
 
 def install_test_exporter():
     """测试专用:重置并安装 InMemorySpanExporter(SimpleSpanProcessor 同步导出)。
@@ -179,8 +179,8 @@ def install_test_exporter():
     resource = Resource.create({"service.name": _SERVICE_NAME})
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(SimpleSpanProcessor(exporter))
-    # 测试内可能重复安装:直接覆盖本模块持有的 provider/tracer;
-    # 全局 provider 只在首次设置(OTel 不允许覆盖,重复设置会告警),故不强设全局。
+    # Trong kiểm thử có thể cài lại nhiều lần: ghi đè thẳng provider/tracer mà module này giữ;
+    # provider toàn cục chỉ đặt ở lần đầu (OTel không cho ghi đè, đặt lại sẽ cảnh báo), nên không ép đặt toàn cục.
     try:
         trace.set_tracer_provider(provider)
     except Exception:
@@ -201,7 +201,7 @@ def reset() -> None:
     _tracer = None
 
 
-# ---- span 接口(全部在关闭时 no-op) --------------------------------------
+# ---- Giao diện span (tất cả đều no-op khi tắt) ---------------------------
 
 @contextmanager
 def agent_run_span(

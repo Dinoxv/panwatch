@@ -29,7 +29,7 @@ def get_global_proxy() -> str:
 
 def sanitize_for_telegram(content: str) -> str:
     """清理内容以适配 Telegram（移除 HTML 和 Markdown 格式）"""
-    # 移除 HTML 标签
+    # Bỏ thẻ HTML
     content = re.sub(r"</?table[^>]*>", "", content)
     content = re.sub(r"</?thead[^>]*>", "", content)
     content = re.sub(r"</?tbody[^>]*>", "", content)
@@ -41,31 +41,31 @@ def sanitize_for_telegram(content: str) -> str:
     content = re.sub(r"</?p[^>]*>", "\n", content)
     content = re.sub(r"<br\s*/?>", "\n", content)
 
-    # 移除 Markdown 格式
-    # markdown 链接 [label](url) → "label url":Telegram 内联链接对 localhost/IP:端口 等
-    # 非公网地址不渲染(标签退化成纯文本点不了),裸 URL 则会被自动识别为可点击,更稳。
+    # Bỏ định dạng Markdown
+    # Liên kết markdown [label](url) → "label url": liên kết nội tuyến của Telegram không dựng được với localhost / IP:cổng
+    # và các địa chỉ không thuộc mạng công cộng (nhãn tụt thành văn bản thuần, bấm không được), còn URL trần thì được tự nhận là bấm được nên ổn định hơn.
     content = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r"\1 \2", content)
-    content = re.sub(r"^#{1,6}\s*", "", content, flags=re.MULTILINE)  # 移除标题 #
-    content = re.sub(r"\*\*(.+?)\*\*", r"\1", content)  # 移除粗体 **
-    content = re.sub(r"\*(.+?)\*", r"\1", content)  # 移除斜体 *
-    content = re.sub(r"__(.+?)__", r"\1", content)  # 移除粗体 __
-    content = re.sub(r"_(.+?)_", r"\1", content)  # 移除斜体 _
-    content = re.sub(r"~~(.+?)~~", r"\1", content)  # 移除删除线
-    content = re.sub(r"`(.+?)`", r"\1", content)  # 移除行内代码
+    content = re.sub(r"^#{1,6}\s*", "", content, flags=re.MULTILINE)  # Bỏ dấu # của tiêu đề
+    content = re.sub(r"\*\*(.+?)\*\*", r"\1", content)  # Bỏ dấu ** của chữ đậm
+    content = re.sub(r"\*(.+?)\*", r"\1", content)  # Bỏ dấu * của chữ nghiêng
+    content = re.sub(r"__(.+?)__", r"\1", content)  # Bỏ dấu __ của chữ đậm
+    content = re.sub(r"_(.+?)_", r"\1", content)  # Bỏ dấu _ của chữ nghiêng
+    content = re.sub(r"~~(.+?)~~", r"\1", content)  # Bỏ gạch ngang chữ
+    content = re.sub(r"`(.+?)`", r"\1", content)  # Bỏ mã nội dòng
     content = re.sub(
         r"^\s*[-*+]\s+", "· ", content, flags=re.MULTILINE
-    )  # 列表符号改为 ·
+    )  # Đổi ký hiệu danh sách thành ·
     content = re.sub(
         r"^\s*\d+\.\s+", "", content, flags=re.MULTILINE
-    )  # 移除有序列表数字
+    )  # Bỏ số thứ tự của danh sách đánh số
 
-    # 清理多余空白
+    # Dọn khoảng trắng thừa
     content = re.sub(r"\n\s*\n\s*\n", "\n\n", content)
     content = re.sub(r" +", " ", content)
     return content.strip()
 
 
-# 渠道类型定义 (label + 表单字段)
+# Định nghĩa các loại kênh (nhãn + các trường biểu mẫu)
 CHANNEL_TYPES = {
     "telegram": {
         "label": "Telegram",
@@ -82,7 +82,7 @@ CHANNEL_TYPES = {
             "secret",
             "phones",
             "keyword",
-        ],  # keyword 选填：安全设置为“关键字”时自动附加
+        ],  # keyword không bắt buộc: khi thiết lập bảo mật là “từ khóa” thì tự động nối thêm
     },
     "wecom": {
         "label": "企业微信机器人",
@@ -110,16 +110,16 @@ CHANNEL_TYPES = {
     },
 }
 
-# 通过 Apprise 支持的渠道类型（无代理配置时）
+# Các loại kênh do Apprise hỗ trợ (khi không cấu hình proxy)
 _APPRISE_TYPES = {"telegram", "bark", "dingtalk", "lark", "discord", "pushover"}
 
-# 自定义实现的渠道类型（带代理或特殊需求）
+# Các loại kênh tự cài đặt (có proxy hoặc yêu cầu đặc biệt)
 _CUSTOM_IMPL_TYPES = {"wecom", "serverchan", "pushplus"}
 
-# 支持 Markdown 的渠道（不需要 sanitize）
+# Kênh hỗ trợ Markdown (không cần làm sạch)
 _MARKDOWN_CHANNELS = {"wecom", "serverchan", "pushplus", "dingtalk", "lark", "discord"}
 
-# 不支持 Markdown 的渠道（需要 sanitize）
+# Kênh không hỗ trợ Markdown (phải làm sạch)
 _PLAIN_TEXT_CHANNELS = {"telegram", "bark", "pushover"}
 
 
@@ -135,7 +135,7 @@ def build_apprise_url(channel_type: str, config: dict) -> str | None:
         chat_id = config.get("chat_id", "")
         if not bot_token or not chat_id:
             raise ValueError("Telegram 需要 bot_token 和 chat_id")
-        # 如果配置了代理（渠道级或全局），返回 None，使用自定义方式发送
+        # Nếu đã cấu hình proxy (cấp kênh hoặc toàn cục) thì trả None và gửi bằng cách tự cài đặt
         proxy = config.get("proxy", "").strip() or get_global_proxy()
         if proxy:
             return None
@@ -152,10 +152,10 @@ def build_apprise_url(channel_type: str, config: dict) -> str | None:
         return f"bark://{device_key}/"
 
     elif channel_type == "dingtalk":
-        # Apprise 钉钉格式：
-        # - 无加签：dingtalk://{access_token}/
-        # - 加签：  dingtalk://{secret}@{access_token}/
-        # - @手机号：在 URL 末尾追加 ?to=13800138000,13900139000
+        # Định dạng DingTalk của Apprise:
+        # - Không ký: dingtalk://{access_token}/
+        # - Có ký:  dingtalk://{secret}@{access_token}/
+        # - Nhắc theo số điện thoại: nối vào cuối URL ?to=13800138000,13900139000
         token = (config.get("token") or "").strip()
         secret = (config.get("secret") or "").strip()
         phones = (config.get("phones") or "").strip()
@@ -163,7 +163,7 @@ def build_apprise_url(channel_type: str, config: dict) -> str | None:
             raise ValueError("钉钉需要 token")
         base = f"dingtalk://{secret}@{token}/" if secret else f"dingtalk://{token}/"
         if phones:
-            # 仅保留数字和逗号
+            # Chỉ giữ chữ số và dấu phẩy
             phone_list = [
                 re.sub(r"[^0-9]", "", p)
                 for p in phones.split(",")
@@ -204,7 +204,7 @@ class NotifierManager:
         self._ap = apprise.Apprise()
         self._custom_channels: list[tuple[str, dict]] = []
         self._channel_count = 0
-        # 钉钉关键字（可选）：若群机器人启用“关键字”安全校验，则自动附加
+        # Từ khóa DingTalk (tùy chọn): nếu bot nhóm bật kiểm tra bảo mật “từ khóa” thì tự động nối thêm
         self._dingtalk_keywords: set[str] = set()
         self.policy = policy
 
@@ -214,7 +214,7 @@ class NotifierManager:
             if channel_type in _APPRISE_TYPES:
                 url = build_apprise_url(channel_type, config)
                 if url is None:
-                    # 需要自定义实现（如带代理的 Telegram）
+                    # Cần tự cài đặt (ví dụ Telegram đi qua proxy)
                     self._custom_channels.append((channel_type, config))
                     self._channel_count += 1
                     logger.info(f"注册自定义通知渠道: {channel_type} (带代理)")
@@ -261,10 +261,10 @@ class NotifierManager:
             # do not block sends on policy errors
             pass
 
-        # 准备纯文本版本（用于不支持 Markdown 的渠道）
+        # Chuẩn bị bản văn bản thuần (cho các kênh không hỗ trợ Markdown)
         plain_content = sanitize_for_telegram(content)
 
-        # 准备附件
+        # Chuẩn bị tệp đính kèm
         attachments = None
         if images:
             attachments = apprise.AppriseAttachment()
@@ -274,7 +274,7 @@ class NotifierManager:
 
         errors = []
 
-        # 若配置了钉钉关键字，自动追加在内容末尾以通过“关键字”校验
+        # Nếu đã cấu hình từ khóa DingTalk thì tự nối vào cuối nội dung để qua được kiểm tra “từ khóa”
         if self._dingtalk_keywords:
             suffix = " " + " ".join(sorted(self._dingtalk_keywords))
             if suffix.strip() not in plain_content:
@@ -297,7 +297,7 @@ class NotifierManager:
                 return
             await asyncio.sleep(backoff * (2 ** max(0, i - 1)))
 
-        # Apprise 渠道（使用纯文本，因为 Telegram 等不支持 Markdown）
+        # Kênh qua Apprise (dùng văn bản thuần, vì Telegram và vài kênh khác không hỗ trợ Markdown)
         if len(self._ap) > 0:
             apprise_ok = False
             last_err = ""
@@ -323,13 +323,13 @@ class NotifierManager:
             if not apprise_ok:
                 errors.append(last_err or "Apprise 通知发送失败")
 
-        # 自定义渠道（根据渠道类型自动选择格式）
+        # Kênh tự cài đặt (tự chọn định dạng theo loại kênh)
         for ch_type, config in self._custom_channels:
             ch_ok = False
             last_err = ""
             for attempt in range(0, retry_attempts + 1):
                 try:
-                    # 支持 Markdown 的渠道使用原始内容，否则使用纯文本
+                    # Kênh hỗ trợ Markdown thì dùng nội dung gốc, còn lại dùng văn bản thuần
                     ch_content = (
                         content if ch_type in _MARKDOWN_CHANNELS else plain_content
                     )
@@ -372,23 +372,23 @@ class NotifierManager:
         """
         bot_token = config.get("bot_token", "")
         chat_id = config.get("chat_id", "")
-        # 渠道级代理优先，否则使用全局代理
+        # Ưu tiên proxy cấp kênh, không có thì dùng proxy toàn cục
         proxy = config.get("proxy", "").strip() or get_global_proxy()
 
         if not bot_token or not chat_id:
             raise ValueError("Telegram 需要 bot_token 和 chat_id")
 
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        # 用现成的 sanitize_for_telegram 把 markdown 完全剥成纯文本,
-        # 避免 `**粗体**` / `## 标题` / 未闭合实体导致 Telegram parse 失败。
-        # 标题外层手动加 `*...*` 让其加粗(Telegram 老 Markdown 只认单星号)。
+        # Dùng sẵn sanitize_for_telegram để lột sạch markdown thành văn bản thuần,
+        # tránh việc `**chữ đậm**` / `## tiêu đề` / thực thể chưa đóng làm Telegram phân tích thất bại.
+        # Bọc tiêu đề bằng `*...*` thủ công cho đậm (Markdown đời cũ của Telegram chỉ nhận một dấu sao).
         safe_title = sanitize_for_telegram(title) if title else ""
         safe_content = sanitize_for_telegram(content)
         text = f"*{safe_title}*\n\n{safe_content}" if safe_title else safe_content
-        # Telegram 单条上限 4096,留点 buffer 给末尾提示
+        # Telegram giới hạn 4096 ký tự mỗi tin, chừa một khoảng đệm cho dòng nhắc ở cuối
         if len(text) > 3900:
-            # 正文末尾若带详情链接(经 sanitize 后已是裸 URL),直接截断会把它砍掉 →
-            # 用户点不到。先抽出来,截断正文后再拼回末尾。
+            # Nếu cuối phần thân có liên kết chi tiết (sau khi làm sạch đã thành URL trần) thì cắt thẳng sẽ chém mất nó →
+            # người dùng không bấm được. Vậy nên tách nó ra trước, cắt phần thân xong mới ghép lại vào cuối.
             link_m = re.search(r"(https?://[^\s)]+)\s*$", text)
             if link_m:
                 notice = f"\n\n…内容过长已截断,完整报告 👉 {link_m.group(1)}"
@@ -401,7 +401,7 @@ class NotifierManager:
             "parse_mode": "Markdown",
         }
 
-        # 配置代理
+        # Cấu hình proxy
         transport = None
         if proxy:
             transport = httpx.AsyncHTTPTransport(proxy=proxy)

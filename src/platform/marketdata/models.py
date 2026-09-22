@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 
 class MarketCode(str, Enum):
     CN = "CN"  # Cổ phiếu A
-    HK = "HK"  # 港股
-    US = "US"  # 美股
+    HK = "HK"  # Cổ phiếu Hồng Kông
+    US = "US"  # Cổ phiếu Mỹ
 
 
 @dataclass
@@ -24,7 +24,7 @@ class MarketDef:
     name: str
     timezone: str
     sessions: list[TradingSession]
-    symbol_pattern: str  # 正则，用于校验股票代码格式
+    symbol_pattern: str  # Biểu thức chính quy dùng để kiểm tra định dạng mã cổ phiếu
 
     def get_tz(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
@@ -36,8 +36,8 @@ class MarketDef:
         else:
             dt = dt.astimezone(self.get_tz())
 
-        # 非交易日(周末 / A股法定节假日)一律不交易。
-        # 延迟导入:trading_calendar 依赖本模块的 MarketCode/MARKETS。
+        # Ngày không giao dịch (cuối tuần / nghỉ lễ theo quy định của thị trường A) thì nhất loạt không giao dịch.
+        # Import trễ: trading_calendar phụ thuộc MarketCode/MARKETS của chính module này.
         from src.platform.scheduling.trading_calendar import is_trading_day
 
         if not is_trading_day(self.code, dt.date()):
@@ -50,7 +50,7 @@ class MarketDef:
         )
 
 
-# 预定义市场
+# Các thị trường định nghĩa sẵn
 MARKETS: dict[MarketCode, MarketDef] = {
     MarketCode.CN: MarketDef(
         code=MarketCode.CN,
@@ -91,10 +91,10 @@ class StockData:
     name: str
     market: MarketCode
     current_price: float
-    change_pct: float       # 涨跌幅 %
-    change_amount: float    # 涨跌额
-    volume: float           # 成交量（手）
-    turnover: float         # 成交额（元）
+    change_pct: float       # Biên độ %
+    change_amount: float    # Mức tăng giảm tuyệt đối
+    volume: float           # Khối lượng (lô)
+    turnover: float         # Giá trị giao dịch (đồng)
     open_price: float
     high_price: float
     low_price: float

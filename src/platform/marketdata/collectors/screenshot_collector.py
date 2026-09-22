@@ -10,15 +10,15 @@ from src.platform.marketdata.cn_symbol import get_cn_prefix
 
 logger = logging.getLogger(__name__)
 
-# 截图保存目录
+# Thư mục lưu ảnh chụp màn hình
 SCREENSHOT_DIR = Path(tempfile.gettempdir()) / "panwatch_screenshots"
 SCREENSHOT_DIR.mkdir(exist_ok=True)
 
-# 默认配置
+# Cấu hình mặc định
 DEFAULT_CONFIG = {
     "viewport": {"width": 1280, "height": 900},
     "wait_selector": ".quote_title",  # Chờ phần thân trang tải xong
-    "extra_wait_ms": 3000,  # 等待图表渲染
+    "extra_wait_ms": 3000,  # Chờ biểu đồ dựng xong
 }
 
 
@@ -61,7 +61,7 @@ class ScreenshotCollector:
             from playwright.async_api import async_playwright
             self._playwright = await async_playwright().start()
 
-            # 使用反检测设置启动浏览器
+            # Khởi động trình duyệt với thiết lập chống phát hiện tự động
             self._browser = await self._playwright.chromium.launch(
                 headless=True,
                 args=[
@@ -137,7 +137,7 @@ class ScreenshotCollector:
         filepath = str(SCREENSHOT_DIR / f"{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
 
         try:
-            # 使用真实的 User-Agent 和反检测设置
+            # Dùng User-Agent thật và thiết lập chống phát hiện tự động
             context = await self._browser.new_context(
                 viewport=self.config["viewport"],
                 locale="zh-CN",
@@ -147,7 +147,7 @@ class ScreenshotCollector:
             )
             page = await context.new_page()
 
-            # 注入反检测脚本
+            # Tiêm script chống phát hiện tự động
             await page.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
                 Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
@@ -166,13 +166,13 @@ class ScreenshotCollector:
                     state="visible",
                 )
             except Exception:
-                # 备选：等待任意内容加载
+                # Phương án phụ: chờ bất kỳ nội dung nào tải xong
                 await page.wait_for_load_state("networkidle", timeout=10000)
 
-            # 额外等待渲染
+            # Chờ thêm cho phần dựng hình
             await page.wait_for_timeout(self.config["extra_wait_ms"])
 
-            # 根据数据源执行不同的截图逻辑
+            # Chạy logic chụp màn hình khác nhau tùy nguồn dữ liệu
             if provider == "xueqiu":
                 await self._capture_xueqiu(page, filepath, period)
             elif provider == "sina":
@@ -200,25 +200,25 @@ class ScreenshotCollector:
         # Chờ trang tải xong
         await page.wait_for_timeout(1000)
 
-        # 关闭所有可能的弹窗
+        # Đóng mọi hộp thoại có thể xuất hiện
         await self._close_xueqiu_popups(page)
 
-        # 等待图表加载
+        # Chờ biểu đồ tải xong
         try:
             await page.wait_for_selector(".stock-chart", timeout=10000)
         except Exception:
             pass
 
-        # 切换到日K（默认是分时图）
+        # Chuyển sang nến ngày (mặc định là biểu đồ trong phiên)
         await self._switch_to_daily_kline(page)
 
-        # 如果需要其他周期再切换
+        # Cần khung thời gian khác thì chuyển tiếp
         if period == "weekly":
             await self._switch_period_xueqiu(page, "weekly")
         elif period == "monthly":
             await self._switch_period_xueqiu(page, "monthly")
 
-        # 直接截取固定区域（K线图区域）
+        # Cắt thẳng vùng cố định (vùng biểu đồ nến)
         await page.screenshot(
             path=filepath,
             clip={"x": 250, "y": 80, "width": 660, "height": 720}
@@ -233,7 +233,7 @@ class ScreenshotCollector:
         except Exception:
             pass
 
-        # 截取 K 线图区域
+        # Cắt vùng biểu đồ nến
         try:
             chart = await page.query_selector("#kline_container")
             if chart:
@@ -246,7 +246,7 @@ class ScreenshotCollector:
 
     async def _capture_eastmoney(self, page, filepath: str, period: str):
         """东方财富截图逻辑"""
-        # 滚动到 K 线图区域
+        # Cuộn tới vùng biểu đồ nến
         try:
             kline_area = await page.query_selector("#app > div > div > div.quote_title.self_clearfix")
             if kline_area:
@@ -255,11 +255,11 @@ class ScreenshotCollector:
         except Exception:
             pass
 
-        # 尝试切换周期
+        # Thử chuyển khung thời gian
         if period != "daily":
             await self._switch_period(page, period)
 
-        # 截图 K 线图区域
+        # Chụp vùng biểu đồ nến
         try:
             kline_container = await page.query_selector("#kline_div")
             if kline_container:
@@ -272,11 +272,11 @@ class ScreenshotCollector:
 
     async def _close_xueqiu_popups(self, page):
         """关闭雪球所有弹窗"""
-        # 多次尝试关闭各种弹窗
+        # Thử nhiều lần để đóng các loại hộp thoại
         for _ in range(5):
             closed = False
 
-            # 1. 关闭登录弹窗（点击"跳过"）
+            # 1. Đóng hộp thoại đăng nhập (bấm "bỏ qua")
             try:
                 skip_btn = await page.query_selector('text="跳过"')
                 if skip_btn and await skip_btn.is_visible():
@@ -287,15 +287,15 @@ class ScreenshotCollector:
             except Exception:
                 pass
 
-            # 2. 关闭邀请加群弹窗（点击 X 按钮）
+            # 2. Đóng hộp thoại mời vào nhóm (bấm nút X)
             try:
-                # 弹窗右上角的关闭按钮
+                # Nút đóng ở góc trên bên phải hộp thoại
                 close_btns = await page.query_selector_all('svg, .close, [class*="close"], [class*="Close"]')
                 for btn in close_btns:
                     try:
                         if await btn.is_visible():
                             box = await btn.bounding_box()
-                            # 只点击在弹窗区域内的关闭按钮
+                            # Chỉ bấm nút đóng nằm trong vùng hộp thoại
                             if box and box["x"] > 200 and box["y"] < 500:
                                 await btn.click()
                                 await page.wait_for_timeout(500)
@@ -307,14 +307,14 @@ class ScreenshotCollector:
             except Exception:
                 pass
 
-            # 3. 按 ESC 键
+            # 3. Nhấn phím ESC
             try:
                 await page.keyboard.press("Escape")
                 await page.wait_for_timeout(300)
             except Exception:
                 pass
 
-            # 4. 点击遮罩层关闭
+            # 4. Bấm lớp phủ để đóng
             try:
                 mask = await page.query_selector('.modal-mask, .overlay, [class*="mask"]')
                 if mask and await mask.is_visible():
@@ -331,7 +331,7 @@ class ScreenshotCollector:
     async def _switch_to_daily_kline(self, page):
         """雪球切换到日K线图"""
         try:
-            # 点击"日K"按钮
+            # Bấm nút "nến ngày"
             daily_btn = await page.query_selector('text="日K"')
             if daily_btn and await daily_btn.is_visible():
                 await daily_btn.click()
@@ -356,7 +356,7 @@ class ScreenshotCollector:
 
     async def _close_popups(self, page):
         """关闭弹窗广告"""
-        # 常见的关闭按钮选择器
+        # Các selector nút đóng thường gặp
         close_selectors = [
             'text="关闭"',
             'text="×"',
@@ -380,7 +380,7 @@ class ScreenshotCollector:
             except Exception:
                 continue
 
-        # 按 ESC 键关闭可能的弹窗
+        # Nhấn ESC để đóng hộp thoại nếu có
         try:
             await page.keyboard.press("Escape")
             await page.wait_for_timeout(300)

@@ -31,8 +31,8 @@ from marketdata.types import (
 from marketdata.vendors.discovery import DiscoveryVendor
 from marketdata.vendors.news import EastmoneyStockNewsVendor
 
-# 指数 secid(东财):指数与个股 secid 前缀规则不同,必须显式映射,否则按个股规则会取错标的。
-# 美股指数东财K线不支持,未列入 → index_klines 返回空,fail-soft。
+# secid của chỉ số (EastMoney): quy tắc tiền tố của chỉ số khác với cổ phiếu riêng lẻ nên phải ánh xạ tường minh, không thì áp quy tắc cổ phiếu sẽ lấy nhầm mã.
+# EastMoney không hỗ trợ nến cho chỉ số Mỹ nên không đưa vào danh sách → index_klines trả rỗng, hạ cấp mềm.
 INDEX_SECID: dict[str, str] = {
     "000300": "1.000300",   # Chỉ số CSI 300
     "000001": "1.000001",   # Chỉ số Thượng Hải
@@ -41,17 +41,17 @@ INDEX_SECID: dict[str, str] = {
     "HSI": "100.HSI",       # Chỉ số Hang Seng
 }
 
-# 指数的原始腾讯符号(index_klines 的腾讯兜底路径;美股指数东财无 secid,只能走这里,
-# 腾讯对美股指数只返最近几根,短但可用)。
+# Mã Tencent gốc của các chỉ số (đường dự phòng qua Tencent của index_klines; chỉ số Mỹ không có secid ở EastMoney nên chỉ còn lối này,
+# Tencent chỉ trả vài cây nến gần nhất cho chỉ số Mỹ, ngắn nhưng dùng được).
 INDEX_TENCENT: dict[str, str] = {
     "000001": "sh000001",   # Chỉ số Thượng Hải
     "399001": "sz399001",   # Chỉ số Thâm Quyến
     "399006": "sz399006",   # Chỉ số ChiNext
     "000300": "sh000300",   # Chỉ số CSI 300
     "HSI": "hkHSI",         # Chỉ số Hang Seng
-    "IXIC": "usIXIC",       # 纳斯达克
-    "DJI": "usDJI",         # 道琼斯
-    "INX": "usINX",         # 标普500
+    "IXIC": "usIXIC",       # Nasdaq
+    "DJI": "usDJI",         # Dow Jones
+    "INX": "usINX",         # S&P 500
 }
 
 
@@ -85,20 +85,20 @@ class MarketData:
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=0.0), default_ttl=0.0,
         )
-        # flash_news(快讯 7×24)是市场级(symbols 恒空),但仍走 Engine 做主备/缓存/健康度,
-        # 与 discovery(不进 Engine)的区别是:flash_news 有多源竞争、需要统一 TTL 缓存。
+        # flash_news (tin nhanh 7×24) ở cấp thị trường (symbols luôn rỗng), nhưng vẫn đi qua Engine để có chính/phụ, bộ đệm và theo dõi sức khỏe;
+        # khác với discovery (không vào Engine) ở chỗ: flash_news có nhiều nguồn cạnh tranh và cần bộ đệm TTL thống nhất.
         self._flash_news_engine = Engine(
             datatype="flash_news",
             vendors=build_vendors("flash_news"),
             config=config, metrics=self.metrics,
             cache=TTLCache(default_ttl_sec=30.0), default_ttl=30.0,
         )
-        # discovery(东财热门榜)是市场级、单源、非 symbol 模型,不进 Engine/不进 DataSource
-        # taxonomy —— md 直接委托给 DiscoveryVendor。
+        # discovery (bảng xếp hạng nổi bật của EastMoney) ở cấp thị trường, một nguồn, không theo mô hình symbol, nên không vào Engine / không vào phân loại
+        # DataSource — md ủy quyền thẳng cho DiscoveryVendor.
         self._discovery = DiscoveryVendor()
-        # news(新闻资讯)是聚合语义(并发查所有已启用源、结果合并去重),非失败转移
-        # (找到一个就停),硬套 Engine 的主备模型是设计错配,故不进 Engine —— 只借 registry
-        # 的 build_vendors 复用 vendor 实例,合并/去重/排序/since 过滤逻辑在 news() 里自己做。
+        # news (tin tức) mang ngữ nghĩa tổng hợp (hỏi song song mọi nguồn đang bật rồi gộp và khử trùng lặp), không phải ngữ nghĩa hạ cấp khi lỗi
+        # (tìm được một nguồn là dừng); ép nó vào mô hình chính/phụ của Engine là lệch thiết kế nên không đưa vào Engine — chỉ mượn build_vendors của registry
+        # để dùng lại thực thể vendor, còn phần gộp / khử trùng lặp / sắp xếp / lọc since thì news() tự làm.
         self._news_vendors = build_vendors("news")
         self._fundamentals_engine = Engine(
             datatype="fundamentals",

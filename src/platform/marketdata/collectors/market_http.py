@@ -26,7 +26,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-# ── 调用来源标记(全局共享)──────────────────────────────────────────────
+# ── Dấu nguồn gọi (dùng chung toàn cục) ──────────────────────────────────
 _FETCH_SOURCE: contextvars.ContextVar[str] = contextvars.ContextVar(
     "fetch_source", default=""
 )
@@ -47,7 +47,7 @@ def fetch_source(name: str):
 
             stack.enter_context(package_fetch_source(name))
         except Exception:
-            # marketdata 是可选依赖；宿主采集器本身仍应能独立工作。
+            # marketdata là phụ thuộc tùy chọn; bộ thu thập của bên chủ quản vẫn phải chạy độc lập được.
             pass
         yield
     finally:
@@ -60,7 +60,7 @@ def source_suffix() -> str:
     return f" [src={src}]" if src else ""
 
 
-# ── 按 host 进程级节流 ───────────────────────────────────────────────────
+# ── Giãn nhịp theo host ở cấp tiến trình ─────────────────────────────────
 _THROTTLE_LOCK = threading.Lock()
 _last_call: dict[str, float] = {}
 
@@ -76,7 +76,7 @@ def throttle(host_key: str, min_interval_s: float) -> None:
         _last_call[host_key] = time.time()
 
 
-# ── 统一同步 GET ─────────────────────────────────────────────────────────
+# ── Hàm GET đồng bộ dùng chung ───────────────────────────────────────────
 def market_get(
     url: str,
     *,
@@ -89,11 +89,11 @@ def market_get(
     backoff: float = 0.4,
     jitter: float = 0.25,
     parse: str = "text",  # "text" | "json" | "content"
-    encoding: str | None = None,  # 强制解码(如 "gbk")
+    encoding: str | None = None,  # Ép bảng mã khi giải (ví dụ "gbk")
     symbol: str = "",
     log_label: str = "",
     raise_for_status: bool = True,
-    trust_env: bool = True,  # 遵循进程 env 代理(HTTP_PROXY/NO_PROXY),由 apply_proxy_env 统一设
+    trust_env: bool = True,  # Tuân theo proxy trong env của tiến trình (HTTP_PROXY/NO_PROXY), do apply_proxy_env đặt thống nhất
     follow_redirects: bool = True,
     verify: bool = True,
 ) -> Any | None:
@@ -131,9 +131,9 @@ def market_get(
     return None
 
 
-# ── 轻量 TTL 缓存 ────────────────────────────────────────────────────────
-# 与 src/core/providers/cache.py 等价,但定义在采集层最底层模块,供各 collector
-# 直接复用——避免 collector 反向 import providers 包触发循环依赖。
+# ── Bộ đệm TTL nhẹ ───────────────────────────────────────────────────────
+# Tương đương src/core/providers/cache.py, nhưng đặt ở module tầng đáy của lớp thu thập để các collector
+# dùng lại trực tiếp — tránh việc collector import ngược gói providers gây phụ thuộc vòng.
 class TTLCache:
     """单进程内存 TTL 缓存,线程安全,过期 key 在下次 get 时被动剔除。"""
 
@@ -158,7 +158,7 @@ class TTLCache:
     def set(self, key: str, value: Any, ttl_sec: float | None = None) -> None:
         ttl = ttl_sec if ttl_sec is not None else self._default_ttl
         if ttl <= 0:
-            return  # 显式不缓存
+            return  # Tường minh không đệm
         expires = time.monotonic() + ttl
         with self._lock:
             if len(self._store) >= self._max_size and key not in self._store:

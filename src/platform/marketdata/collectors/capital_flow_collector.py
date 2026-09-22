@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from src.platform.marketdata.collectors.market_http import TTLCache
 from src.platform.marketdata.models import MarketCode
 
-# 资金流为日级数据、变动慢:中等 TTL 缓存,避免每轮重复拉。
+# Dòng tiền là dữ liệu theo ngày và đổi chậm: đệm với TTL trung bình, tránh vòng nào cũng lấy lại.
 _FLOW_CACHE = TTLCache(default_ttl_sec=600.0)
 
 
@@ -14,7 +14,7 @@ class CapitalFlow:
     symbol: str
     name: str
 
-    # 今日资金流（单位：元）
+    # Dòng tiền hôm nay (đơn vị: đồng)
     main_net_inflow: float      # Dòng tiền lớn vào ròng
     main_net_inflow_pct: float  # Tỷ trọng dòng tiền lớn vào ròng
     super_net_inflow: float     # Lệnh siêu lớn vào ròng
@@ -22,7 +22,7 @@ class CapitalFlow:
     mid_net_inflow: float       # Lệnh vừa vào ròng
     small_net_inflow: float     # Lệnh nhỏ vào ròng
 
-    # 5日资金流
+    # Dòng tiền 5 phiên
     main_net_5d: float | None = None  # Dòng tiền lớn vào ròng 5 phiên
 
 
@@ -69,7 +69,7 @@ class CapitalFlowCollector:
         if not flow:
             return {"error": "无资金流向数据"}
 
-        # 判断资金状态
+        # Xác định trạng thái dòng tiền
         if flow.main_net_inflow > 0:
             if flow.main_net_inflow_pct > 10:
                 status = "主力大幅流入"
@@ -87,7 +87,7 @@ class CapitalFlowCollector:
         else:
             status = "主力资金平衡"
 
-        # 5日趋势
+        # Xu hướng 5 phiên
         trend_5d = "无数据"
         if flow.main_net_5d is not None:
             if flow.main_net_5d > 0:

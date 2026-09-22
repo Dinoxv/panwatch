@@ -49,7 +49,7 @@ from src.web.response import ResponseWrapperMiddleware
 app = FastAPI(
     title="PanWatch API",
     version="0.1.0",
-    redirect_slashes=False,  # 避免重定向丢失 Authorization header
+    redirect_slashes=False,  # Tránh chuyển hướng làm mất header Authorization
 )
 
 app.add_middleware(ResponseWrapperMiddleware)
@@ -61,12 +61,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 认证路由（无需登录）
+# Route xác thực (không cần đăng nhập)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# 市场指数（公共数据，无需登录）
+# Chỉ số thị trường (dữ liệu công khai, không cần đăng nhập)
 app.include_router(market.router, prefix="/api/market", tags=["market"])
 
-# 需要登录的路由
+# Các route bắt buộc đăng nhập
 protected = [Depends(get_current_user)]
 app.include_router(
     stocks.router, prefix="/api/stocks", tags=["stocks"], dependencies=protected
@@ -198,12 +198,12 @@ app.include_router(
 
 
 app.router.on_startup.append(assistant_task_runner.recover_pending)
-# PAT 管理(需登录):创建/列出/吊销 MCP 用的个人访问令牌
+# Quản lý PAT (cần đăng nhập): tạo / liệt kê / thu hồi mã truy cập cá nhân dùng cho MCP
 app.include_router(
     pats.router, prefix="/api/pats", tags=["pats"], dependencies=protected
 )
-# MCP Server:挂在顶层 /mcp(不在 /api/ 下,绕开响应包装中间件保证 JSON-RPC 原样),
-# 自带 PAT 鉴权,不走登录 JWT
+# MCP Server: gắn ở cấp cao nhất /mcp (không nằm dưới /api/, đi vòng qua middleware bọc phản hồi để giữ nguyên dạng JSON-RPC),
+# tự mang xác thực PAT, không dùng JWT đăng nhập
 app.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 
 

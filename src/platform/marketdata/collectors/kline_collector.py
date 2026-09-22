@@ -21,24 +21,24 @@ def get_market_data():
     return _g()
 
 
-# 调用来源标记统一在 market_http(全项目共享一个 contextvar)。
-# 保留 kline_source 名称,兼容已有调用方(schedulers 等)。
+# Dấu nguồn gọi gom hết về market_http (cả dự án dùng chung một contextvar).
+# Giữ lại tên kline_source để tương thích các phía gọi sẵn có (bộ lập lịch...).
 kline_source = fetch_source
 
 
-# ── K线按市场状态缓存 ──────────────────────────────────────────────────────
-# 日K一天只定稿一次(收盘后),但调度任务每轮都逐只重新联网拉 → 批量突发触发限流。
-# 交易时段用短 TTL(末根K线盘中会动),收盘后用长 TTL(数据已定稿,无需重复拉)。
+# ── Bộ đệm nến theo trạng thái thị trường ─────────────────────────────────
+# Nến ngày mỗi ngày chỉ chốt một lần (sau khi đóng cửa), nhưng tác vụ lập lịch vòng nào cũng gọi mạng lấy lại từng mã → dồn dập gây giới hạn tốc độ.
+# Trong phiên dùng TTL ngắn (cây nến cuối còn động), sau khi đóng cửa dùng TTL dài (dữ liệu đã chốt, khỏi lấy lại).
 _KLINE_CACHE: dict[str, tuple[float, int, list["KlineData"]]] = {}
 _KLINE_TTL_TRADING_S = 180
 _KLINE_TTL_CLOSED_S = 1800
 
-# 失败负缓存:源短暂故障(Server disconnected/限流)时,冷却窗口内不再联网。
-# 复活的批量消费者(entry_candidates/strategy_engine/backtest/组合归因)会并发地
-# 对同一批标的取数,空结果若不缓存则每个消费者每轮都重复打爆数据源。
+# Negative cache khi lỗi: nguồn hỏng tạm thời (Server disconnected / giới hạn tốc độ) thì trong cửa sổ chờ không gọi mạng nữa.
+# Các bên tiêu thụ hàng loạt vừa được khôi phục (entry_candidates / strategy_engine / backtest / phân rã đóng góp danh mục) sẽ song song
+# lấy dữ liệu cùng một rổ mã; không đệm kết quả rỗng thì mỗi bên mỗi vòng lại dội lên nguồn dữ liệu.
 _FAIL_UNTIL: dict[str, float] = {}
-_FAIL_COOLDOWN_S = 60.0  # 交易时段:短冷却,便于尽快重试
-_FAIL_COOLDOWN_CLOSED_S = 900.0  # 收盘后:数据已定稿,失败/不足时长冷却,避免批量任务反复刷屏
+_FAIL_COOLDOWN_S = 60.0  # Trong phiên: thời gian chờ ngắn để thử lại sớm
+_FAIL_COOLDOWN_CLOSED_S = 900.0  # Sau khi đóng cửa: dữ liệu đã chốt, nên lỗi / thiếu thì chờ lâu, tránh tác vụ hàng loạt gọi dồn dập
 
 
 def _fail_cooldown(market: MarketCode) -> float:
@@ -52,7 +52,7 @@ def _fail_cooldown(market: MarketCode) -> float:
     return _FAIL_COOLDOWN_CLOSED_S
 
 
-# 同标的并发合并:同一 cache_key 的并发取数串行化,只联网一次,其余复用缓存。
+# Gộp truy cập song song cùng mã: các lần lấy dữ liệu cùng cache_key được nối tiếp lại, chỉ gọi mạng một lần, phần còn lại dùng bộ đệm.
 _FETCH_LOCKS: dict[str, threading.Lock] = {}
 _FETCH_LOCKS_GUARD = threading.Lock()
 
@@ -124,7 +124,7 @@ class TechnicalIndicators:
     macd_dea: float | None = None
     macd_hist: float | None = None
     macd_cross: str | None = None  # Giao cắt vàng / giao cắt tử
-    macd_cross_days: int | None = None  # 距离上次交叉天数
+    macd_cross_days: int | None = None  # Số phiên kể từ lần giao cắt gần nhất
     # RSI
     rsi6: float | None = None
     rsi12: float | None = None
@@ -138,33 +138,33 @@ class TechnicalIndicators:
     boll_upper: float | None = None
     boll_mid: float | None = None
     boll_lower: float | None = None
-    boll_width: float | None = None  # 带宽百分比
+    boll_width: float | None = None  # Phần trăm độ rộng dải
     # Sức khối lượng
-    volume_ratio: float | None = None  # 量比（今日成交量/5日均量）
+    volume_ratio: float | None = None  # Tỷ lệ khối lượng (khối lượng hôm nay / khối lượng bình quân 5 phiên)
     volume_ma5: float | None = None
     volume_ma10: float | None = None
-    volume_trend: str | None = None  # 放量/缩量/平量
+    volume_trend: str | None = None  # Bùng khối lượng / cạn khối lượng / khối lượng đi ngang
     # Biên độ
     change_5d: float | None = None
     change_20d: float | None = None
     # Biên dao động
-    amplitude: float | None = None  # 今日振幅
-    amplitude_avg5: float | None = None  # 5日平均振幅
+    amplitude: float | None = None  # Biên dao động hôm nay
+    amplitude_avg5: float | None = None  # Biên dao động bình quân 5 phiên
     # Độ biến động (ATR)
-    atr: float | None = None  # 平均真实波幅(绝对值)
-    atr_pct: float | None = None  # ATR / 最新收盘 * 100(相对波动率%)
-    # 支撑压力（多级别）
-    support_s: float | None = None  # 短期支撑（5日）
-    support_m: float | None = None  # 中期支撑（20日）
-    support_l: float | None = None  # 长期支撑（60日）
-    resistance_s: float | None = None  # 短期压力
-    resistance_m: float | None = None  # 中期压力
-    resistance_l: float | None = None  # 长期压力
+    atr: float | None = None  # Biên dao động thực trung bình (giá trị tuyệt đối)
+    atr_pct: float | None = None  # ATR / giá đóng cửa mới nhất * 100 (độ biến động tương đối, %)
+    # Hỗ trợ và kháng cự (nhiều khung)
+    support_s: float | None = None  # Hỗ trợ ngắn hạn (5 phiên)
+    support_m: float | None = None  # Hỗ trợ trung hạn (20 phiên)
+    support_l: float | None = None  # Hỗ trợ dài hạn (60 phiên)
+    resistance_s: float | None = None  # Kháng cự ngắn hạn
+    resistance_m: float | None = None  # Kháng cự trung hạn
+    resistance_l: float | None = None  # Kháng cự dài hạn
     # Tương thích trường cũ
     support: float | None = None
     resistance: float | None = None
     # Mẫu hình nến
-    kline_pattern: str | None = None  # 十字星/锤子线/吞没等
+    kline_pattern: str | None = None  # Nến doji / nến búa / mẫu hình nhấn chìm...
 
 
 def _calculate_ma(closes: list[float], period: int) -> float | None:
@@ -245,7 +245,7 @@ def _calculate_rsi(closes: list[float], period: int) -> float | None:
             gains.append(0)
             losses.append(abs(change))
 
-    # 使用最近 period 天计算
+    # Tính trên period phiên gần nhất
     avg_gain = sum(gains[-period:]) / period
     avg_loss = sum(losses[-period:]) / period
 
@@ -330,7 +330,7 @@ def _detect_kline_pattern(klines: list[KlineData]) -> str | None:
 
     body_ratio = body / total_range
 
-    # 十字星：实体很小
+    # Nến doji: thân nến rất nhỏ
     if body_ratio < 0.1:
         if upper_shadow > body * 2 and lower_shadow > body * 2:
             return "十字星"
@@ -339,31 +339,31 @@ def _detect_kline_pattern(klines: list[KlineData]) -> str | None:
         elif lower_shadow > body * 3:
             return "T字线"
 
-    # 锤子线：下影线很长，实体在上方
+    # Nến búa: bóng dưới rất dài, thân nằm phía trên
     if lower_shadow > body * 2 and upper_shadow < body * 0.5:
         if curr.close > curr.open:
             return "锤子线(阳)"
         else:
             return "锤子线(阴)"
 
-    # 倒锤子：上影线很长
+    # Búa ngược: bóng trên rất dài
     if upper_shadow > body * 2 and lower_shadow < body * 0.5:
         if curr.close > curr.open:
             return "倒锤子(阳)"
         else:
             return "射击之星"
 
-    # 吞没形态
+    # Mẫu hình nhấn chìm
     prev_body = abs(prev.close - prev.open)
     if body > prev_body * 1.5:
-        if prev.close < prev.open and curr.close > curr.open:  # 前阴后阳
+        if prev.close < prev.open and curr.close > curr.open:  # Nến giảm trước, nến tăng sau
             if curr.close > prev.open and curr.open < prev.close:
                 return "看涨吞没"
-        elif prev.close > prev.open and curr.close < curr.open:  # 前阳后阴
+        elif prev.close > prev.open and curr.close < curr.open:  # Nến tăng trước, nến giảm sau
             if curr.open > prev.close and curr.close < prev.open:
                 return "看跌吞没"
 
-    # 大阳线/大阴线
+    # Nến tăng thân dài / nến giảm thân dài
     if body_ratio > 0.7:
         change_pct = (curr.close - curr.open) / curr.open * 100 if curr.open > 0 else 0
         if change_pct > 3:
@@ -383,11 +383,11 @@ def _find_cross_days(
 
     for i in range(len(series1) - 2, -1, -1):
         if cross_type == "金叉":
-            # 金叉：series1 从下方穿越 series2
+            # Giao cắt vàng: series1 cắt lên qua series2
             if series1[i] <= series2[i] and series1[i + 1] > series2[i + 1]:
                 return len(series1) - 1 - i
         else:
-            # 死叉：series1 从上方穿越 series2
+            # Giao cắt tử: series1 cắt xuống qua series2
             if series1[i] >= series2[i] and series1[i + 1] < series2[i + 1]:
                 return len(series1) - 1 - i
 
@@ -409,19 +409,19 @@ class KlineCollector:
         cache_key = f"{self.market.value}:{symbol}"
         need = max(1, int(days or 1))
 
-        # 1) 快路径:命中新鲜正缓存,无需加锁
+        # 1) Đường nhanh: khớp bộ đệm dương còn tươi, khỏi cần khóa
         hit = self._cache_hit(cache_key, need)
         if hit is not None:
             return hit
 
-        # 2) 同标的并发合并:仅一个线程实际联网,其余等待后复用结果
+        # 2) Gộp truy cập song song cùng mã: chỉ một luồng thật sự gọi mạng, các luồng khác chờ rồi dùng lại kết quả
         with _get_fetch_lock(cache_key):
             hit = self._cache_hit(cache_key, need)
             if hit is not None:
                 return hit
 
             now = time.time()
-            # 3) 负缓存:刚失败过的标的,冷却窗口内返回陈旧/空,不再联网
+            # 3) Negative cache: mã vừa lỗi thì trong cửa sổ chờ trả dữ liệu cũ / rỗng, không gọi mạng nữa
             if now < _FAIL_UNTIL.get(cache_key, 0.0):
                 stale = _KLINE_CACHE.get(cache_key)
                 bars = stale[2] if stale else []
@@ -429,13 +429,13 @@ class KlineCollector:
 
             klines = self._fetch_all_sources(symbol, days)
             if klines and len(klines) >= need:
-                # 成功且条数足够:固化正缓存并清除冷却标记
+                # Thành công và đủ số bản ghi: chốt bộ đệm dương rồi xóa dấu thời gian chờ
                 _KLINE_CACHE[cache_key] = (now, len(klines), list(klines))
                 _FAIL_UNTIL.pop(cache_key, None)
             else:
-                # 空 或 拿到部分但不足 need(常见:HK 腾讯不足 + eastmoney 补全失败,
-                # 正缓存因 count<need 永不命中 → 每轮重打补全源刷屏)→ 固化冷却。
-                # 部分结果仍缓存下来,冷却窗口内直接服务,避免反复联网。
+                # Rỗng, hoặc lấy được một phần nhưng chưa đủ need (thường gặp: Tencent thiếu dữ liệu Hồng Kông + EastMoney bù thất bại,
+                # bộ đệm dương vì count < need nên không bao giờ khớp → vòng nào cũng dội lên nguồn bù) → chốt thời gian chờ.
+                # Kết quả một phần vẫn được đệm lại và phục vụ ngay trong cửa sổ chờ, tránh gọi mạng lặp đi lặp lại.
                 if klines:
                     _KLINE_CACHE[cache_key] = (now, len(klines), list(klines))
                 _FAIL_UNTIL[cache_key] = now + _fail_cooldown(self.market)
@@ -492,7 +492,7 @@ class KlineCollector:
             macd_dif = dif_list[-1]
             macd_dea = dea_list[-1]
             macd_hist = hist_list[-1]
-            # 判断金叉/死叉
+            # Xác định giao cắt vàng / giao cắt tử
             if macd_dif > macd_dea:
                 macd_cross = "金叉"
                 macd_cross_days = _find_cross_days(dif_list, dea_list, "金叉")
@@ -525,7 +525,7 @@ class KlineCollector:
         if boll_result:
             boll_upper, boll_mid, boll_lower, boll_width = boll_result
 
-        # 量能分析
+        # Phân tích sức khối lượng
         volume_ma5 = _calculate_ma(volumes, 5) if volumes else None
         volume_ma10 = _calculate_ma(volumes, 10) if volumes else None
         volume_ratio = None
@@ -562,13 +562,13 @@ class KlineCollector:
                 if amps:
                     amplitude_avg5 = sum(amps) / len(amps)
 
-        # ATR(波动率):个股自身波动基准,供自适应异动判定使用
+        # ATR (độ biến động): mốc dao động của chính mã đó, dùng cho phép xác định biến động bất thường thích ứng
         atr = _calculate_atr(klines, period=14)
         atr_pct = None
         if atr is not None and closes and closes[-1]:
             atr_pct = round(atr / closes[-1] * 100, 2)
 
-        # 多级支撑压力位
+        # Các vùng hỗ trợ và kháng cự nhiều tầng
         support_s, support_m, support_l = None, None, None
         resistance_s, resistance_m, resistance_l = None, None, None
         if len(klines) >= 5:
@@ -637,7 +637,7 @@ class KlineCollector:
             return {"error": "无K线数据"}
         indicators = self.get_technical_indicators(klines=klines)
 
-        # 最近5日表现
+        # Diễn biến 5 phiên gần nhất
         recent_5 = klines[-5:] if len(klines) >= 5 else klines
         up_days = sum(
             1
@@ -645,7 +645,7 @@ class KlineCollector:
             if i > 0 and k.close > recent_5[i - 1].close
         )
 
-        # 趋势判断
+        # Xác định xu hướng
         trend = "数据不足"
         if indicators.ma5 and indicators.ma10 and indicators.ma20:
             if indicators.ma5 > indicators.ma10 > indicators.ma20:
@@ -655,7 +655,7 @@ class KlineCollector:
             else:
                 trend = "均线交织"
 
-        # MACD 状态（更详细）
+        # Trạng thái MACD (chi tiết hơn)
         macd_status = "无数据"
         if indicators.macd_cross:
             days_str = (
@@ -665,7 +665,7 @@ class KlineCollector:
             )
             macd_status = f"{indicators.macd_cross}{days_str}"
 
-        # RSI 状态
+        # Trạng thái RSI
         rsi_status = None
         if indicators.rsi6 is not None:
             if indicators.rsi6 > 80:
@@ -679,7 +679,7 @@ class KlineCollector:
             else:
                 rsi_status = "中性"
 
-        # KDJ 状态
+        # Trạng thái KDJ
         kdj_status = None
         if indicators.kdj_k is not None and indicators.kdj_d is not None:
             if indicators.kdj_j is not None and indicators.kdj_j > 100:
@@ -689,7 +689,7 @@ class KlineCollector:
             else:
                 kdj_status = indicators.kdj_cross
 
-        # 布林带状态
+        # Trạng thái dải Bollinger
         boll_status = None
         last_close = klines[-1].close if klines else None
         if last_close and indicators.boll_upper and indicators.boll_lower:

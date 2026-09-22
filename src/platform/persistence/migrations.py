@@ -369,7 +369,7 @@ def _m107_suggestion_market_dimension(conn: Connection) -> None:
     if not _has_table(conn, "stock_suggestions"):
         return
 
-    # 历史数据平滑回填：优先从 stocks 里推断 market，否则回退 CN。
+    # Bù dữ liệu cũ một cách êm: ưu tiên suy thị trường từ bảng stocks, không được thì lùi về CN.
     conn.execute(
         text(
             """
@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS entry_candidates (
         "CREATE INDEX ix_entry_candidate_status_updated ON entry_candidates(status, updated_at)",
     )
 
-    # 历史平滑迁移：将每个市场/股票最新建议回填为“今日候选”基线记录。
+    # Di trú dữ liệu cũ một cách êm: lấy khuyến nghị mới nhất của từng thị trường / mã bù vào làm bản ghi nền “ứng viên hôm nay”.
     today = date.today().strftime("%Y-%m-%d")
     conn.execute(
         text(
@@ -1543,7 +1543,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
     if not _has_table(conn, "paper_trading_account"):
         return
 
-    # 迁移必须自包含，不能依赖业务模块的运行时代码。
+    # Migration phải tự chứa, không được phụ thuộc mã chạy của module nghiệp vụ.
     def allocations_from_excluded(excluded: list[str]) -> dict[str, float]:
         markets = ("CN", "HK", "US")
         defaults = {"CN": 0.5, "HK": 0.3, "US": 0.2}
@@ -1560,7 +1560,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
     for r in rows:
         row_id = r[0]
 
-        # 已有非空比例则跳过，避免覆盖用户配置
+        # Đã có tỷ trọng khác rỗng thì bỏ qua, tránh ghi đè cấu hình của người dùng
         raw_alloc = r[2]
         has_alloc = False
         if isinstance(raw_alloc, str) and raw_alloc.strip() and raw_alloc.strip() not in ("{}", "null"):
@@ -1612,7 +1612,7 @@ def _m119_pat_and_mcp_tables(conn: Connection) -> None:
         """
         )
     )
-    # 与 ORM 模型的自动唯一索引同名(token_hash unique+index),便于 create_all 复核
+    # Trùng tên với chỉ mục duy nhất mà mô hình ORM tự tạo (token_hash unique+index), để create_all đối chiếu được
     _create_index_if_missing(
         conn,
         "ix_personal_access_tokens_token_hash",

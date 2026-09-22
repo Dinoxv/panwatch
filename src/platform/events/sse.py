@@ -16,9 +16,9 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-# 流结束后保留时长（秒）：足够前端断线重连拿到完整结果
+# Thời gian giữ lại sau khi luồng kết thúc (giây): đủ để giao diện kết nối lại và lấy trọn kết quả
 STREAM_TTL_SEC = 600
-# 单条流的事件数量上限（防御性兜底，防止异常任务撑爆内存）
+# Trần số sự kiện của một luồng (chặn phòng thủ, tránh tác vụ lỗi làm tràn bộ nhớ)
 MAX_EVENTS_PER_STREAM = 10000
 
 
@@ -26,7 +26,7 @@ def format_sse_event(seq: int, event: str, data: dict | str) -> str:
     """编码单条 SSE 事件（id + event + data，data 统一 JSON）。"""
     if not isinstance(data, str):
         data = json.dumps(data, ensure_ascii=False)
-    # data 含换行时按 SSE 协议拆成多个 data: 行
+    # data có xuống dòng thì tách thành nhiều dòng data: theo giao thức SSE
     data_lines = "".join(f"data: {line}\n" for line in data.split("\n"))
     return f"id: {seq}\nevent: {event}\n{data_lines}\n"
 
@@ -59,7 +59,7 @@ class SSEStream:
         """追加一条事件，返回其序号（从 1 开始）。"""
         async with self._cond:
             if len(self._events) >= MAX_EVENTS_PER_STREAM:
-                # 超限直接置为结束，避免无界增长
+                # Vượt trần thì đặt luôn trạng thái kết thúc, tránh phình vô hạn
                 self.done = True
                 self._cond.notify_all()
                 return len(self._events)
@@ -133,5 +133,5 @@ class SSEHub:
             self._streams.pop(sid, None)
 
 
-# chat 对话流的全局 hub（进程内单例；生成任务与 SSE 连接通过它解耦）
+# Hub toàn cục cho luồng hội thoại chat (thực thể duy nhất trong tiến trình; tác vụ sinh nội dung và kết nối SSE tách rời qua nó)
 chat_stream_hub = SSEHub()

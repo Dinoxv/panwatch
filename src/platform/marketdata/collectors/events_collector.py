@@ -19,8 +19,8 @@ class EventItem:
     url: str
 
 
-# 东财公告全文(纯文本)content API:art_code -> data.notice_content。
-# 走系统代理(trust_env=True,env HTTP_PROXY);东财证书链偶发问题,verify=False。
+# API lấy toàn văn công bố thông tin của EastMoney (văn bản thuần): art_code -> data.notice_content.
+# Đi qua proxy hệ thống (trust_env=True, env HTTP_PROXY); chuỗi chứng chỉ của EastMoney thỉnh thoảng lỗi nên verify=False.
 ANN_CONTENT_API_URL = "https://np-cnotice-stock.eastmoney.com/api/content/ann"
 
 
@@ -61,7 +61,7 @@ def fetch_announcement_fulltext(
             verify=False,
             headers=headers,
             follow_redirects=True,
-            trust_env=True,  # 走系统代理(env HTTP_PROXY,由 apply_proxy_env 统一设)
+            trust_env=True,  # Đi qua proxy hệ thống (env HTTP_PROXY, do apply_proxy_env đặt thống nhất)
             proxy=proxy,
         ) as client:
             resp = client.get(ANN_CONTENT_API_URL, params=params)
@@ -98,9 +98,9 @@ class EastMoneyEventsCollector:
         retries: int = 1,
         backoff_s: float = 0.6,
     ):
-        # timeout_s/connect_timeout_s/verify_ssl/proxy/retries/backoff_s 仅为兼容旧调用方签名保留
-        # (DataSource 配置、EventsCollector.COLLECTOR_MAP、EastmoneyEventsProvider 仍按这些参数构造实例);
-        # 取数已改走 marketdata 包,这些参数当前不再被内部逻辑使用。
+        # timeout_s/connect_timeout_s/verify_ssl/proxy/retries/backoff_s chỉ giữ lại để tương thích chữ ký của các phía gọi cũ
+        # (cấu hình DataSource, EventsCollector.COLLECTOR_MAP, EastmoneyEventsProvider vẫn dựng thực thể theo các tham số này);
+        # việc lấy dữ liệu đã chuyển sang gói marketdata, nên hiện các tham số này không còn được logic bên trong dùng.
         self.last_error: str | None = None
 
     async def fetch_events(
@@ -116,14 +116,14 @@ class EastMoneyEventsCollector:
         if not symbols_list:
             return []
 
-        # since 语义:md.events 按 since_days 天窗过滤,本方法按 since 精确 datetime 过滤。
-        # 用 since 反推一个足够宽松的 since_days,取回数据后再用原 since 精确重过滤。
+        # Ngữ nghĩa since: md.events lọc theo cửa sổ since_days ngày, còn phương thức này lọc theo đúng datetime của since.
+        # Suy ngược từ since ra một since_days đủ rộng, lấy dữ liệu về rồi lọc lại chính xác theo since gốc.
         if since is not None:
             delta_days = (datetime.now() - since).days
             since_days = max(1, delta_days + 1)
         else:
-            # since=None 时不按时间过滤;用足够大的窗口近似同等效果
-            # (实际结果仍受上游 API page_size 条数限制,不会引入额外老旧数据)。
+            # since=None thì không lọc theo thời gian; dùng cửa sổ đủ lớn để cho kết quả xấp xỉ tương đương
+            # (kết quả thực tế vẫn bị giới hạn bởi page_size của API thượng nguồn nên không kéo thêm dữ liệu quá cũ).
             since_days = 3650
 
         md_items = await _asyncio.to_thread(

@@ -20,7 +20,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 CACHE_FILE = DATA_DIR / "stock_list_cache.json"
 CACHE_TTL = 86400 * 7  # 7 days
 
-# 东方财富 A 股（使用 push2delay 域名，避免重定向）
+# Cổ phiếu A trên EastMoney (dùng tên miền push2delay để tránh chuyển hướng)
 EASTMONEY_URL = "http://80.push2delay.eastmoney.com/api/qt/clist/get"
 EASTMONEY_PARAMS = {
     "po": "1",
@@ -32,36 +32,36 @@ EASTMONEY_PARAMS = {
     "fields": "f12,f14",
 }
 
-# 东方财富港股参数
+# Tham số cổ phiếu Hồng Kông của EastMoney
 EASTMONEY_HK_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2",  # 港股主板、创业板等
+    "fs": "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2",  # Sàn chính, sàn GEM... của Hồng Kông
     "fields": "f12,f14",
 }
 
-# 东方财富美股参数
+# Tham số cổ phiếu Mỹ của EastMoney
 EASTMONEY_US_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:105,m:106,m:107",  # 美股 NYSE, NASDAQ, AMEX
+    "fs": "m:105,m:106,m:107",  # Cổ phiếu Mỹ: NYSE, NASDAQ, AMEX
     "fields": "f12,f14",
 }
 
-# 东方财富北交所参数（北证A股）
+# Tham số Sở giao dịch Bắc Kinh của EastMoney (cổ phiếu A sàn Bắc Kinh)
 EASTMONEY_BJ_PARAMS = {
     "po": "1",
     "np": "1",
     "fltt": "2",
     "invt": "2",
     "fid": "f12",
-    "fs": "m:0+t:81",  # 北交所
+    "fs": "m:0+t:81",  # Sở giao dịch Bắc Kinh
     "fields": "f12,f14",
 }
 PAGE_SIZE = 100
@@ -264,7 +264,7 @@ def refresh_stock_list() -> list[dict]:
     """拉取 A 股和港股列表并缓存"""
     stocks = []
 
-    # A 股: 东方财富优先，akshare 备用
+    # Cổ phiếu A: ưu tiên EastMoney, akshare là dự phòng
     try:
         cn_stocks = _fetch_from_eastmoney()
         stocks.extend(cn_stocks)
@@ -282,7 +282,7 @@ def refresh_stock_list() -> list[dict]:
         except Exception as e2:
             logger.error(f"A 股数据源获取失败: {e2}")
 
-    # 港股: 东方财富
+    # Cổ phiếu Hồng Kông: EastMoney
     try:
         hk_stocks = _fetch_hk_from_eastmoney()
         stocks.extend(hk_stocks)
@@ -290,7 +290,7 @@ def refresh_stock_list() -> list[dict]:
     except Exception as e:
         logger.warning(f"东方财富获取港股失败: {e}")
 
-    # 美股: 东方财富
+    # Cổ phiếu Mỹ: EastMoney
     try:
         us_stocks = _fetch_us_from_eastmoney()
         stocks.extend(us_stocks)
@@ -298,7 +298,7 @@ def refresh_stock_list() -> list[dict]:
     except Exception as e:
         logger.warning(f"东方财富获取美股失败: {e}")
 
-    # 北交所: 东方财富
+    # Sở giao dịch Bắc Kinh: EastMoney
     try:
         bj_stocks = _fetch_bj_from_eastmoney()
         stocks.extend(bj_stocks)
@@ -322,7 +322,7 @@ def get_stock_list() -> list[dict]:
 def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
     """东方财富实时搜索 API"""
     import urllib.parse
-    # 提高 count 以覆盖更多候选项（包含北交所）
+    # Nâng count để phủ thêm ứng viên (gồm cả sàn Bắc Kinh)
     url = f"https://searchapi.eastmoney.com/api/suggest/get?input={urllib.parse.quote(query)}&type=14&count={limit * 5}"
 
     try:
@@ -339,16 +339,16 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
 
     def _normalize_symbol(code: str, mkt: str) -> str:
         c = (code or "").strip().upper()
-        # 去掉可能的市场前缀/后缀，如 SH000001 / SZ000001 / BJ830799 / 00700.HK / 836239.BJ
+        # Bỏ tiền tố / hậu tố thị trường nếu có, ví dụ SH000001 / SZ000001 / BJ830799 / 00700.HK / 836239.BJ
         for p in ("SH", "SZ", "BJ", "US", "HK"):
             if c.startswith(p):
                 c = c[len(p):]
                 break
         if "." in c:
-            # 形如 00700.HK / 836239.BJ
+            # Dạng như 00700.HK / 836239.BJ
             c = c.split(".")[0]
         if mkt == "HK":
-            # 保证为 5 位代码
+            # Bảo đảm mã có 5 chữ số
             c = c.zfill(5)
         return c
 
@@ -358,7 +358,7 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
         security_type = (item.get("SecurityTypeName") or "").strip()
         code_raw = (item.get("Code") or "").strip().upper()
 
-        # 判断市场
+        # Xác định thị trường
         if (
             classify in ("AStock", "BJStock")
             or any(ch in security_type for ch in ("沪", "深", "北"))
@@ -371,15 +371,15 @@ def _realtime_search(query: str, market: str = "", limit: int = 20) -> list[dict
         elif classify == "UsStock" or "美" in security_type:
             stock_market = "US"
         else:
-            continue  # 跳过其他类型（债券、基金等）
+            continue  # Bỏ qua các loại khác (trái phiếu, quỹ...)
 
-        # 市场筛选
+        # Lọc theo thị trường
         if market and stock_market != market:
             continue
 
-        # 只保留股票（排除债券等）
+        # Chỉ giữ cổ phiếu (loại trái phiếu và các loại khác)
         type_us = item.get("TypeUS", "")
-        if stock_market == "US" and type_us and type_us not in ("1", "2", "3"):  # 1=普通股, 3=ADR/ADS 等；5=ETF 等
+        if stock_market == "US" and type_us and type_us not in ("1", "2", "3"):  # 1 = cổ phiếu phổ thông, 3 = ADR/ADS...; 5 = ETF...
             continue
 
         code = item.get("Code", "")
@@ -403,12 +403,12 @@ def search_stocks(query: str, market: str = "", limit: int = 20) -> list[dict]:
     if not q:
         return []
 
-    # 尝试实时搜索
+    # Thử tìm theo thời gian thực
     results = _realtime_search(q, market, limit)
     if len(results) >= limit:
         return results[:limit]
 
-    # 实时搜索结果不足时，用缓存补全（便于聚合多市场搜索结果）
+    # Kết quả tìm thời gian thực chưa đủ thì bù bằng bộ đệm (tiện gộp kết quả tìm của nhiều thị trường)
     cached = _cached_search(q, market, limit)
     if not results:
         if cached:
@@ -443,7 +443,7 @@ def _cached_search(query: str, market: str = "", limit: int = 20) -> list[dict]:
             continue
         code = s["symbol"].upper()
         name = s["name"].upper()
-        # 代码前缀匹配优先
+        # Ưu tiên khớp theo tiền tố mã
         if code.startswith(q):
             results.append((0, s))
         elif q in name:

@@ -41,7 +41,7 @@ class DbConfigProvider:
         )
         sources = []
         for row in rows:
-            # 腾讯美股接口在当前网络出口稳定返回 501；A/HK 仍保留腾讯作为主源。
+            # Endpoint cổ phiếu Mỹ của Tencent luôn trả 501 ở đường ra mạng hiện tại; A / Hồng Kông vẫn giữ Tencent làm nguồn chính.
             if (
                 datatype == "kline"
                 and market_code == "US"
@@ -145,8 +145,8 @@ def md_news(
     """
     from datetime import datetime, timezone
 
-    # 包内 news vendor 的 publish_time 是 aware(UTC);这里的 now 也必须 aware,
-    # 否则 since 过滤会 "can't compare offset-naive and offset-aware datetimes"。
+    # publish_time của news vendor trong gói có múi giờ (UTC); nên now ở đây cũng bắt buộc phải có múi giờ,
+    # nếu không, phép lọc since sẽ báo "can't compare offset-naive and offset-aware datetimes".
     arts = get_market_data().news(
         list(symbols or []), since_hours=since_hours, names=names,
         now=datetime.now(timezone.utc),
