@@ -134,7 +134,7 @@ export default function StockPriceAlertPanel(props: {
       )
       setRules(filtered)
     } catch (e) {
-      toast(e instanceof Error ? e.message : '加载提醒失败', 'error')
+      toast(e instanceof Error ? e.message : 'Tải cảnh báo thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -170,18 +170,18 @@ export default function StockPriceAlertPanel(props: {
     try {
       const stockId = await ensureStockId()
       if (!stockId) {
-        toast('无法定位股票', 'error')
+        toast('Không định vị được mã', 'error')
         return
       }
       setEditingId(null)
       setForm({
         ...DEFAULT_FORM,
         stock_id: stockId,
-        name: props.stockName ? `${props.stockName} 价格提醒` : '',
+        name: props.stockName ? `Cảnh báo giá ${props.stockName}` : '',
       })
       setFormOpen(true)
     } catch (e) {
-      toast(e instanceof Error ? e.message : '无法创建提醒', 'error')
+      toast(e instanceof Error ? e.message : 'Không tạo được cảnh báo', 'error')
     }
   }
 
@@ -213,7 +213,7 @@ export default function StockPriceAlertPanel(props: {
       setFormOpen(false)
       await load()
       props.onChanged?.()
-      toast('提醒已保存', 'success')
+      toast('Đã lưu cảnh báo', 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Lưu thất bại', 'error')
     } finally {
@@ -232,7 +232,7 @@ export default function StockPriceAlertPanel(props: {
   }
 
   const removeRule = async (r: AlertRule) => {
-    if (!window.confirm(`确认删除规则「${r.name || 'Cảnh báo'}」？`)) return
+    if (!window.confirm(`Xác nhận xóa quy tắc «${r.name || 'Cảnh báo'}»?`)) return
     try {
       await fetchAPI(`/price-alerts/${r.id}`, { method: 'DELETE' })
       await load()
@@ -250,7 +250,7 @@ export default function StockPriceAlertPanel(props: {
       className="h-8 px-2.5"
       onClick={() => setOpen(true)}
       type="button"
-      title={shownSummary.total > 0 ? `提醒 ${shownSummary.enabled}/${shownSummary.total}` : 'Cảnh báo giá'}
+      title={shownSummary.total > 0 ? `Cảnh báo ${shownSummary.enabled}/${shownSummary.total}` : 'Cảnh báo giá'}
     >
       <Bell className="w-3.5 h-3.5" />
       提醒 {shownSummary.total > 0 ? `${shownSummary.enabled}/${shownSummary.total}` : '0'}
@@ -259,7 +259,7 @@ export default function StockPriceAlertPanel(props: {
     <button
       className="relative inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent/40 transition-colors"
       onClick={() => setOpen(true)}
-      title={shownSummary.total > 0 ? `提醒 ${shownSummary.enabled}/${shownSummary.total}` : 'Cảnh báo giá'}
+      title={shownSummary.total > 0 ? `Cảnh báo ${shownSummary.enabled}/${shownSummary.total}` : 'Cảnh báo giá'}
       type="button"
     >
       <Bell className="w-3.5 h-3.5" />
@@ -284,13 +284,13 @@ export default function StockPriceAlertPanel(props: {
             <div className="flex justify-end">
               <Button size="sm" className="h-8" onClick={() => openCreate()}>
                 <Plus className="w-3.5 h-3.5" />
-                新建提醒
+                Tạo cảnh báo
               </Button>
             </div>
             {loading ? (
               <div className="text-[12px] text-muted-foreground py-6 text-center">Đang tải...</div>
             ) : rules.length === 0 ? (
-              <div className="text-[12px] text-muted-foreground py-6 text-center">该股票暂无提醒规则</div>
+              <div className="text-[12px] text-muted-foreground py-6 text-center">Mã này chưa có quy tắc cảnh báo nào</div>
             ) : (
               <div className="space-y-2 max-h-[48vh] overflow-y-auto scrollbar">
                 {rules.map(r => (
@@ -298,7 +298,7 @@ export default function StockPriceAlertPanel(props: {
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-medium truncate">{r.name || `${props.stockName || symbol} 提醒`}</span>
+                          <span className="text-[13px] font-medium truncate">{r.name || `Cảnh báo ${props.stockName || symbol}`}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.enabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
                             {r.enabled ? 'Bật' : 'Tạm dừng'}
                           </span>

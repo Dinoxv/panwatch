@@ -260,7 +260,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
       const flow = FLOW_PRESETS.find(x => x.key === selectedFlow)
       if (flow) parts.push(`Chuỗi:${flow.label}`)
     }
-    if (selectedLoggers.length) parts.push(`自选Logger:${selectedLoggers.length}`)
+    if (selectedLoggers.length) parts.push(`Logger tự chọn:${selectedLoggers.length}`)
     return parts.length > 0 ? parts.join(' | ') : 'Hiện không lọc thêm gì'
   }, [query, selectedLevels, timeRange, domain, selectedFlow, selectedLoggers])
 
@@ -271,16 +271,16 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
       <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] flex flex-col overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span>日志</span>
+            <span>Nhật ký</span>
             <Button variant={autoRefresh ? 'default' : 'secondary'} size="sm" className="h-7" onClick={() => setAutoRefresh(v => !v)}>
               <RefreshCw className={`w-3.5 h-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
-              自动刷新
+              Tự làm mới
             </Button>
             <Button variant="outline" size="sm" className="h-7" onClick={loadLatest}>
               Làm mới
             </Button>
             <Button variant="ghost" size="sm" className="h-7 hover:text-destructive hover:bg-destructive/8 ml-auto" onClick={handleClear}>
-              <Trash2 className="w-3.5 h-3.5" /> 清空
+              <Trash2 className="w-3.5 h-3.5" /> Xóa sạch
             </Button>
           </DialogTitle>
         </DialogHeader>
@@ -344,10 +344,10 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               onClick={() => setShowAllLoggerFilters(v => !v)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-accent text-muted-foreground hover:text-foreground"
             >
-              Logger过滤
+              Lọc Logger
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllLoggerFilters ? 'rotate-180' : ''}`} />
             </button>
-            <div className="text-[11px] text-muted-foreground">默认链路会自动包含 `src.agents.base` 决策日志</div>
+            <div className="text-[11px] text-muted-foreground">Chuỗi mặc định luôn gồm nhật ký quyết định `src.agents.base`</div>
           </div>
           {showAllLoggerFilters && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -368,7 +368,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
             <div className="flex-1 rounded-md border border-border/50 px-2.5 py-1.5 text-muted-foreground bg-background/40">
               过滤器：{filterSummary}
             </div>
-            <Button variant="ghost" size="sm" className="h-7" onClick={clearFilters}>清空过滤</Button>
+            <Button variant="ghost" size="sm" className="h-7" onClick={clearFilters}>Xóa bộ lọc</Button>
           </div>
         </div>
 
@@ -382,8 +382,8 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                 <ScrollText className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[15px] font-semibold text-foreground">暂无日志</p>
-              <p className="text-[13px] text-muted-foreground mt-1.5">后台运行后日志会自动出现在这里</p>
+              <p className="text-[15px] font-semibold text-foreground">Chưa có nhật ký nào</p>
+              <p className="text-[13px] text-muted-foreground mt-1.5">Chạy nền xong nhật ký sẽ tự hiện ở đây</p>
             </div>
           ) : (
             <div className="card overflow-hidden h-full flex flex-col">
@@ -391,11 +391,11 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                 <table className="w-full text-[12px] font-mono">
                   <thead className="sticky top-0 bg-card z-10 border-b border-border/50">
                     <tr>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-32">时间</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-20">级别</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-32">Thời gian</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-20">Mức</th>
                       <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-36">Logger</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-44">链路</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">消息</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-44">Chuỗi</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Thông điệp</th>
                     </tr>
                   </thead>
                   <tbody>

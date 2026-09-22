@@ -272,7 +272,7 @@ export default function AddPositionCalculator({
               <div className="flex items-center gap-2">
                 <span
                   className={`rounded border px-2 py-0.5 text-[11px] ${
-                    VERDICT_STYLE[aiResult.verdict] || VERDICT_STYLE['未知']
+                    VERDICT_STYLE[aiResult.verdict] || VERDICT_STYLE['Không rõ']
                   }`}
                 >
                   {aiResult.verdict}
