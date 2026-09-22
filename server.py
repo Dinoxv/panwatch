@@ -48,7 +48,7 @@ from src.modules.market.data_collector import DEFAULT_TEST_SYMBOLS
 
 logger = logging.getLogger(__name__)
 
-# 全局 scheduler 实例，供 agents API 调用
+# Thực thể scheduler toàn cục, cho API agents gọi
 scheduler: AgentScheduler | None = None
 price_alert_scheduler: PriceAlertScheduler | None = None
 paper_trading_scheduler: PaperTradingScheduler | None = None
@@ -154,7 +154,7 @@ def setup_logging():
     root.setLevel(logging.DEBUG)
     install_log_record_factory()
 
-    # reload/server restart 时避免重复 handler 导致日志放大。
+    # Tránh gắn trùng handler lúc reload/khởi động lại server làm nhật ký nhân đôi.
     for h in list(root.handlers):
         if isinstance(h, DBLogHandler) or getattr(h, "_panwatch_console", False):
             root.removeHandler(h)
@@ -163,7 +163,7 @@ def setup_logging():
             except Exception:
                 pass
 
-    # 控制台输出: 按 LOG_LEVEL 过滤,且丢弃三方库的低级别噪音
+    # Xuất ra console: lọc theo LOG_LEVEL, và bỏ tiếng ồn mức thấp của thư viện ngoài
     console = logging.StreamHandler()
     console._panwatch_console = True  # type: ignore[attr-defined]
     console.setLevel(console_level)
@@ -175,14 +175,14 @@ def setup_logging():
     )
     root.addHandler(console)
 
-    # 数据库持久化: 始终全量收录,UI 日志板可查 DEBUG
+    # Lưu bền xuống cơ sở dữ liệu: luôn thu trọn, bảng nhật ký trên giao diện tra được cả DEBUG
     db_handler = DBLogHandler(level=logging.DEBUG)
     db_handler.setFormatter(logging.Formatter("%(message)s"))
     root.addHandler(db_handler)
 
-    # uvicorn 默认给自己挂了 stderr handler 并且 propagate=False,导致 access log
-    # 走自己的链路(`INFO: 127.0.0.1 - "GET /api/..."`)不被我们的 filter 拦截。
-    # 改成清空自己的 handler + propagate 到 root,让 _ConsoleNoiseFilter 生效。
+    # uvicorn mặc định tự gắn handler stderr cho mình và đặt propagate=False, khiến access log
+    # đi theo đường riêng (`INFO: 127.0.0.1 - "GET /api/..."`) mà filter của ta không chặn được.
+    # Đổi thành xóa sạch handler của nó + propagate lên root, để _ConsoleNoiseFilter có hiệu lực.
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         lg = logging.getLogger(name)
         lg.handlers = []
@@ -217,29 +217,29 @@ def setup_playwright():
     """
     import subprocess
 
-    # 允许通过环境变量跳过首次安装（例如不需要截图功能时）
+    # Cho phép bỏ qua lần cài đầu qua biến môi trường (ví dụ khi không cần tính năng chụp màn hình)
     if os.environ.get("PLAYWRIGHT_SKIP_BROWSER_INSTALL") == "1":
         logger.info(
             "已设置 PLAYWRIGHT_SKIP_BROWSER_INSTALL=1，跳过 Playwright 浏览器安装"
         )
         return
 
-    # 如果用户已显式设置 PLAYWRIGHT_BROWSERS_PATH，尊重该设置
+    # Nếu người dùng đã đặt PLAYWRIGHT_BROWSERS_PATH tường minh thì tôn trọng thiết lập đó
     if "PLAYWRIGHT_BROWSERS_PATH" in os.environ:
         browser_dir = os.environ["PLAYWRIGHT_BROWSERS_PATH"]
         logger.info(f"使用自定义 Playwright 路径: {browser_dir}")
-    # Docker 环境下安装到 data 目录
+    # Trong môi trường Docker thì cài vào thư mục data
     elif os.environ.get("DOCKER") == "1":
         data_dir = os.environ.get("DATA_DIR", "./data")
         browser_dir = os.path.join(data_dir, "playwright")
         os.environ["PLAYWRIGHT_BROWSERS_PATH"] = browser_dir
         logger.info(f"Docker 环境，Playwright 路径: {browser_dir}")
     else:
-        # 本地开发，使用系统默认路径，不做任何安装
+        # Phát triển cục bộ: dùng đường dẫn mặc định của hệ thống, không cài gì cả
         logger.info("本地开发环境，使用系统 Playwright")
         return
 
-    # 检查是否已安装
+    # Kiểm tra xem đã cài chưa
     if os.path.exists(browser_dir):
         try:
             dirs = os.listdir(browser_dir)
@@ -253,7 +253,7 @@ def setup_playwright():
         except Exception:
             pass
 
-    # 首次安装
+    # Lần cài đầu
     logger.info("首次启动，正在安装 Playwright 浏览器（可能需要几分钟）...")
     os.makedirs(browser_dir, exist_ok=True)
 
@@ -263,7 +263,7 @@ def setup_playwright():
             env={**os.environ, "PLAYWRIGHT_BROWSERS_PATH": browser_dir},
             capture_output=True,
             text=True,
-            timeout=600,  # 10 分钟超时
+            timeout=600,  # Hết giờ sau 10 phút
         )
         if result.returncode == 0:
             logger.info("Playwright 浏览器安装完成")
@@ -281,7 +281,7 @@ def seed_sample_stocks():
     """首次启动时添加示例股票"""
     db = SessionLocal()
     try:
-        # 只在没有任何股票时才添加示例
+        # Chỉ thêm mã ví dụ khi chưa có mã nào
         if db.query(Stock).count() > 0:
             return
 
@@ -323,9 +323,9 @@ def seed_agents():
                 )
             )
         else:
-            # 始终同步 execution_mode（确保代码中的定义生效）
+            # Luôn đồng bộ execution_mode (để định nghĩa trong mã có hiệu lực)
             existing.execution_mode = spec.execution_mode or "batch"
-            # 同步 display_name 和 description
+            # Đồng bộ display_name và description
             existing.display_name = spec.display_name or existing.display_name
             existing.description = spec.description or existing.description
             existing.kind = spec.kind
@@ -334,15 +334,15 @@ def seed_agents():
             existing.replaced_by = spec.replaced_by or ""
             existing.display_order = int(spec.display_order or 0)
 
-            # capability 强制不参与调度，避免旧配置继续触发。
+            # capability bị ép không tham gia lập lịch, tránh cấu hình cũ tiếp tục kích hoạt.
             if spec.kind != AGENT_KIND_WORKFLOW:
                 existing.enabled = False
                 existing.schedule = ""
 
-            # 仅在用户未配置时补齐默认 config
+            # Chỉ bù config mặc định khi người dùng chưa cấu hình
             if spec.config and (not existing.config):
                 existing.config = spec.config
-            # 对已存在配置做“向前兼容”的字段补齐（不覆盖用户已有值）
+            # Bù trường theo kiểu "tương thích tiến" cho cấu hình đã có (không ghi đè giá trị người dùng đã đặt)
             if existing.name == "intraday_monitor":
                 cfg = existing.config or {}
                 if isinstance(cfg, dict) and "event_only" not in cfg:
@@ -353,10 +353,10 @@ def seed_agents():
     db.close()
 
 
-# 预置数据源种子(供 seed_data_sources / reconcile_data_sources 复用)。
-# 只增不删的 upsert 目标;删孤儿的对账逻辑见 reconcile_data_sources。
+# Bộ mầm nguồn dữ liệu dựng sẵn (cho seed_data_sources / reconcile_data_sources dùng lại).
+# Đích upsert chỉ thêm chứ không xóa; phần đối soát xóa nguồn mồ côi xem reconcile_data_sources.
 DATA_SOURCE_SEEDS: list[dict] = [
-        # 新闻类数据源
+        # Nguồn dữ liệu nhóm tin tức
         {
             "name": "雪球资讯",
             "type": "news",
@@ -377,7 +377,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "config": {},
             "enabled": True,
             "priority": 1,
-            "supports_batch": False,  # 每只股票单独请求
+            "supports_batch": False,  # Mỗi mã gọi một lần riêng
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
@@ -387,10 +387,10 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "config": {},
             "enabled": True,
             "priority": 2,
-            "supports_batch": True,  # 支持批量查询
+            "supports_batch": True,  # Hỗ trợ truy vấn hàng loạt
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # K线数据源
+        # Nguồn dữ liệu nến
         {
             "name": "腾讯K线",
             "type": "kline",
@@ -407,7 +407,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "provider": "eastmoney",
             "config": {"description": "东方财富日线,A股/港股长历史兜底(免 key)。"},
             "enabled": True,
-            "priority": 5,   # 腾讯(0)之后、Tushare(10)之前 → CN/HK 兜底
+            "priority": 5,   # Sau Tencent (0), trước Tushare (10) → lưới hứng cho CN/HK
             "supports_batch": False,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
@@ -417,7 +417,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "provider": "stooq",
             "config": {"description": "Stooq 美股日线兜底(免 key)。"},
             "enabled": True,
-            "priority": 15,  # US 兜底(腾讯 0 之后)
+            "priority": 15,  # Lưới hứng cho US (sau Tencent 0)
             "supports_batch": False,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
@@ -430,12 +430,12 @@ DATA_SOURCE_SEEDS: list[dict] = [
                 "在 config.proxy 填写代理地址后启用,作港股 K线第二源/美股更稳兜底。",
                 "proxy": "",
             },
-            "enabled": False,  # 需代理,默认关(同 YFinance 口径),用户配好 proxy 再开
-            "priority": 20,  # US/HK 最后兜底
+            "enabled": False,  # Cần proxy, mặc định tắt (cùng khẩu độ với YFinance), người dùng cấu hình proxy xong mới bật
+            "priority": 20,  # Lưới hứng cuối cùng cho US/HK
             "supports_batch": False,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # 资金流向数据源
+        # Nguồn dữ liệu dòng tiền
         {
             "name": "东方财富资金流",
             "type": "capital_flow",
@@ -455,11 +455,11 @@ DATA_SOURCE_SEEDS: list[dict] = [
                 "仅含主力/超大单净额(无大/中/小单细分)。",
             },
             "enabled": True,
-            "priority": 5,  # 东财(0)之后的 CN 第二源
+            "priority": 5,  # Nguồn CN thứ hai, sau Đông Tài (0)
             "supports_batch": False,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # 实时行情数据源
+        # Nguồn dữ liệu bảng giá thời gian thực
         {
             "name": "腾讯行情",
             "type": "quote",
@@ -476,8 +476,8 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "provider": "eastmoney",
             "config": {"description": "东方财富 push2 实时行情(CN,免 key)。作腾讯之后的 A 股第二源。"},
             "enabled": True,
-            "priority": 3,  # 腾讯(0)之后的 CN 第二源(sina/yfinance 不支持 CN)
-            "supports_batch": False,  # push2 stock/get 单只查询,逐只
+            "priority": 3,  # Nguồn CN thứ hai, sau Tencent (0) (sina/yfinance không hỗ trợ CN)
+            "supports_batch": False,  # push2 stock/get truy vấn từng mã, đi lần lượt
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
         {
@@ -486,7 +486,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "provider": "sina",
             "config": {"description": "新浪美股/港股实时行情,免 key 免代理,作腾讯之后的 US/HK 备源。"},
             "enabled": True,
-            "priority": 5,   # 腾讯(0)之后
+            "priority": 5,   # Sau Tencent (0)
             "supports_batch": True,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
@@ -502,7 +502,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "supports_batch": True,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # 事件日历数据源（基于公告结构化）
+        # Nguồn dữ liệu lịch sự kiện (dựng từ công bố đã cấu trúc hóa)
         {
             "name": "东方财富事件日历",
             "type": "events",
@@ -513,7 +513,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "supports_batch": True,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # 快讯数据源（7×24 电报，市场级，不按 symbols 过滤）
+        # Nguồn dữ liệu tin nhanh (bản tin 7×24, cấp thị trường, không lọc theo symbols)
         {
             "name": "财联社快讯",
             "type": "flash_news",
@@ -544,7 +544,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "supports_batch": False,
             "test_symbols": [],
         },
-        # 基本面数据源（按 symbol，估值/股本/财报指标）
+        # Nguồn dữ liệu cơ bản (theo symbol: định giá/cổ phần/chỉ tiêu báo cáo tài chính)
         {
             "name": "腾讯基本面",
             "type": "fundamentals",
@@ -567,7 +567,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "supports_batch": True,
             "test_symbols": list(DEFAULT_TEST_SYMBOLS),
         },
-        # 市场资金面数据源（龙虎榜/融资融券/股东户数/分红/北向资金）
+        # Nguồn dữ liệu dòng tiền thị trường (bảng giao dịch khối lớn/giao dịch ký quỹ/số tài khoản cổ đông/cổ tức/dòng vốn bắc tiến)
         {
             "name": "东财龙虎榜",
             "type": "dragon_tiger",
@@ -623,7 +623,7 @@ DATA_SOURCE_SEEDS: list[dict] = [
             "supports_batch": False,
             "test_symbols": [],
         },
-        # K线截图数据源
+        # Nguồn dữ liệu ảnh chụp đồ thị nến
         {
             "name": "雪球K线截图",
             "type": "chart",
@@ -678,12 +678,12 @@ def seed_data_sources(db=None, *, reset_test_symbols: bool = False) -> list[dict
             .first()
         )
         if existing:
-            # 恢复默认时只重置测试代码；配置、启用状态、优先级等用户设置仍保留。
+            # Khôi phục mặc định chỉ đặt lại mã kiểm thử; cấu hình, trạng thái bật, ưu tiên và các thiết lập khác của người dùng vẫn giữ.
             if existing.supports_batch != source_data.get("supports_batch", False):
                 existing.supports_batch = source_data.get("supports_batch", False)
             if reset_test_symbols:
                 existing.test_symbols = list(source_data.get("test_symbols", []))
-            elif not existing.test_symbols:  # 启动对账只补空值,不覆盖用户配置
+            elif not existing.test_symbols:  # Đối soát lúc khởi động chỉ bù giá trị rỗng, không ghi đè cấu hình người dùng
                 existing.test_symbols = source_data.get("test_symbols", [])
         else:
             db.add(DataSource(**source_data))
@@ -759,7 +759,7 @@ def load_watchlist_for_agent(agent_name: str) -> list[StockConfig]:
         if not stock_ids:
             return []
 
-        # 绑定优先：只要绑定了 Agent，就纳入执行范围
+        # Ưu tiên phần đã gắn: chỉ cần đã gắn Agent là đưa vào phạm vi chạy
         stocks = db.query(Stock).filter(Stock.id.in_(stock_ids)).all()
         result = []
         for s in stocks:
@@ -785,7 +785,7 @@ def load_portfolio_for_agent(agent_name: str) -> PortfolioInfo:
 
     db = SessionLocal()
     try:
-        # 获取 Agent 关联的股票 ID
+        # Lấy các ID mã gắn với Agent
         stock_agents = (
             db.query(StockAgent).filter(StockAgent.agent_name == agent_name).all()
         )
@@ -793,12 +793,12 @@ def load_portfolio_for_agent(agent_name: str) -> PortfolioInfo:
         if not stock_ids:
             return PortfolioInfo()
 
-        # 获取所有启用的账户
+        # Lấy mọi tài khoản đang bật
         accounts = db.query(Account).filter(Account.enabled == True).all()
 
         account_infos = []
         for acc in accounts:
-            # 获取该账户中属于关联股票的持仓
+            # Lấy các vị thế trong tài khoản đó thuộc về mã đã gắn
             positions = (
                 db.query(Position)
                 .filter(
@@ -935,25 +935,25 @@ def resolve_ai_model(
     try:
         model_id = None
 
-        # 1. stock_agent 级别覆盖
+        # 1. Ghi đè ở cấp stock_agent
         if stock_agent_id:
             sa = db.query(StockAgent).filter(StockAgent.id == stock_agent_id).first()
             if sa and sa.ai_model_id:
                 model_id = sa.ai_model_id
 
-        # 2. agent 级别默认
+        # 2. Mặc định ở cấp agent
         if not model_id:
             agent = db.query(AgentConfig).filter(AgentConfig.name == agent_name).first()
             if agent and agent.ai_model_id:
                 model_id = agent.ai_model_id
 
-        # 3. 系统默认
+        # 3. Mặc định hệ thống
         if not model_id:
             default_model = db.query(AIModel).filter(AIModel.is_default == True).first()
             if default_model:
                 model_id = default_model.id
 
-        # 4. 回退：取第一个
+        # 4. Lùi về: lấy cái đầu tiên
         if not model_id:
             first_model = db.query(AIModel).first()
             if first_model:
@@ -984,19 +984,19 @@ def resolve_notify_channels(
     try:
         channel_ids = None
 
-        # 1. stock_agent 级别覆盖
+        # 1. Ghi đè ở cấp stock_agent
         if stock_agent_id:
             sa = db.query(StockAgent).filter(StockAgent.id == stock_agent_id).first()
             if sa and sa.notify_channel_ids:
                 channel_ids = sa.notify_channel_ids
 
-        # 2. agent 级别默认
+        # 2. Mặc định ở cấp agent
         if channel_ids is None:
             agent = db.query(AgentConfig).filter(AgentConfig.name == agent_name).first()
             if agent and agent.notify_channel_ids:
                 channel_ids = agent.notify_channel_ids
 
-        # 3. 按 id 列表查询或取系统默认
+        # 3. Truy vấn theo danh sách id hoặc lấy mặc định hệ thống
         if channel_ids:
             channels = (
                 db.query(NotifyChannel)
@@ -1099,7 +1099,7 @@ def build_context(agent_name: str, stock_agent_id: int | None = None) -> AgentCo
     )
 
 
-# Agent 注册表
+# Sổ đăng ký Agent
 AGENT_REGISTRY: dict[str, type] = {
     "daily_report": DailyReportAgent,
     "premarket_outlook": PremarketOutlookAgent,
@@ -1115,7 +1115,7 @@ def build_scheduler() -> AgentScheduler:
     settings = Settings()
     sched = AgentScheduler(timezone=settings.app_timezone)
 
-    # 设置 context 构建函数（每次执行时动态获取最新配置）
+    # Đặt hàm dựng context (mỗi lần chạy lấy động cấu hình mới nhất)
     sched.set_context_builder(build_context)
 
     db = SessionLocal()
@@ -1262,7 +1262,7 @@ async def trigger_agent(agent_name: str) -> str:
         execution_mode = get_agent_execution_mode(agent_name)
         agent_config = get_agent_config(agent_name)
 
-        # 根据配置初始化 Agent
+        # Khởi tạo Agent theo cấu hình
         if agent_config:
             agent = agent_cls(**agent_config)
         else:
@@ -1270,7 +1270,7 @@ async def trigger_agent(agent_name: str) -> str:
 
         try:
             if execution_mode == "single" and hasattr(agent, "run_single"):
-                # 单只模式：逐只股票分析
+                # Chế độ từng mã: phân tích lần lượt từng mã
                 results = []
                 for stock in watchlist:
                     result = await agent.run_single(context, stock.symbol)
@@ -1288,7 +1288,7 @@ async def trigger_agent(agent_name: str) -> str:
                 )
                 return msg
             else:
-                # 批量模式：所有股票一起分析
+                # Chế độ hàng loạt: phân tích mọi mã cùng lúc
                 result = await agent.run(context)
                 raw = result.raw_data or {}
                 record_agent_run(
@@ -1336,8 +1336,8 @@ async def trigger_agent_for_stock(
     agent_cls = AGENT_REGISTRY.get(agent_name)
     if not agent_cls:
         raise ValueError(f"Agent {agent_name} 未注册实际实现")
-    # 自动调度等不经过 stocks.trigger API 的入口也要拥有同样的生命周期记录；
-    # 手动入口已提前写入，这里幂等调用可避免重复 AgentRun。
+    # Các lối vào không đi qua API stocks.trigger, như lập lịch tự động, cũng phải có cùng bản ghi vòng đời;
+    # lối vào thủ công đã ghi từ trước, ở đây gọi lại theo kiểu bất biến để khỏi sinh AgentRun trùng.
     try:
         from src.modules.automation.agent_runs import start_agent_run
         start_agent_run(
@@ -1362,7 +1362,7 @@ async def trigger_agent_for_stock(
         market=market,
     )
 
-    # 加载该股票的持仓信息
+    # Nạp thông tin vị thế của mã này
     portfolio = load_portfolio_for_stock(stock.id)
 
     model, service = resolve_ai_model(agent_name, stock_agent_id)
@@ -1382,19 +1382,19 @@ async def trigger_agent_for_stock(
         model_label=model_label,
         suppress_notify=suppress_notify,
     )
-    # 暴露 trace_id / force_refresh 给 agent(供 TradingAgents 进度反馈 + 缓存控制使用)。
-    # AgentContext 不强制声明此字段,通过 setattr 注入,其他 agent 不受影响。
+    # Đưa trace_id / force_refresh cho agent (để TradingAgents phản hồi tiến độ + điều khiển bộ đệm).
+    # AgentContext không bắt buộc khai báo trường này, tiêm qua setattr, các agent khác không bị ảnh hưởng.
     setattr(context, "_trace_id", trace_id)
     setattr(context, "_force_refresh", force_refresh)
 
-    # 创建 agent，支持手动触发参数。TradingAgents 等新 agent 从 AgentConfig 读 config。
+    # Tạo agent, hỗ trợ tham số kích hoạt thủ công. Các agent mới như TradingAgents đọc config từ AgentConfig.
     if agent_name == "intraday_monitor":
         agent = agent_cls(
             bypass_throttle=bypass_throttle,
             bypass_market_hours=bypass_market_hours,
         )
     elif agent_name == "tradingagents":
-        # 从 AgentConfig.config 读取实例化参数
+        # Đọc tham số khởi tạo từ AgentConfig.config
         agent_kwargs = get_agent_config(agent_name) or {}
         try:
             agent = agent_cls(**agent_kwargs)
@@ -1440,7 +1440,7 @@ async def trigger_agent_for_stock(
             )
             raise
 
-    # 返回详细结果
+    # Trả về kết quả chi tiết
     skipped = bool(result.raw_data.get("skipped", False))
     should_alert = bool(
         result.raw_data.get("should_alert", False if skipped else True)
@@ -1462,19 +1462,19 @@ async def lifespan(app):
     """应用生命周期: 初始化 + 启动调度器"""
     init_db()
     setup_logging()
-    # OTel 导出(可选,默认关闭):仅当配置了 OTEL_EXPORTER_OTLP_ENDPOINT 且装了
-    # opentelemetry SDK 时启用,否则静默 no-op,不影响现有部署。
+    # Xuất OTel (tùy chọn, mặc định tắt): chỉ bật khi đã cấu hình OTEL_EXPORTER_OTLP_ENDPOINT và
+    # đã cài SDK opentelemetry, ngược lại im lặng no-op, không đụng tới bản triển khai sẵn có.
     try:
         from src.platform.observability.otel import init_otel
 
         init_otel()
-    except Exception as e:  # 兜底:OTel 初始化异常绝不阻断服务启动
+    except Exception as e:  # Lưới hứng: lỗi lúc khởi tạo OTel tuyệt đối không được chặn dịch vụ khởi động
         logger.warning(f"OTel 初始化跳过: {e}")
-    setup_proxy()  # 设置进程 env 代理(HTTP_PROXY/NO_PROXY);所有 httpx(trust_env=True)据此走代理
+    setup_proxy()  # Đặt proxy vào env của tiến trình (HTTP_PROXY/NO_PROXY); mọi httpx (trust_env=True) dựa vào đó để đi qua proxy
     setup_ssl()
     setup_playwright()
 
-    # 从环境变量初始化认证（Docker 部署用）
+    # Khởi tạo xác thực từ biến môi trường (dùng khi triển khai Docker)
     from src.modules.administration.api.auth import init_auth_from_env
 
     db = SessionLocal()
@@ -1496,16 +1496,16 @@ async def lifespan(app):
     seed_strategies()
     seed_sample_stocks()
 
-    # 启动时回填历史 TradingAgents 决策到建议池(stock_suggestions)
-    # 早期 TA 运行没写建议池,这次启动一次性补齐,让「AI 建议」面板能看到。
-    # 幂等:已存在不重复写;每次启动重跑代价极低(只查最近 7 天 + dedupe)。
+    # Lúc khởi động, điền ngược quyết định TradingAgents lịch sử vào kho khuyến nghị (stock_suggestions)
+    # Các lượt chạy TA thời kỳ đầu không ghi kho khuyến nghị, lần khởi động này bù một lần cho trọn, để bảng «Khuyến nghị AI» thấy được.
+    # Bất biến: đã có thì không ghi lại; chạy lại mỗi lần khởi động rất rẻ (chỉ tra 7 ngày gần nhất + gộp trùng).
     try:
         from src.modules.automation.tradingagents.operations import backfill_tradingagents_suggestions
         backfill_tradingagents_suggestions(days=7)
     except Exception as e:
         logger.warning(f"TradingAgents 建议回填失败,跳过: {e}")
 
-    # 后台刷新股票列表缓存
+    # Làm mới bộ đệm danh sách mã ở nền
     import threading
     from src.platform.marketdata.stock_list import get_stock_list, refresh_stock_list
 
@@ -1517,8 +1517,8 @@ async def lifespan(app):
 
     threading.Thread(target=refresh_stock_cache, daemon=True).start()
 
-    # 交易日历预热(判断周末/法定节假日是否开市)。拉取失败会自动降级为只判周末,
-    # 因此这里不阻塞启动,交给后台任务;之后每日 03:00 由上下文维护调度器刷新。
+    # Hâm nóng lịch giao dịch (xét cuối tuần/nghỉ lễ có mở cửa không). Kéo hỏng sẽ tự hạ xuống chỉ xét cuối tuần,
+    # nên ở đây không chặn khởi động, giao cho tác vụ nền; sau đó 03:00 hằng ngày bộ lập lịch bảo trì ngữ cảnh sẽ làm mới.
     try:
         from src.platform.scheduling.trading_calendar import refresh as refresh_trading_calendar
 
@@ -1562,7 +1562,7 @@ async def lifespan(app):
         logger.info("上下文维护调度器已启动")
     except Exception as e:
         logger.error(f"上下文维护调度器启动失败: {e}")
-    # MCP 调用日志保留期清理:每日 04:00 清理超期审计记录
+    # Dọn nhật ký gọi MCP theo thời hạn lưu: 04:00 hằng ngày dọn các bản ghi kiểm toán quá hạn
     try:
         register_mcp_log_cleanup(scheduler)
     except Exception as e:
@@ -1582,12 +1582,12 @@ async def lifespan(app):
         logger.info("上下文维护调度器已关闭")
 
 
-# 模块级 app 实例，供 uvicorn reload 使用
+# Thực thể app ở cấp module, cho uvicorn reload dùng
 from src.bootstrap.application import app  # noqa: E402
 
 app.router.lifespan_context = lifespan
 
-# 生产环境静态文件服务
+# Phục vụ tệp tĩnh ở môi trường sản xuất
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     from fastapi.staticfiles import StaticFiles
@@ -1612,9 +1612,9 @@ if os.path.exists(static_dir):
 if __name__ == "__main__":
     print("盯盘侠启动: http://127.0.0.1:8000")
     print("API 文档: http://127.0.0.1:8000/docs")
-    # 生产(Docker `python server.py`)不应开 reload:uvicorn 文件监听会多起一个 reloader
-    # 子进程、浪费资源,且监听 data/ 写入易误触发重启。本地热重载用 `make dev-api`
-    # (uvicorn --reload),或显式设 DEV_RELOAD=1。
+    # Sản xuất (Docker `python server.py`) không nên bật reload: uvicorn theo dõi tệp sẽ mở thêm một tiến trình
+    # con reloader, phí tài nguyên, và theo dõi ghi vào data/ dễ kích hoạt khởi động lại nhầm. Nạp nóng cục bộ dùng `make dev-api`
+    # (uvicorn --reload), hoặc đặt tường minh DEV_RELOAD=1.
     _dev_reload = os.environ.get("DEV_RELOAD", "").lower() in ("1", "true", "yes")
     uvicorn.run(
         "server:app",
