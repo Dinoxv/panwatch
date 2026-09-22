@@ -275,12 +275,12 @@ export default function DataSourcesPage() {
           <Icon className={`w-4 h-4 ${color}`} />
           <h3 className="text-[13px] font-semibold text-foreground">{label}</h3>
           <span className="text-[11px] text-muted-foreground ml-auto">
-            {groupedSources[type]?.length || 0} 个
+            {groupedSources[type]?.length || 0} nguồn
           </span>
         </div>
 
         {(!groupedSources[type] || groupedSources[type].length === 0) ? (
-          <p className="text-[13px] text-muted-foreground text-center py-6">暂无{label}数据源</p>
+          <p className="text-[13px] text-muted-foreground text-center py-6">Chưa có{label}Nguồn dữ liệu</p>
         ) : (
           <div className="space-y-2">
             {groupedSources[type].map(source => (
@@ -302,7 +302,7 @@ export default function DataSourcesPage() {
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-[11px] text-muted-foreground font-mono">{source.provider}</span>
-                        <span className="text-[11px] text-muted-foreground">优先级: {source.priority}</span>
+                        <span className="text-[11px] text-muted-foreground">Ưu tiên: {source.priority}</span>
                         {source.engine_attached ? (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Đã nối engine mới</span>
                         ) : (
@@ -319,7 +319,7 @@ export default function DataSourcesPage() {
                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${
                               source.health.success_rate >= 0.95 ? 'bg-emerald-500'
                               : source.health.success_rate >= 0.8 ? 'bg-amber-500' : 'bg-red-500'}`} />
-                            成功率 {Math.round(source.health.success_rate * 100)}%
+                            Tỷ lệ thành công {Math.round(source.health.success_rate * 100)}%
                             {source.health.p50_latency_ms != null && ` · p50 ${source.health.p50_latency_ms}ms`}
                             {source.health.last_error ? ` · lỗi gần nhất` : ''}
                           </span>
@@ -382,7 +382,7 @@ export default function DataSourcesPage() {
           ) : (
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
           )}
-          恢复默认
+          Khôi phục mặc định
         </Button>
       </div>
 
@@ -401,7 +401,7 @@ export default function DataSourcesPage() {
                 <span className="text-[13px] font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
                   {category.label}
                 </span>
-                <span className="text-[11px] text-muted-foreground/70">{categoryCount} 个源</span>
+                <span className="text-[11px] text-muted-foreground/70">{categoryCount} nguồn</span>
                 <div className="flex-1 h-px bg-border ml-2" />
               </button>
               {isOpen && (
@@ -418,7 +418,7 @@ export default function DataSourcesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>数据源设置 - {form.name}</DialogTitle>
+            <DialogTitle>Thiết lập nguồn dữ liệu - {form.name}</DialogTitle>
             <DialogDescription>{form.provider}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
@@ -516,7 +516,7 @@ export default function DataSourcesPage() {
               ) : (
                 <X className="w-5 h-5 text-red-500" />
               )}
-              测试结果 - {testResult?.source_name}
+              Kết quả kiểm tra - {testResult?.source_name}
             </DialogTitle>
             <DialogDescription>
               {testResult?.type_label} · {testResult?.provider}
@@ -535,7 +535,7 @@ export default function DataSourcesPage() {
               </div>
               <div className="flex-1">
                 <div className="text-[11px] text-muted-foreground">Lượng dữ liệu</div>
-                <div className="text-[13px] font-medium">{testResult?.count ?? 0} 条</div>
+                <div className="text-[13px] font-medium">{testResult?.count ?? 0} bản ghi</div>
               </div>
               <div className="flex-1">
                 <div className="text-[11px] text-muted-foreground">Thời gian chạy</div>
@@ -694,7 +694,7 @@ export default function DataSourcesPage() {
                           <span className={`text-[12px] font-mono ${
                             (flowItem.main_net ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                           }`}>
-                            {(flowItem.main_net ?? 0) > 0 ? '+' : ''}{((flowItem.main_net ?? 0) / 10000).toFixed(2)}万
+                            {(flowItem.main_net ?? 0) > 0 ? '+' : ''}{((flowItem.main_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                           <span className="text-[11px] text-muted-foreground">
                             {flowItem.main_pct?.toFixed(2)}%
@@ -713,7 +713,7 @@ export default function DataSourcesPage() {
                         <span className={`text-[12px] font-mono ${
                           (dtItem.net_buy ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                         }`}>
-                          {(dtItem.net_buy ?? 0) > 0 ? '+' : ''}{((dtItem.net_buy ?? 0) / 10000).toFixed(2)}万
+                          {(dtItem.net_buy ?? 0) > 0 ? '+' : ''}{((dtItem.net_buy ?? 0) / 10000).toFixed(2)}vạn
                         </span>
                       </div>
                     )
@@ -726,7 +726,7 @@ export default function DataSourcesPage() {
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
                         <span className="text-[12px] font-medium text-foreground">{marginItem.symbol}</span>
                         <div className="flex items-center gap-3">
-                          <span className="text-[12px] font-mono">{((marginItem.total_balance ?? 0) / 10000).toFixed(2)}万</span>
+                          <span className="text-[12px] font-mono">{((marginItem.total_balance ?? 0) / 10000).toFixed(2)}vạn</span>
                           <span className="text-[11px] text-muted-foreground">{marginItem.date}</span>
                         </div>
                       </div>
@@ -754,7 +754,7 @@ export default function DataSourcesPage() {
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-accent/30">
                         <span className="text-[12px] font-medium text-foreground">{divItem.symbol}</span>
                         <div className="flex items-center gap-3">
-                          <span className="text-[12px] font-mono">{divItem.dividend_per_share?.toFixed(4) ?? '-'} 元/股</span>
+                          <span className="text-[12px] font-mono">{divItem.dividend_per_share?.toFixed(4) ?? '-'} đồng/cổ</span>
                           <span className="text-[11px] text-muted-foreground">{divItem.ex_date}</span>
                         </div>
                       </div>
@@ -771,10 +771,10 @@ export default function DataSourcesPage() {
                           <span className={`text-[12px] font-mono ${
                             (nbItem.total_net ?? 0) > 0 ? 'text-red-500' : 'text-green-500'
                           }`}>
-                            {(nbItem.total_net ?? 0) > 0 ? '+' : ''}{((nbItem.total_net ?? 0) / 10000).toFixed(2)}万
+                            {(nbItem.total_net ?? 0) > 0 ? '+' : ''}{((nbItem.total_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            沪股通 {((nbItem.hgt_net ?? 0) / 10000).toFixed(2)}万
+                            Kết nối Thượng Hải {((nbItem.hgt_net ?? 0) / 10000).toFixed(2)}vạn
                           </span>
                         </div>
                       </div>
@@ -787,7 +787,7 @@ export default function DataSourcesPage() {
             {/* Test symbols info */}
             {testResult?.test_symbols && testResult.test_symbols.length > 0 && (
               <div className="text-[11px] text-muted-foreground">
-                测试股票: {testResult.test_symbols.join(', ')}
+                Mã kiểm thử: {testResult.test_symbols.join(', ')}
               </div>
             )}
           </div>

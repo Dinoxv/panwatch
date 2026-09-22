@@ -12,9 +12,9 @@ describe('ApprovalCard', () => {
       <ApprovalCard
         approval={{
           id: 'approval-1',
-          tool_title: '创建提醒',
+          tool_title: 'Tạo cảnh báo',
           risk: 'write',
-          summary: '为贵州茅台创建价格提醒',
+          summary: 'Tạo cảnh báo giá cho 贵州茅台',
           expires_at: '2026-09-11T00:10:00Z',
           status: 'pending',
         }}
@@ -22,7 +22,7 @@ describe('ApprovalCard', () => {
       />,
     )
 
-    expect(screen.getByText('为贵州茅台创建价格提醒')).toBeTruthy()
+    expect(screen.getByText('Tạo cảnh báo giá cho 贵州茅台')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Cho phép lần này' }))
 
     expect(onDecision).toHaveBeenCalledTimes(1)
@@ -35,9 +35,9 @@ describe('ApprovalCard', () => {
       <ApprovalCard
         approval={{
           id: 'approval-1',
-          tool_title: '创建提醒',
+          tool_title: 'Tạo cảnh báo',
           risk: 'write',
-          summary: '为贵州茅台创建价格提醒',
+          summary: 'Tạo cảnh báo giá cho 贵州茅台',
           expires_at: '2026-09-11T00:10:00Z',
           status: 'approved',
         }}
@@ -54,9 +54,9 @@ describe('ApprovalCard', () => {
       <ApprovalCard
         approval={{
           id: 'approval-2',
-          tool_title: '创建提醒',
+          tool_title: 'Tạo cảnh báo',
           risk: 'write',
-          summary: '为贵州茅台创建价格提醒',
+          summary: 'Tạo cảnh báo giá cho 贵州茅台',
           expires_at: '2026-09-11T00:10:00Z',
           status: 'rejected',
         }}

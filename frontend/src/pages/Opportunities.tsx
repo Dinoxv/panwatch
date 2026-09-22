@@ -306,6 +306,7 @@ export default function OpportunitiesPage() {
         })
       } catch (firstErr) {
         const msg = firstErr instanceof Error ? firstErr.message : ''
+        // '超时' là chữ trong thông báo lỗi hết giờ do backend trả về, giữ nguyên.
         if (!msg.includes('超时')) throw firstErr
         try {
           // Retry once for transient DB lock/contention.
@@ -541,7 +542,7 @@ export default function OpportunitiesPage() {
             disabled={refreshing}
           >
             {refreshing ? <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
-            刷新
+            Làm mới
           </Button>
         </div>
       </div>
@@ -551,28 +552,28 @@ export default function OpportunitiesPage() {
           <div className="text-[11px] text-muted-foreground">Ứng viên hiện tại (toàn cục)</div>
           <div className="text-[18px] font-bold mt-1">{globalCoverage?.total_signals ?? '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            可执行: {globalCoverage?.active_signals ?? '--'}，观察: {(globalCoverage?.total_signals != null && globalCoverage?.active_signals != null) ? Math.max(0, globalCoverage.total_signals - globalCoverage.active_signals) : '--'}
+            Chạy được: {globalCoverage?.active_signals ?? '--'}, quan sát: {(globalCoverage?.total_signals != null && globalCoverage?.active_signals != null) ? Math.max(0, globalCoverage.total_signals - globalCoverage.active_signals) : '--'}
           </div>
         </div>
         <div className="card p-3">
           <div className="text-[11px] text-muted-foreground">Tỷ trọng kho thị trường</div>
           <div className="text-[18px] font-bold mt-1">{globalCoverage?.market_scan_share_pct != null ? `${globalCoverage.market_scan_share_pct.toFixed(1)}%` : '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            市场池: {globalCoverage?.market_scan_signals ?? '--'}，关注池: {globalCoverage?.watchlist_signals ?? '--'}，融合: {globalCoverage?.mixed_signals ?? '--'}
+            Kho thị trường: {globalCoverage?.market_scan_signals ?? '--'}, kho theo dõi: {globalCoverage?.watchlist_signals ?? '--'}, hợp nhất: {globalCoverage?.mixed_signals ?? '--'}
           </div>
         </div>
         <div className="card p-3">
           <div className="text-[11px] text-muted-foreground">Kết quả lọc lần này</div>
           <div className="text-[18px] font-bold mt-1">{filteredSummary.total}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            未持仓: {filteredSummary.unheld}，市场池: {filteredSummary.marketPool}
+            Chưa nắm giữ: {filteredSummary.unheld}, kho thị trường: {filteredSummary.marketPool}
           </div>
         </div>
         <div className="card p-3">
           <div className="text-[11px] text-muted-foreground">Tỷ lệ thắng 3 ngày (hậu kiểm tự động)</div>
           <div className="text-[18px] font-bold mt-1">{outcome3d ? `${outcome3d.win_rate.toFixed(1)}%` : '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            自动样本: {outcome3d ? `${outcome3d.total}` : '--'}
+            Mẫu tự động: {outcome3d ? `${outcome3d.total}` : '--'}
           </div>
         </div>
       </div>
@@ -582,13 +583,13 @@ export default function OpportunitiesPage() {
           <div className="card p-3">
             <div className="text-[11px] text-muted-foreground">Nhân tố Alpha bình quân</div>
             <div className="text-[18px] font-bold mt-1">{factorStats ? factorStats.avg_alpha_score.toFixed(1) : '--'}</div>
-            <div className="text-[10px] text-muted-foreground mt-1">样本 {factorStats?.sample_size ?? '--'}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Mẫu {factorStats?.sample_size ?? '--'}</div>
           </div>
           <div className="card p-3">
             <div className="text-[11px] text-muted-foreground">Xúc tác sự kiện bình quân</div>
             <div className="text-[18px] font-bold mt-1">{factorStats ? factorStats.avg_catalyst_score.toFixed(1) : '--'}</div>
             <div className="text-[10px] text-muted-foreground mt-1">
-              拥挤惩罚 {factorStats ? factorStats.avg_crowd_penalty.toFixed(1) : '--'}
+              Phạt chen chúc {factorStats ? factorStats.avg_crowd_penalty.toFixed(1) : '--'}
             </div>
           </div>
           <div className="card p-3">
@@ -612,12 +613,12 @@ export default function OpportunitiesPage() {
           <div className="flex flex-wrap gap-2">
             {regimeSummary.map((r) => (
               <span key={`regime-${r.market}`} className={`text-[11px] px-2.5 py-1 rounded ${regimeToneClass(r.regime)}`}>
-                {marketLabel(r.market)}: {r.label} · 置信 {Math.round(r.confidence * 100)}%
+                {marketLabel(r.market)}: {r.label} · tin cậy {Math.round(r.confidence * 100)}%
               </span>
             ))}
             {riskSummary.map((r) => (
               <span key={`risk-${r.market}`} className="text-[11px] px-2.5 py-1 rounded bg-accent/70 text-muted-foreground border border-border/60">
-                {marketLabel(r.market)}风险: {r.riskLevel} · 集中度{(r.concentration * 100).toFixed(0)}% · 高风险占比{(r.highRiskRatio * 100).toFixed(0)}%
+                {marketLabel(r.market)}Rủi ro: {r.riskLevel} · mức tập trung{(r.concentration * 100).toFixed(0)}% · tỷ trọng rủi ro cao{(r.highRiskRatio * 100).toFixed(0)}%
               </span>
             ))}
           </div>
@@ -741,7 +742,7 @@ export default function OpportunitiesPage() {
                       </span>
                     </div>
                     <div className={`text-[12px] font-mono mt-1 ${Number(item.rank_score || item.score || 0) >= 80 ? 'text-primary' : 'text-muted-foreground'}`}>
-                      评分 {Math.round(item.rank_score || item.score || 0)}
+                      Điểm {Math.round(item.rank_score || item.score || 0)}
                     </div>
                     {item.ai_score != null && (
                       <div className="mt-1 flex items-center justify-end gap-1">
@@ -755,31 +756,31 @@ export default function OpportunitiesPage() {
                 </div>
                 <div className="mt-2 text-[12px] text-foreground line-clamp-2">{item.signal || item.reason || '--'}</div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-                  <div>入场: {formatEntryDisplay(item.action, entryLow, entryHigh)}</div>
-                  <div>止损: {formatPlanPrice(stopLoss)}</div>
-                  <div>目标: {formatPlanPrice(targetPrice)}</div>
-                  <div>失效: {item.invalidation || '--'}</div>
+                  <div>Vào lệnh: {formatEntryDisplay(item.action, entryLow, entryHigh)}</div>
+                  <div>Cắt lỗ: {formatPlanPrice(stopLoss)}</div>
+                  <div>Mục tiêu: {formatPlanPrice(targetPrice)}</div>
+                  <div>Mất hiệu lực: {item.invalidation || '--'}</div>
                   <div>
-                    策略: {strategyHead}
+                    Chiến lược: {strategyHead}
                     {strategyTailCount > 0 ? ` +${strategyTailCount}` : ''}
                   </div>
-                  <div>来源池: {sourcePoolLabel}</div>
+                  <div>Kho nguồn: {sourcePoolLabel}</div>
                   <div>
-                    来源Agent: {sourceAgentHead}
+                    Agent nguồn: {sourceAgentHead}
                     {sourceAgentTailCount > 0 ? ` +${sourceAgentTailCount}` : ''}
                   </div>
-                  <div>风险: {item.risk_level_label || item.risk_level || '--'}</div>
-                  <div>市场状态: {marketRegime.regime_label || marketRegime.regime || '--'}</div>
-                  <div>持仓: {item.is_holding_snapshot ? 'Đang nắm giữ' : 'Chưa nắm giữ'}</div>
-                  <div>市场: {marketLabel(item.stock_market)}</div>
+                  <div>Rủi ro: {item.risk_level_label || item.risk_level || '--'}</div>
+                  <div>Trạng thái thị trường: {marketRegime.regime_label || marketRegime.regime || '--'}</div>
+                  <div>Vị thế: {item.is_holding_snapshot ? 'Đang nắm giữ' : 'Chưa nắm giữ'}</div>
+                  <div>Thị trường: {marketLabel(item.stock_market)}</div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
                   <div>Alpha: {formatMetric(breakdown.alpha_score)}</div>
-                  <div>催化: {formatMetric(breakdown.catalyst_score)}</div>
-                  <div>质量: {formatMetric(breakdown.quality_score)}</div>
-                  <div>风险惩罚: {formatMetric(breakdown.risk_penalty)}</div>
-                  <div>相对强弱: {crossFeature.relative_strength_pct != null ? `phân vị ${Number(crossFeature.relative_strength_pct).toFixed(0)}` : '--'}</div>
-                  <div>事件催化: {eventScore != null ? eventScore.toFixed(1) : '--'}{eventCount > 0 ? `(${eventCount} sự kiện)` : '(không trúng)'}</div>
+                  <div>Xúc tác: {formatMetric(breakdown.catalyst_score)}</div>
+                  <div>Chất lượng: {formatMetric(breakdown.quality_score)}</div>
+                  <div>Phạt rủi ro: {formatMetric(breakdown.risk_penalty)}</div>
+                  <div>Sức mạnh tương đối: {crossFeature.relative_strength_pct != null ? `phân vị ${Number(crossFeature.relative_strength_pct).toFixed(0)}` : '--'}</div>
+                  <div>Xúc tác sự kiện: {eventScore != null ? eventScore.toFixed(1) : '--'}{eventCount > 0 ? `(${eventCount} sự kiện)` : '(không trúng)'}</div>
                 </div>
                 {item.factor_explain && (((item.factor_explain.positive?.length ?? 0) > 0) || ((item.factor_explain.negative?.length ?? 0) > 0)) && (
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -797,14 +798,14 @@ export default function OpportunitiesPage() {
                 )}
                 {item.constrained && (
                   <div className="mt-2 text-[10px] text-amber-400">
-                    组合约束: {(item.constraint_reasons || []).join('；') || 'Đã tự hạ cấp'}
+                    Ràng buộc danh mục: {(item.constraint_reasons || []).join('; ') || 'Đã tự hạ cấp'}
                   </div>
                 )}
               </button>
 
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-[10px] text-muted-foreground">
-                  来源: {sourceFlags.join(' + ')}
+                  Nguồn: {sourceFlags.join(' + ')}
                 </div>
                 <div className="flex items-center gap-3">
                   <button

@@ -181,7 +181,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
             />
           </div>
           <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
-            分析成本 ${costUsd != null ? costUsd.toFixed(4) : '-'}
+            Chi phí phân tích ${costUsd != null ? costUsd.toFixed(4) : '-'}
           </div>
         </div>
       </div>

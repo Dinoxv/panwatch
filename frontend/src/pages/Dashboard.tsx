@@ -525,7 +525,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1.5">
                     <span className="h-[3px] w-3.5 rounded-full bg-primary" />
-                    <span className="text-muted-foreground">我的组合 {benchReady ? pct(bench!.portfolio_return) : ''}</span>
+                    <span className="text-muted-foreground">Danh mục của tôi {benchReady ? pct(bench!.portfolio_return) : ''}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-0 w-3.5 border-t-[1.5px] border-dashed border-muted-foreground/70" />
@@ -536,7 +536,7 @@ export default function DashboardPage() {
                 </div>
                 {benchReady && (
                   <span className={`rounded px-1.5 py-0.5 font-mono ${pctChipCls(bench!.excess_return)}`}>
-                    超额 {pct(bench!.excess_return)}
+                    Vượt trội {pct(bench!.excess_return)}
                   </span>
                 )}
               </div>
@@ -564,7 +564,7 @@ export default function DashboardPage() {
               )}
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">持仓 {diag!.position_count} 只 · 最大单仓</span>
+                <span className="text-muted-foreground">Vị thế {diag!.position_count} mã · vị thế lớn nhất</span>
                 <span className={`font-mono ${diag!.max_weight >= 0.4 ? 'text-amber-600' : ''}`}>
                   {(diag!.max_weight * 100).toFixed(0)}%
                 </span>

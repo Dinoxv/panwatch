@@ -60,7 +60,7 @@ export function ApprovalCard({ approval, onDecision }: ApprovalCardProps) {
             </p>
           ) : approval.expires_at && (
             <p className="mt-1.5 text-[11px] text-muted-foreground/80">
-              请在 {new Date(approval.expires_at).toLocaleString()} 前决定
+              Xin quyết trước {new Date(approval.expires_at).toLocaleString()}
             </p>
           )}
           {failed && <p className="mt-1.5 text-[11px] text-destructive">Gửi quyết định thất bại, xin thử lại.</p>}

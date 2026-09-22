@@ -1,7 +1,7 @@
 /**
- * TradingAgents 深度分析 API。
- * 复用现有 /api/stocks/:id/agents/:name/trigger,只是 agent_name = "tradingagents"。
- * 进度走新增的 /api/agents/runs/:trace_id/progress。
+ * API phân tích chuyên sâu TradingAgents.
+ * Dùng lại /api/stocks/:id/agents/:name/trigger sẵn có, chỉ khác agent_name = "tradingagents".
+ * Tiến độ đi qua /api/agents/runs/:trace_id/progress mới thêm.
  */
 import { fetchAPI, getToken } from './client'
 
@@ -10,7 +10,7 @@ export interface TradingAgentsTriggerResult {
   queued?: boolean
   trace_id?: string
   message?: string
-  /** 后端幂等命中:已有在跑任务,trace_id 是现有任务的,不是新启的 */
+  /** Backend chống trùng có hiệu lực: đã có tác vụ đang chạy, trace_id là của tác vụ cũ chứ không phải mới mở */
   deduplicated?: boolean
 }
 
@@ -30,10 +30,10 @@ export interface DebateHistory {
 export interface DeepAnalysisSuggestion {
   action: 'buy' | 'hold' | 'sell'
   action_label: string
-  /** 上游五档评级；review 表示无法安全解析，需要人工复核而不是普通持有。 */
+  /** Xếp hạng năm bậc của thượng nguồn; review nghĩa là không đọc ra an toàn được, cần người kiểm lại chứ không phải nắm giữ bình thường. */
   rating_raw?: 'buy' | 'overweight' | 'hold' | 'underweight' | 'sell' | 'review'
   review_required?: boolean
-  /** 上游 propagate 的原始输出，便于展示与排查映射差异。 */
+  /** Đầu ra gốc do thượng nguồn propagate, để tiện hiện ra và truy lệch khi ánh xạ. */
   upstream_decision?: string
   signal: string
   reason: string
@@ -95,7 +95,7 @@ export interface ProgressDataSource {
 export interface ProgressActiveOperation {
   kind: 'llm' | 'tool'
   name: string
-  /** TradingAgents LangGraph 节点名；旧后端快照可能没有该字段。 */
+  /** Tên nút LangGraph của TradingAgents; ảnh chụp từ backend cũ có thể không có trường này. */
   agent?: string
 }
 
@@ -179,8 +179,8 @@ export interface HistoryComparisonResponse {
 }
 
 export const tradingAgentsApi = {
-  /** 触发深度分析(异步排队)。force=true 跳过同日缓存。
-   *  TradingAgents 不要求 StockAgent 绑定 — 始终带 allow_unbound=true。 */
+  /** Kích hoạt phân tích chuyên sâu (xếp hàng bất đồng bộ). force=true thì bỏ đệm trong ngày.
+   *  TradingAgents không đòi phải gắn StockAgent — luôn mang allow_unbound=true. */
   trigger(stockId: number, opts: { force?: boolean } = {}): Promise<TradingAgentsTriggerResult> {
     const qsParts = ['allow_unbound=true']
     if (opts.force) qsParts.push('force_refresh=true')
@@ -193,12 +193,12 @@ export const tradingAgentsApi = {
     )
   },
 
-  /** 读取本月预算 + 单次预估成本(用于触发前确认弹窗)。 */
+  /** Đọc ngân sách tháng này + ước tính chi phí một lượt (dùng cho hộp thoại xác nhận trước khi kích hoạt). */
   getBudget(): Promise<BudgetInfo> {
     return fetchAPI('/agents/tradingagents/budget')
   },
 
-  /** 把某次深度分析报告导出为 PDF 文件并触发下载(后台直出,不走打印对话框)。 */
+  /** Xuất một báo cáo phân tích chuyên sâu thành tệp PDF rồi tải về (backend xuất thẳng, không qua hộp thoại in). */
   async downloadAnalysisPdf(symbol: string, date: string): Promise<void> {
     const token = getToken()
     const qs = new URLSearchParams({ stock_symbol: symbol, analysis_date: date })
@@ -206,24 +206,24 @@ export const tradingAgentsApi = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
     if (!resp.ok) {
-      let msg = `导出失败 (${resp.status})`
+      let msg = `Xuất thất bại (${resp.status})`
       try {
         const j = await resp.json()
         msg = (j && (j.message || j.detail)) || msg
       } catch {
-        /* 非 JSON 错误体,用默认提示 */
+        /* Thân lỗi không phải JSON, dùng thông báo mặc định */
       }
       throw new Error(msg)
     }
     const blob = await resp.blob()
-    let filename = `深度分析-${date}.pdf`
+    let filename = `phan-tich-chuyen-sau-${date}.pdf`
     const cd = resp.headers.get('Content-Disposition') || ''
     const m = cd.match(/filename\*=UTF-8''([^;]+)/i)
     if (m) {
       try {
         filename = decodeURIComponent(m[1])
       } catch {
-        /* 保留默认文件名 */
+        /* Giữ tên tệp mặc định */
       }
     }
     const url = URL.createObjectURL(blob)
@@ -236,9 +236,9 @@ export const tradingAgentsApi = {
     URL.revokeObjectURL(url)
   },
 
-  /** 查某只股票最近 30 分钟有没有在跑或刚完成的 TA 任务(后端权威源)。
-   *  返回 status: running | success | failed | stale | none
-   *  stale = 5 分钟无新进度日志,前端可据此 reset 到 idle 允许重新触发 */
+  /** Tra xem mã này trong 30 phút gần nhất có tác vụ TA nào đang chạy hoặc vừa xong không (backend là nguồn có thẩm quyền).
+   *  Trả về status: running | success | failed | stale | none
+   *  stale = 5 phút không có nhật ký tiến độ mới, frontend dựa vào đó đưa về idle để cho kích hoạt lại */
   findRunning(symbol: string): Promise<{
     trace_id: string | null
     status: 'running' | 'success' | 'failed' | 'stale' | 'none'
@@ -247,12 +247,12 @@ export const tradingAgentsApi = {
     return fetchAPI(`/agents/tradingagents/running?stock_symbol=${encodeURIComponent(symbol)}`)
   },
 
-  /** 拉取进度(前端轮询)。 */
+  /** Kéo tiến độ (frontend hỏi vòng). */
   getProgress(traceId: string): Promise<ProgressResponse> {
     return fetchAPI(`/agents/runs/${encodeURIComponent(traceId)}/progress`)
   },
 
-  /** 历史决策 vs 实际涨跌对比。 */
+  /** Đối chiếu quyết định lịch sử vs tăng giảm thực tế. */
   getHistoryComparison(
     symbol: string,
     market: string,
@@ -266,7 +266,7 @@ export const tradingAgentsApi = {
     return fetchAPI(`/agents/tradingagents/history-comparison?${qs.toString()}`)
   },
 
-  /** 拉取某只股票最近一次深度分析结果(含完整 raw_data)。 */
+  /** Kéo kết quả phân tích chuyên sâu gần nhất của một mã (kèm raw_data đầy đủ). */
   getLatestForStock(symbol: string): Promise<DeepAnalysisResult | null> {
     return fetchAPI(
       `/agents/tradingagents/latest?stock_symbol=${encodeURIComponent(symbol)}`,
@@ -284,7 +284,7 @@ export const tradingAgentsApi = {
     })
   },
 
-  /** 按 symbol + date 拉某次深度分析完整结果(详细阅读页用)。 */
+  /** Kéo kết quả đầy đủ của một lần phân tích chuyên sâu theo symbol + date (dùng cho trang đọc chi tiết). */
   getAnalysisByDate(symbol: string, date: string): Promise<DeepAnalysisResult | null> {
     const qs = new URLSearchParams({ stock_symbol: symbol, analysis_date: date })
     return fetchAPI(`/agents/tradingagents/analysis?${qs.toString()}`).then((item: unknown) => {

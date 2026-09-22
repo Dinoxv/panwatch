@@ -13,7 +13,7 @@ const config = {
   hard_limit_tokens: 10200,
   keep_recent_messages: 8,
   models: [
-    { id: 6, name: 'DeepSeek V4 Flash', model: 'deepseek-ai/DeepSeek-V4-Flash', service_name: '硅基流动' },
+    { id: 6, name: 'DeepSeek V4 Flash', model: 'deepseek-ai/DeepSeek-V4-Flash', service_name: 'SiliconFlow' },
   ],
 }
 

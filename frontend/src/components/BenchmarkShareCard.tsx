@@ -117,7 +117,7 @@ export default function BenchmarkShareCard({ open, onClose, bench }: BenchmarkSh
         <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, color: '#0f172a' }}>
           Bảng thành tích mô phỏng AI
         </div>
-        <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>近 {days} 天</div>
+        <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}> {days} ngày gần nhất</div>
       </div>
 
       {/* Hero: lợi nhuận vượt trội */}
@@ -132,7 +132,7 @@ export default function BenchmarkShareCard({ open, onClose, bench }: BenchmarkSh
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, opacity: 0.92 }}>
-          超额收益(vs {benchLabel})
+          Lợi nhuận vượt trội (vs {benchLabel})
         </div>
         <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, letterSpacing: 1, marginTop: 6 }}>
           {pct(excess, 1)}

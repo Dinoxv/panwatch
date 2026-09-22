@@ -342,7 +342,7 @@ export function DeepAnalysisModal({
       <DialogContent className="w-[92vw] max-w-6xl max-h-[85vh] overflow-y-auto scrollbar">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            🧠 深度分析 · {stockName} ({stockSymbol})
+            🧠 Phân tích chuyên sâu · {stockName} ({stockSymbol})
           </DialogTitle>
           <DialogDescription>
             Khung quyết định nhiều Agent TradingAgents · chỉ để học hỏi nghiên cứu tham khảo, không phải khuyến nghị đầu tư
@@ -401,14 +401,14 @@ function IdleView({
   return (
     <div className="space-y-4 text-[13px]">
       <div className="rounded-lg bg-accent/30 p-3 space-y-1.5">
-        <div className="font-medium">即将分析:{stockSymbol}</div>
+        <div className="font-medium">Sắp phân tích:{stockSymbol}</div>
         <div className="text-muted-foreground">
           Gọi 4 nhóm chuyên viên phân tích (kỹ thuật / tâm lý / tin tức / cơ bản) + tranh luận xem tăng xem giảm + kiểm soát rủi ro + PM tổng hợp
         </div>
         <div className="text-[11px] text-muted-foreground mt-2 space-y-0.5">
           <div>⏱ Ước tính mất: 3-8 phút</div>
           {est ? (
-            <div>💰 预估成本:${est.cost_low_usd.toFixed(2)} - ${est.cost_high_usd.toFixed(2)} ({est.model})</div>
+            <div>💰 Ước tính chi phí:${est.cost_low_usd.toFixed(2)} - ${est.cost_high_usd.toFixed(2)} ({est.model})</div>
           ) : (
             <div>💰 Ước tính chi phí: đang tải...</div>
           )}
@@ -462,7 +462,7 @@ function RunningView({
           <span className="inline-block w-3 h-3 rounded-full bg-primary animate-pulse" />
           <span className="font-medium">Đang phân tích...</span>
           <span className="ml-auto text-[11px] text-muted-foreground">
-            已用 {formatElapsed(elapsed)} · ${cost.toFixed(4)}
+            Đã dùng {formatElapsed(elapsed)} · ${cost.toFixed(4)}
           </span>
         </div>
         {progress?.active_operation && (
@@ -472,7 +472,7 @@ function RunningView({
                 Agent hiện tại:<span className="font-mono">{progress.active_operation.agent}</span> ·{' '}
               </>
             )}
-            当前操作：{progress.active_operation.kind === 'tool' ? 'Công cụ dữ liệu ' : ''}
+            Thao tác hiện tại: {progress.active_operation.kind === 'tool' ? 'Công cụ dữ liệu ' : ''}
             <span className="font-mono">{progress.active_operation.name}</span>
           </div>
         )}
@@ -595,15 +595,15 @@ export function ToolkitDiagnostics({
         <span className="ml-auto text-[11px] whitespace-nowrap">
           <span className={ACTION_CLS.HIT}>HIT {hit}</span>
           <span className="text-muted-foreground"> · MISS {miss}</span>
-          <span className={ACTION_CLS.PASSTHROUGH}> · 透传 {pass}</span>
-          {fall > 0 && <span className={ACTION_CLS.FALLTHROUGH}> · 兜底 {fall}</span>}
-          {err > 0 && <span className="text-rose-600"> · 错误 {err}</span>}
+          <span className={ACTION_CLS.PASSTHROUGH}> · chuyển thẳng {pass}</span>
+          {fall > 0 && <span className={ACTION_CLS.FALLTHROUGH}> · lưới hứng {fall}</span>}
+          {err > 0 && <span className="text-rose-600"> · lỗi {err}</span>}
         </span>
       </summary>
       <div className="text-[10.5px] text-muted-foreground/80 mt-2 leading-relaxed">
-        <span className={ACTION_CLS.HIT}>HIT</span>: 用 PanWatch 数据 ·{' '}
-        <span className={ACTION_CLS.MISS}>MISS</span>: 命中但 PanWatch 未实现 ·{' '}
-        <span className={ACTION_CLS.PASSTHROUGH}>Chuyển thẳng</span>: 非 A 股直接走上游 vendor ·{' '}
+        <span className={ACTION_CLS.HIT}>HIT</span>: dùng dữ liệu PanWatch ·{' '}
+        <span className={ACTION_CLS.MISS}>MISS</span>: khớp nhưng PanWatch chưa làm ·{' '}
+        <span className={ACTION_CLS.PASSTHROUGH}>Chuyển thẳng</span>: không phải cổ phiếu A nên đi thẳng vendor thượng nguồn ·{' '}
         <span className={ACTION_CLS.FALLTHROUGH}>Lưới hứng</span>: cổ phiếu A nhưng cache rỗng, đã đi lên thượng nguồn
       </div>
       {total === 0 ? (
@@ -622,7 +622,7 @@ export function ToolkitDiagnostics({
                 <span className="text-foreground/80 truncate flex-1 text-left">
                   {h.method} ({h.symbol || '-'})
                   {h.reason && <span className="text-muted-foreground"> · {h.reason}</span>}
-                  {h.chars != null && <span className="text-muted-foreground"> · {h.chars} 字符</span>}
+                  {h.chars != null && <span className="text-muted-foreground"> · {h.chars} ký tự</span>}
                   {h.source && <span className="text-muted-foreground/70"> · {h.source}</span>}
                 </span>
               </div>
@@ -655,7 +655,7 @@ export function ToolkitDiagnostics({
                         {h.snippet}
                         {h.chars != null && h.chars > h.snippet.length && (
                           <span className="text-muted-foreground/60">
-                            {'\n\n'}...(共 {h.chars} 字符,仅展示前 {h.snippet.length})
+                            {'\n\n'}...(tổng {h.chars} ký tự, chỉ hiện {h.snippet.length})
                           </span>
                         )}
                       </pre>
@@ -742,7 +742,7 @@ function DoneView({
           {sug.action_label}
         </span>
         <span className="text-[12px] text-muted-foreground">
-          置信度 {sug.confidence?.toFixed(1) ?? '-'} / 10
+          Độ tin cậy {sug.confidence?.toFixed(1) ?? '-'} / 10
         </span>
         <Button
           variant="outline"
@@ -753,7 +753,7 @@ function DoneView({
           Xem trang chi tiết
         </Button>
         <span className="text-[10px] text-muted-foreground">
-          成本:${costUsd?.toFixed(4) ?? '-'}
+          Chi phí:${costUsd?.toFixed(4) ?? '-'}
         </span>
       </div>
 

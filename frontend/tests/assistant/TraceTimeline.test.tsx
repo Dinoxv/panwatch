@@ -12,7 +12,7 @@ describe('TraceTimeline', () => {
           { event: 'run_started', data: { task_id: 7 } },
           { event: 'context_prepared', data: { compressed: true } },
           { event: 'tool_call_start', data: { name: 'get_portfolio', arguments: { market: 'CN' } } },
-          { event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: '持仓查询完成' } },
+          { event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: 'Truy vấn danh mục xong' } },
           { event: 'model_usage', data: { input_tokens: 120, output_tokens: 30 } },
           { event: 'done', data: {} },
         ]}
@@ -47,7 +47,7 @@ describe('TraceTimeline', () => {
       <TraceTimeline
         events={[
           { event: 'tool_call_start', data: { name: 'get_portfolio', arguments: { market: 'CN' } } },
-          { event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: '持仓查询完成' } },
+          { event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: 'Truy vấn danh mục xong' } },
           {
             event: 'extension_event',
             data: {
@@ -65,7 +65,7 @@ describe('TraceTimeline', () => {
 
     expect(screen.getByText('Gọi công cụ: get_portfolio')).toBeTruthy()
     expect(screen.getByText('{"market":"CN"}')).toBeTruthy()
-    expect(screen.getByText('持仓查询完成')).toBeTruthy()
+    expect(screen.getByText('Truy vấn danh mục xong')).toBeTruthy()
     expect(screen.getByText('Rà công cụ xong: chọn được 1')).toBeTruthy()
   })
 

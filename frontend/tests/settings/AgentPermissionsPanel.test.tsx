@@ -16,8 +16,8 @@ describe('agent tool permission settings', () => {
             { risk: 'destructive', mode: 'deny' },
           ],
           tools: [
-            { name: 'create_alert', title: '创建提醒', risk: 'write', mode: 'ask', confirmation_required: false },
-            { name: 'delete_alert', title: '删除提醒', risk: 'destructive', mode: 'deny', confirmation_required: false },
+            { name: 'create_alert', title: 'Tạo cảnh báo', risk: 'write', mode: 'ask', confirmation_required: false },
+            { name: 'delete_alert', title: 'Xóa cảnh báo', risk: 'destructive', mode: 'deny', confirmation_required: false },
           ],
         }}
         onChange={onChange}
@@ -39,7 +39,7 @@ describe('agent tool permission settings', () => {
       risk: 'write',
     })
 
-    fireEvent.change(screen.getByLabelText('创建提醒'), { target: { value: 'allow' } })
+    fireEvent.change(screen.getByLabelText('Tạo cảnh báo'), { target: { value: 'allow' } })
     expect(onChange).toHaveBeenCalledWith({
       selector_kind: 'tool',
       selector_value: 'create_alert',
@@ -47,7 +47,7 @@ describe('agent tool permission settings', () => {
       risk: 'write',
     })
 
-    const destructive = screen.getByLabelText('删除提醒') as HTMLSelectElement
+    const destructive = screen.getByLabelText('Xóa cảnh báo') as HTMLSelectElement
     expect([...destructive.options].some((option) => option.value === 'allow')).toBe(false)
   })
 })

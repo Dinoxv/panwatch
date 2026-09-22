@@ -536,7 +536,7 @@ export default function AgentsPage() {
             const preview = previews[agent.name]
             const boundStocks = getBoundStocks(agent.name)
             const boundSummary = boundStocks.length > 0
-              ? `${boundStocks.slice(0, 3).map(s => s.name || s.symbol).join('、')}${boundStocks.length > 3 ? ', ...và nữa' : ''}`
+              ? `${boundStocks.slice(0, 3).map(s => s.name || s.symbol).join(',')}${boundStocks.length > 3 ? ', ...và nữa' : ''}`
               : 'Chưa gắn mã nào'
             return (
               <div key={agent.name} className="card-hover p-4 md:p-6">
@@ -586,7 +586,7 @@ export default function AgentsPage() {
                     {/* Mốc kích hoạt sắp tới (theo múi giờ của lịch chạy) */}
                     {'error' in (preview || {}) ? (
                       <div className="mt-2 ml-[22px] text-[11px] text-muted-foreground">
-                        未来触发时间：{(preview as { error: string }).error}
+                        Mốc kích hoạt sắp tới: {(preview as { error: string }).error}
                       </div>
                     ) : (preview as SchedulePreview | undefined)?.next_runs?.length ? (
                       <div className="mt-2 ml-[22px] flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -777,7 +777,7 @@ export default function AgentsPage() {
                   onChange={e => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  {scheduleConfig.type === 'weekdays' ? 'Thứ Hai đến thứ Sáu' : 'Mỗi ngày'}在此时间执行
+                  {scheduleConfig.type === 'weekdays' ? 'Thứ Hai đến thứ Sáu' : 'Mỗi ngày'}Chạy vào lúc này
                 </p>
               </div>
             )}
@@ -962,7 +962,7 @@ export default function AgentsPage() {
                   <div className="rounded-md bg-accent/30 border border-border/40 p-2 text-[11px] text-muted-foreground mb-3">
                     {defaultModel && agentService ? (
                       <>Mô hình mặc định của Agent hiện tại: <span className="text-foreground font-medium">{defaultModel.model}</span>
-                       <span className="opacity-70"> (来自 {agentService.name})</span></>
+                       <span className="opacity-70"> (từ {agentService.name})</span></>
                     ) : (
                       <>Agent hiện tại dùng dịch vụ AI mặc định của hệ thống (chọn ở mục «Mô hình» trên thẻ Agent).
                        Nên chốt một Service trước rồi mới vào phân tầng.</>

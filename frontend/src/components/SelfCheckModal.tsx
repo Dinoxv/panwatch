@@ -255,7 +255,7 @@ export default function SelfCheckModal({ open, onClose }: SelfCheckModalProps) {
           </div>
           {finished && failCount > 0 && (
             <div className="mt-3 rounded-lg bg-white/15 px-3 py-1.5 text-[11px]">
-              发现 {failCount} 项异常,请查看下方修复建议。
+              Thấy {failCount} mục bất thường, xin xem gợi ý cách sửa bên dưới.
             </div>
           )}
         </div>

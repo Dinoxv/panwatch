@@ -24,12 +24,12 @@ const detail = {
     version: 2,
     mode: 'balanced' as const,
     summary: {
-      goal: ['分析持仓'],
+      goal: ['Phân tích danh mục'],
       constraints: [],
       decisions: [],
       facts: [],
-      current_state: '等待下一步',
-      open_items: ['补充风险说明'],
+      current_state: 'Chờ bước kế tiếp',
+      open_items: ['Bổ sung giải thích rủi ro'],
       tool_findings: [],
     },
     source_message_count: 8,
@@ -63,7 +63,7 @@ describe('ContextPanel', () => {
 
     expect(screen.getByText('Token vào ước tính: 9,000 / 12,000')).toBeTruthy()
     expect(screen.getByText('Tin nhắn lịch sử')).toBeTruthy()
-    expect(screen.getByText(/分析持仓/)).toBeTruthy()
+    expect(screen.getByText(/Phân tích danh mục/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Giữ chi tiết rồi nén' }))
     expect(onCompress).toHaveBeenCalledWith('preserve_details')

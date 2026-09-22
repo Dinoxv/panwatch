@@ -275,10 +275,10 @@ export function KlineSummaryDialog({
                           <li><span className="font-medium text-foreground">Đường trung bình đan xen</span>: giai đoạn giằng co/sang tay, tín hiệu phụ thuộc nhiều hơn vào khối lượng và các mốc giá then chốt.</li>
                         </ul>
                       </div>
-                      <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.trend}</div>
+                      <div className="text-[10px] text-muted-foreground/70">Hiện tại:{effectiveSummary.trend}</div>
                       {(effectiveSummary.ma5 != null || effectiveSummary.ma10 != null || effectiveSummary.ma20 != null || effectiveSummary.ma60 != null) && (
                         <div className="text-[10px] text-muted-foreground/70">
-                          均线：MA5≈{effectiveSummary.ma5 != null ? effectiveSummary.ma5.toFixed(2) : '—'}；MA10≈{effectiveSummary.ma10 != null ? effectiveSummary.ma10.toFixed(2) : '—'}；MA20≈{effectiveSummary.ma20 != null ? effectiveSummary.ma20.toFixed(2) : '—'}；MA60≈{effectiveSummary.ma60 != null ? effectiveSummary.ma60.toFixed(2) : '—'}
+                          Đường trung bình: MA5≈{effectiveSummary.ma5 != null ? effectiveSummary.ma5.toFixed(2) : '—'}; MA10≈{effectiveSummary.ma10 != null ? effectiveSummary.ma10.toFixed(2) : '—'}; MA20≈{effectiveSummary.ma20 != null ? effectiveSummary.ma20.toFixed(2) : '—'}; MA60≈{effectiveSummary.ma60 != null ? effectiveSummary.ma60.toFixed(2) : '—'}
                         </div>
                       )}
                       <div className="text-[10px] text-muted-foreground/70">
@@ -304,13 +304,13 @@ export function KlineSummaryDialog({
                       <div>
                         <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">金叉</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
-                          <li><span className="font-medium text-foreground">死叉</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
+                          <li><span className="font-medium text-foreground">Cắt lên</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
+                          <li><span className="font-medium text-foreground">Cắt xuống</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
                           <li><span className="font-medium text-foreground">Thanh dương/âm</span>: giá trị dương thường cho thấy động lượng bên mua trội hơn; giá trị âm thường cho thấy động lượng bên bán trội hơn.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.macd_status}{effectiveSummary.macd_hist != null ? `, thanh ${effectiveSummary.macd_hist > 0 ? 'dương' : effectiveSummary.macd_hist < 0 ? 'âm' : 'gần 0'} (hist≈${effectiveSummary.macd_hist.toFixed(3)})` : ''}
+                        Hiện tại: {effectiveSummary.macd_status}{effectiveSummary.macd_hist != null ? `, thanh ${effectiveSummary.macd_hist > 0 ? 'dương' : effectiveSummary.macd_hist < 0 ? 'âm' : 'gần 0'} (hist≈${effectiveSummary.macd_hist.toFixed(3)})` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
                         Lưu ý: trong vùng giằng co, MACD hay «cắt giả» liên tục, thường phải kết hợp xu thế (đường trung bình) và giá-khối lượng để xác nhận.
@@ -342,7 +342,7 @@ export function KlineSummaryDialog({
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.rsi_status}{effectiveSummary.rsi6 != null ? `，RSI6≈${effectiveSummary.rsi6.toFixed(0)}` : ''}
+                        Hiện tại: {effectiveSummary.rsi_status}{effectiveSummary.rsi6 != null ? `, RSI6≈${effectiveSummary.rsi6.toFixed(0)}` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
                         Lưu ý: quá mua không có nghĩa là giảm ngay, quá bán không có nghĩa là bật lại ngay; cách dùng đáng tin hơn là kết hợp xu thế và mốc then chốt để nhìn «phân kỳ/cạn lực».
@@ -371,13 +371,13 @@ export function KlineSummaryDialog({
                       <div>
                         <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">金叉</span>: dấu hiệu ngắn hạn chuyển mạnh, đi cùng xu hướng tăng thì hiệu quả hơn.</li>
-                          <li><span className="font-medium text-foreground">死叉</span>: dấu hiệu ngắn hạn chuyển yếu, đi cùng xu hướng giảm thì hiệu quả hơn.</li>
+                          <li><span className="font-medium text-foreground">Cắt lên</span>: dấu hiệu ngắn hạn chuyển mạnh, đi cùng xu hướng tăng thì hiệu quả hơn.</li>
+                          <li><span className="font-medium text-foreground">Cắt xuống</span>: dấu hiệu ngắn hạn chuyển yếu, đi cùng xu hướng giảm thì hiệu quả hơn.</li>
                           <li>Khi giá trị J cực đoan (&gt;100 hoặc &lt;0) thường được coi là «quá mua/quá bán», nhưng trong xu thế mạnh có thể sai lệch.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：{effectiveSummary.kdj_status}</div>
+                        <div>Hiện tại: {effectiveSummary.kdj_status}</div>
                         {(effectiveSummary.kdj_k != null || effectiveSummary.kdj_d != null || effectiveSummary.kdj_j != null) && (
                           <div>
                             K≈{effectiveSummary.kdj_k != null ? effectiveSummary.kdj_k.toFixed(1) : '—'}{' '}
@@ -409,12 +409,12 @@ export function KlineSummaryDialog({
                       <div>
                         <span className="font-medium text-foreground">Đọc thế nào:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">放量</span>: thường cho thấy mức tham gia tăng lên; nếu tăng giá kèm khối lượng bùng thì càng thuận cho xu thế đi tiếp.</li>
-                          <li><span className="font-medium text-foreground">缩量</span>: có thể cho thấy đang đứng ngoài/cạn lực; nếu giảm giá mà khối lượng cạn, đôi khi là dấu hiệu áp lực bán đã nhẹ đi.</li>
+                          <li><span className="font-medium text-foreground">Khối lượng bùng</span>: thường cho thấy mức tham gia tăng lên; nếu tăng giá kèm khối lượng bùng thì càng thuận cho xu thế đi tiếp.</li>
+                          <li><span className="font-medium text-foreground">Khối lượng cạn</span>: có thể cho thấy đang đứng ngoài/cạn lực; nếu giảm giá mà khối lượng cạn, đôi khi là dấu hiệu áp lực bán đã nhẹ đi.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
-                        当前：{effectiveSummary.volume_trend}{effectiveSummary.volume_ratio != null ? `, tỷ lệ khối lượng≈${effectiveSummary.volume_ratio.toFixed(1)}x` : ''}
+                        Hiện tại: {effectiveSummary.volume_trend}{effectiveSummary.volume_ratio != null ? `, tỷ lệ khối lượng≈${effectiveSummary.volume_ratio.toFixed(1)}x` : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
                         Lưu ý: ý nghĩa của khối lượng phải xét cùng chiều giá (giá tăng khối lượng tăng / giá tăng khối lượng cạn / giá giảm khối lượng tăng / giá giảm khối lượng cạn) mới đủ.
@@ -443,8 +443,8 @@ export function KlineSummaryDialog({
                       <div>
                         <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">突破上轨</span>: ngắn hạn thiên mạnh, nhưng cũng có thể «vọt lên rồi rơi lại», cần khối lượng xác nhận.</li>
-                          <li><span className="font-medium text-foreground">跌破下轨</span>: ngắn hạn thiên yếu, nhưng lúc rơi hoảng loạn cũng có thể bật lại do giảm quá đà.</li>
+                          <li><span className="font-medium text-foreground">Vượt dải trên</span>: ngắn hạn thiên mạnh, nhưng cũng có thể «vọt lên rồi rơi lại», cần khối lượng xác nhận.</li>
+                          <li><span className="font-medium text-foreground">Thủng dải dưới</span>: ngắn hạn thiên yếu, nhưng lúc rơi hoảng loạn cũng có thể bật lại do giảm quá đà.</li>
                           <li>Bề rộng dải bóp lại hay gặp khi biến động co cụm, sau đó dễ chọn hướng; bề rộng dải mở ra là biến động phình to.</li>
                         </ul>
                       </div>
@@ -458,11 +458,11 @@ export function KlineSummaryDialog({
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
                         <div>
-                          当前：{effectiveSummary.boll_status}{effectiveSummary.boll_width != null ? `, bề rộng dải≈${effectiveSummary.boll_width.toFixed(1)}%` : ''}
+                          Hiện tại: {effectiveSummary.boll_status}{effectiveSummary.boll_width != null ? `, bề rộng dải≈${effectiveSummary.boll_width.toFixed(1)}%` : ''}
                         </div>
                         {(effectiveSummary.boll_upper != null || effectiveSummary.boll_mid != null || effectiveSummary.boll_lower != null) && (
                           <div>
-                            上轨≈{effectiveSummary.boll_upper != null ? effectiveSummary.boll_upper.toFixed(2) : '—'}；中轨≈{effectiveSummary.boll_mid != null ? effectiveSummary.boll_mid.toFixed(2) : '—'}；下轨≈{effectiveSummary.boll_lower != null ? effectiveSummary.boll_lower.toFixed(2) : '—'}
+                            Dải trên≈{effectiveSummary.boll_upper != null ? effectiveSummary.boll_upper.toFixed(2) : '—'}; dải giữa≈{effectiveSummary.boll_mid != null ? effectiveSummary.boll_mid.toFixed(2) : '—'}; dải dưới≈{effectiveSummary.boll_lower != null ? effectiveSummary.boll_lower.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
@@ -491,7 +491,7 @@ export function KlineSummaryDialog({
                         <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         Phần lớn hình mẫu cần xu thế, khối lượng và mốc then chốt xác nhận. Ví dụ nến búa xuất hiện ở cuối nhịp giảm thì có ý nghĩa hơn; nến nhấn chìm thì coi trọng «đối chiếu hai cây nến trước sau».
                       </div>
-                      <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.kline_pattern}</div>
+                      <div className="text-[10px] text-muted-foreground/70">Hiện tại:{effectiveSummary.kline_pattern}</div>
                       <div className="text-[10px] text-muted-foreground/70">
                         Lưu ý: hình mẫu một cây nến đơn lẻ sai khá nhiều, nên chỉ coi là gợi ý, không nên quyết định đơn độc.
                       </div>
@@ -527,17 +527,17 @@ export function KlineSummaryDialog({
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：支撑≈{effectiveSummary.support.toFixed(2)}</div>
+                        <div>Hiện tại: hỗ trợ≈{effectiveSummary.support.toFixed(2)}</div>
                         {effectiveSummary.last_close != null && effectiveSummary.support > 0 && (
                           <div>
-                            距离（以收盘价计）≈{(((effectiveSummary.last_close - effectiveSummary.support) / effectiveSummary.support) * 100).toFixed(2)}%
+                            Khoảng cách (tính theo giá đóng cửa)≈{(((effectiveSummary.last_close - effectiveSummary.support) / effectiveSummary.support) * 100).toFixed(2)}%
                             {' '}
                             {effectiveSummary.last_close <= effectiveSummary.support * 1.02 ? '(sát hỗ trợ, quy tắc chấm điểm sẽ cộng điểm)' : ''}
                           </div>
                         )}
                         {(effectiveSummary.support_s != null || effectiveSummary.support_m != null || effectiveSummary.support_l != null) && (
                           <div>
-                            多级别：短期(5日)≈{effectiveSummary.support_s != null ? effectiveSummary.support_s.toFixed(2) : '—'}；中期(20日)≈{effectiveSummary.support_m != null ? effectiveSummary.support_m.toFixed(2) : '—'}；长期(60日)≈{effectiveSummary.support_l != null ? effectiveSummary.support_l.toFixed(2) : '—'}
+                            Nhiều cấp: ngắn hạn (5 ngày)≈{effectiveSummary.support_s != null ? effectiveSummary.support_s.toFixed(2) : '—'}; trung hạn (20 ngày)≈{effectiveSummary.support_m != null ? effectiveSummary.support_m.toFixed(2) : '—'}; dài hạn (60 ngày)≈{effectiveSummary.support_l != null ? effectiveSummary.support_l.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
@@ -577,17 +577,17 @@ export function KlineSummaryDialog({
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                        <div>当前：压力≈{effectiveSummary.resistance.toFixed(2)}</div>
+                        <div>Hiện tại: kháng cự≈{effectiveSummary.resistance.toFixed(2)}</div>
                         {effectiveSummary.last_close != null && effectiveSummary.resistance > 0 && (
                           <div>
-                            距离（以收盘价计）≈{(((effectiveSummary.resistance - effectiveSummary.last_close) / effectiveSummary.resistance) * 100).toFixed(2)}%
+                            Khoảng cách (tính theo giá đóng cửa)≈{(((effectiveSummary.resistance - effectiveSummary.last_close) / effectiveSummary.resistance) * 100).toFixed(2)}%
                             {' '}
                             {effectiveSummary.last_close >= effectiveSummary.resistance * 0.98 ? '(sát kháng cự, quy tắc chấm điểm sẽ trừ điểm)' : ''}
                           </div>
                         )}
                         {(effectiveSummary.resistance_s != null || effectiveSummary.resistance_m != null || effectiveSummary.resistance_l != null) && (
                           <div>
-                            多级别：短期(5日)≈{effectiveSummary.resistance_s != null ? effectiveSummary.resistance_s.toFixed(2) : '—'}；中期(20日)≈{effectiveSummary.resistance_m != null ? effectiveSummary.resistance_m.toFixed(2) : '—'}；长期(60日)≈{effectiveSummary.resistance_l != null ? effectiveSummary.resistance_l.toFixed(2) : '—'}
+                            Nhiều cấp: ngắn hạn (5 ngày)≈{effectiveSummary.resistance_s != null ? effectiveSummary.resistance_s.toFixed(2) : '—'}; trung hạn (20 ngày)≈{effectiveSummary.resistance_m != null ? effectiveSummary.resistance_m.toFixed(2) : '—'}; dài hạn (60 ngày)≈{effectiveSummary.resistance_l != null ? effectiveSummary.resistance_l.toFixed(2) : '—'}
                           </div>
                         )}
                       </div>
@@ -631,13 +631,13 @@ export function KlineSummaryDialog({
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70">
-                          当前：{effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
+                          Hiện tại: {effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        5日{' '}
+                        5 ngày{' '}
                         <span className={effectiveSummary.change_5d >= 0 ? 'text-rose-500' : 'text-emerald-500'}>
                           {effectiveSummary.change_5d >= 0 ? '+' : ''}{effectiveSummary.change_5d.toFixed(2)}%
                         </span>
@@ -667,13 +667,13 @@ export function KlineSummaryDialog({
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70">
-                          当前：{effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
+                          Hiện tại: {effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        20日{' '}
+                        20 ngày{' '}
                         <span className={effectiveSummary.change_20d >= 0 ? 'text-rose-500' : 'text-emerald-500'}>
                           {effectiveSummary.change_20d >= 0 ? '+' : ''}{effectiveSummary.change_20d.toFixed(2)}%
                         </span>
@@ -703,16 +703,16 @@ export function KlineSummaryDialog({
                           </ul>
                         </div>
                         <div className="text-[10px] text-muted-foreground/70 space-y-1">
-                          <div>当前：{effectiveSummary.amplitude.toFixed(2)}%</div>
+                          <div>Hiện tại: {effectiveSummary.amplitude.toFixed(2)}%</div>
                           {effectiveSummary.amplitude_avg5 != null && (
-                            <div>近5日均值：{effectiveSummary.amplitude_avg5.toFixed(2)}%</div>
+                            <div>Bình quân 5 phiên gần nhất: {effectiveSummary.amplitude_avg5.toFixed(2)}%</div>
                           )}
                         </div>
                       </div>
                     }
                     trigger={
                       <span className="cursor-help hover:text-foreground">
-                        振幅: {effectiveSummary.amplitude.toFixed(2)}%
+                        Biên độ dao động: {effectiveSummary.amplitude.toFixed(2)}%
                       </span>
                     }
                   />

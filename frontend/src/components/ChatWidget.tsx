@@ -1109,7 +1109,7 @@ export default function ChatWidget({
               <div className="flex justify-start">
                 <div className="max-w-[85%] w-full rounded-xl px-3 py-2 text-[12px] bg-accent/40 border border-border/40">
                   <div className="font-medium text-foreground mb-1.5">
-                    诊断计划{plan.status === 'done' ? '(đã xong)' : plan.status === 'planning' ? '(đang sinh…)' : ''}
+                    Kế hoạch soi{plan.status === 'done' ? '(đã xong)' : plan.status === 'planning' ? '(đang sinh…)' : ''}
                   </div>
                   <ol className="space-y-1">
                     {plan.steps.map((s) => (

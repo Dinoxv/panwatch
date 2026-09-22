@@ -253,7 +253,7 @@ export default function StockPriceAlertPanel(props: {
       title={shownSummary.total > 0 ? `Cảnh báo ${shownSummary.enabled}/${shownSummary.total}` : 'Cảnh báo giá'}
     >
       <Bell className="w-3.5 h-3.5" />
-      提醒 {shownSummary.total > 0 ? `${shownSummary.enabled}/${shownSummary.total}` : '0'}
+      Cảnh báo {shownSummary.total > 0 ? `${shownSummary.enabled}/${shownSummary.total}` : '0'}
     </Button>
   ) : (
     <button
@@ -277,8 +277,8 @@ export default function StockPriceAlertPanel(props: {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{props.stockName || symbol} 提醒</DialogTitle>
-            <DialogDescription>{market} · 启用 {summary.enabled} / 共 {summary.total}</DialogDescription>
+            <DialogTitle>{props.stockName || symbol} cảnh báo</DialogTitle>
+            <DialogDescription>{market} · đang bật {summary.enabled} / tổng {summary.total}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex justify-end">

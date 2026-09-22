@@ -200,7 +200,7 @@ export default function AnalysisDetailPage() {
   if (!result) {
     return (
       <div className="p-12 text-center text-muted-foreground space-y-3">
-        <div>未找到 {symbol} 在 {date} 的深度分析记录</div>
+        <div>Không tìm thấy bản ghi phân tích chuyên sâu của {symbol} ngày {date} </div>
         <button onClick={() => navigate(-1)} className="text-primary hover:underline">
           Quay lại
         </button>
@@ -311,10 +311,10 @@ export default function AnalysisDetailPage() {
               </span>
               {reviewRequired && <span className="text-[12px] text-orange-600">Dữ liệu hoặc kết luận còn điểm chưa chắc chắn, xin kiểm chứng bằng tay rồi mới quyết</span>}
               <span className="text-[13px] text-muted-foreground">
-                置信度 {sug.confidence?.toFixed(1) ?? '-'} / 10
+                Độ tin cậy {sug.confidence?.toFixed(1) ?? '-'} / 10
               </span>
               <span className="ml-auto text-[11px] text-muted-foreground">
-                成本 ${rawData.cost_usd?.toFixed(4) ?? '-'}
+                Chi phí ${rawData.cost_usd?.toFixed(4) ?? '-'}
               </span>
             </div>
           )}

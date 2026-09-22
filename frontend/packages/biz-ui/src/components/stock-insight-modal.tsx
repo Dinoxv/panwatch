@@ -812,7 +812,7 @@ export default function StockInsightModal(props: {
       action: technicalScored.action,
       action_label: technicalScored.action_label,
       signal: technicalScored.signal || 'Kỹ thuật trung tính',
-      reason: topEvidence.length > 0 ? topEvidence.join('；') : 'Khuyến nghị nền tự dựng từ chỉ báo kỹ thuật của nến',
+      reason: topEvidence.length > 0 ? topEvidence.join(';') : 'Khuyến nghị nền tự dựng từ chỉ báo kỹ thuật của nến',
       should_alert: technicalScored.action === 'buy' || technicalScored.action === 'add' || technicalScored.action === 'sell' || technicalScored.action === 'reduce',
       agent_name: 'technical_fallback',
       agent_label: 'Chỉ báo kỹ thuật',
@@ -949,11 +949,11 @@ export default function StockInsightModal(props: {
       ...buildShareTechnicalRisks(klineSummary),
     ].filter(Boolean)
     const dedupRisks = Array.from(new Set(risksList))
-    const risks = dedupRisks.length > 0 ? dedupRisks.slice(0, 2).join('；') : 'Rủi ro biến động thị trường'
+    const risks = dedupRisks.length > 0 ? dedupRisks.slice(0, 2).join(';') : 'Rủi ro biến động thị trường'
     const triggerList = pickListFromJson('triggers', 'trigger', 'signals')
     const invalidList = pickListFromJson('invalidations', 'invalidation', 'stop_conditions')
-    const trigger = triggerList.length > 0 ? triggerList.slice(0, 2).join('；') : '--'
-    const invalidation = invalidList.length > 0 ? invalidList.slice(0, 2).join('；') : '--'
+    const trigger = triggerList.length > 0 ? triggerList.slice(0, 2).join(';') : '--'
+    const invalidation = invalidList.length > 0 ? invalidList.slice(0, 2).join(';') : '--'
     const technicalBrief = firstNonEmptyText(
       [klineSummary?.trend, klineSummary?.macd_status, klineSummary?.rsi_status].filter(Boolean).join(' / '),
       technicalScored?.signal
@@ -1581,10 +1581,10 @@ export default function StockInsightModal(props: {
                         <div className="rounded bg-accent/10 p-2 text-[11px]">
                           <div className="text-muted-foreground">Nhận định cốt lõi</div>
                           <div className="mt-1 text-foreground line-clamp-2">{suggestions[0].signal || suggestions[0].reason || 'Chưa có giải thích'}</div>
-                          <div className="mt-1 text-muted-foreground">动作: {suggestions[0].action_label || suggestions[0].action || '--'}</div>
-                          <div className="mt-1 text-foreground line-clamp-2">依据: {suggestions[0].reason || 'Chưa có căn cứ bổ sung'}</div>
+                          <div className="mt-1 text-muted-foreground">Hành động: {suggestions[0].action_label || suggestions[0].action || '--'}</div>
+                          <div className="mt-1 text-foreground line-clamp-2">Căn cứ: {suggestions[0].reason || 'Chưa có căn cứ bổ sung'}</div>
                           <div className="mt-1 text-muted-foreground">
-                            来源: {suggestions[0].agent_label || suggestions[0].agent_name || 'AI'}{suggestions[0].created_at ? ` · ${formatTime(suggestions[0].created_at)}` : ''}
+                            Nguồn: {suggestions[0].agent_label || suggestions[0].agent_name || 'AI'}{suggestions[0].created_at ? ` · ${formatTime(suggestions[0].created_at)}` : ''}
                           </div>
                         </div>
                         {suggestions.length > 1 && (
@@ -1965,7 +1965,7 @@ function DeepAnalysisSection({
     <div className="space-y-3 text-[13px]">
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] text-muted-foreground">
-          TradingAgents 深度{result?.timestamp ? ` · ${result.timestamp.slice(0, 16).replace('T', ' ')}` : ''}
+          TradingAgents chuyên sâu{result?.timestamp ? ` · ${result.timestamp.slice(0, 16).replace('T', ' ')}` : ''}
         </div>
         <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]" onClick={onRefresh} disabled={loading || historyLoading}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading || historyLoading ? 'animate-spin' : ''}`} />
@@ -1980,13 +1980,13 @@ function DeepAnalysisSection({
             </span>
             {typeof sug.confidence === 'number' && (
               <span className="text-[12px] text-muted-foreground">
-                置信度 {sug.confidence.toFixed(1)} / 10
+                Độ tin cậy {sug.confidence.toFixed(1)} / 10
               </span>
             )}
           </div>
           {sug.reason && <div className="text-[12px] text-foreground/80">{sug.reason.slice(0, 240)}</div>}
           {typeof costUsd === 'number' && (
-            <div className="text-[10px] text-muted-foreground mt-2">成本:${costUsd.toFixed(4)}</div>
+            <div className="text-[10px] text-muted-foreground mt-2">Chi phí:${costUsd.toFixed(4)}</div>
           )}
         </div>
       )}
@@ -2007,7 +2007,7 @@ function DeepAnalysisSection({
             className="text-[12px] text-muted-foreground hover:text-foreground flex items-center gap-1"
             onClick={() => setShowAnalyst(!showAnalyst)}
           >
-            {showAnalyst ? '▼' : '▶'} 4 位分析师报告
+            {showAnalyst ? '▼' : '▶'} báo cáo của 4 chuyên viên phân tích
           </button>
           {showAnalyst && (
             <div className="space-y-3 mt-2 pl-3 border-l-2 border-border/40">
@@ -2035,7 +2035,7 @@ function DeepAnalysisSection({
             className="text-[12px] text-muted-foreground hover:text-foreground flex items-center gap-1"
             onClick={() => setShowDebate(!showDebate)}
           >
-            {showDebate ? '▼' : '▶'} 看多看空辩论
+            {showDebate ? '▼' : '▶'} tranh luận xem tăng xem giảm
           </button>
           {showDebate && (
             <div className="mt-2 pl-3 border-l-2 border-border/40 text-[11px] text-foreground/80 whitespace-pre-wrap max-h-96 overflow-y-auto">
@@ -2092,11 +2092,11 @@ function DeepHistoryComparison({
           <div className="font-semibold">{fmtPct(stats.overall_hit_rate)}</div>
         </div>
         <div className="rounded bg-accent/30 px-2 py-1.5">
-          <div className="text-muted-foreground">买入 ({stats.buy_count})</div>
+          <div className="text-muted-foreground">Mua vào ({stats.buy_count})</div>
           <div className="font-semibold text-emerald-600 dark:text-emerald-400">{fmtPct(stats.buy_hit_rate)}</div>
         </div>
         <div className="rounded bg-accent/30 px-2 py-1.5">
-          <div className="text-muted-foreground">卖出 ({stats.sell_count})</div>
+          <div className="text-muted-foreground">Bán ra ({stats.sell_count})</div>
           <div className="font-semibold text-rose-600 dark:text-rose-400">{fmtPct(stats.sell_hit_rate)}</div>
         </div>
         <div className="rounded bg-accent/30 px-2 py-1.5">

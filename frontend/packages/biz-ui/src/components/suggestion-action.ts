@@ -41,6 +41,8 @@ export function normalizeSuggestionAction(action?: string, label?: string): Sugg
   if (raw === 'watch' || raw === 'neutral') return 'watch'
   if (raw === 'avoid') return 'avoid'
   if (raw === 'alert') return 'alert'
+  // Các mẫu dưới đây khớp với chữ trong khuyến nghị THÔ do mô hình sinh ra
+  // (vẫn là tiếng Trung) — đây là từ khóa đối chiếu, không phải chữ hiển thị.
   if (/买入|买|建仓/.test(raw)) return 'buy'
   if (/加仓|增持|补仓/.test(raw)) return 'add'
   if (/减仓|减持/.test(raw)) return 'reduce'

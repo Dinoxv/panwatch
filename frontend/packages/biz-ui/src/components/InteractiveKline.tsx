@@ -609,7 +609,7 @@ export default function InteractiveKline(props: {
           <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Tăng giảm</span> <span className={`font-mono ml-1 ${latestMetrics.changePct >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{latestMetrics.changePct >= 0 ? '+' : ''}{latestMetrics.changePct.toFixed(2)}%</span></div>
           <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Biên độ dao động</span> <span className="font-mono ml-1">{latestMetrics.ampPct.toFixed(2)}%</span></div>
           <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Cao thấp trong khoảng</span> <span className="font-mono ml-1">{latestMetrics.maxHigh.toFixed(2)}/{latestMetrics.minLow.toFixed(2)}</span></div>
-          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Khối lượng bình quân</span> <span className="font-mono ml-1">{(latestMetrics.avgVol / 10000).toFixed(1)}万</span></div>
+          <div className="rounded-lg bg-accent/20 px-2.5 py-2 text-[11px]"><span className="text-muted-foreground">Khối lượng bình quân</span> <span className="font-mono ml-1">{(latestMetrics.avgVol / 10000).toFixed(1)}vạn</span></div>
         </div>
       ) : null}
       <div className="relative">
@@ -643,7 +643,7 @@ export default function InteractiveKline(props: {
       </div>
       <div className="mt-3 grid grid-cols-1 gap-3">
         <div>
-          <div className="text-[11px] text-muted-foreground mb-1">动能指标（MACD{showRsi ? ' + đường RSI' : ''}）</div>
+          <div className="text-[11px] text-muted-foreground mb-1">Chỉ báo động lượng (MACD{showRsi ? ' + đường RSI' : ''})</div>
           <div className="text-[11px] text-muted-foreground mb-2 rounded-lg bg-accent/15 border border-border/40 px-2.5 py-1.5">
             MACD dùng để nhìn động lượng xu thế và điểm ngoặt; RSI dùng để nhìn đang nóng hay yếu (thường trên 70 là nóng, dưới 30 là yếu).
           </div>

@@ -1332,6 +1332,7 @@ export default function StocksPage() {
           toast(result.message || result.content || 'Lượt chạy không qua', 'info')
           return
         }
+        // Hai mẫu này khớp với chữ trong result.content do backend trả về, giữ nguyên.
         const isSkipped = !!result.skipped || /已跳过执行|非交易时段/.test(result.content || '')
         if (isSkipped) {
           toast(result.content || 'Hiện ngoài giờ giao dịch, đã bỏ qua lượt chạy', 'info')
@@ -1942,7 +1943,7 @@ export default function StocksPage() {
                   <Building2 className="w-4 h-4 text-primary" />
                   <span className="text-[14px] md:text-[15px] font-semibold text-foreground">{account.name}</span>
                   <span className="text-[11px] md:text-[12px] text-muted-foreground">
-                    {account.positions.length} 只
+                    {account.positions.length} mã
                   </span>
                 </div>
                 <div className="flex items-center justify-between md:justify-end gap-2 md:gap-6 pl-6 md:pl-0">
@@ -2699,7 +2700,7 @@ export default function StocksPage() {
           <DialogHeader>
             <DialogTitle>{editPositionId ? 'Sửa vị thế' : 'Thêm vị thế'}</DialogTitle>
             <DialogDescription>
-              {accounts.find(a => a.id === positionDialogAccountId)?.name} 账户持仓
+              {accounts.find(a => a.id === positionDialogAccountId)?.name} vị thế trong tài khoản
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
@@ -2858,7 +2859,7 @@ export default function StocksPage() {
           <DialogHeader>
             <DialogTitle>Cấu hình Agent giám sát</DialogTitle>
             <DialogDescription>
-              为 {agentDialogStock?.name}（{agentDialogStock?.symbol}）选择要监控的 Agent
+              Chọn Agent giám sát cho {agentDialogStock?.name} ({agentDialogStock?.symbol})
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
@@ -2933,7 +2934,7 @@ export default function StocksPage() {
                             <div className="ml-[22px] rounded-lg border border-border/40 bg-background/30 px-2.5 py-2">
                               <div className="flex items-center justify-between">
                                 <div className="text-[11px] text-muted-foreground">
-                                  未来触发时间预览{isFollowingGlobal ? <span className="ml-1 opacity-70">(theo cấu hình chung)</span> : null}
+                                  Xem trước các mốc kích hoạt sắp tới{isFollowingGlobal ? <span className="ml-1 opacity-70">(theo cấu hình chung)</span> : null}
                                 </div>
                                 {isLoading && (
                                   <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -3022,7 +3023,7 @@ export default function StocksPage() {
                             ) : (
                               <Play className="w-3 h-3" />
                             )}
-                            立即分析
+                            Phân tích ngay
                           </Button>
                         </div>
                       </div>
@@ -3196,7 +3197,7 @@ export default function StocksPage() {
           {/* Nút làm mới ở cuối trang */}
           <div className="flex items-center justify-between pt-2 border-t">
             <span className="text-[11px] text-muted-foreground">
-              共 {news.length} 条资讯
+              Tổng {news.length} tin
             </span>
             <Button variant="secondary" size="sm" onClick={() => loadNews(newsDialogSymbol || undefined)} disabled={newsLoading}>
               <RefreshCw className={`w-3 h-3 ${newsLoading ? 'animate-spin' : ''}`} />

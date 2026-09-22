@@ -283,11 +283,11 @@ export default function PriceAlertsPage() {
       </div>
 
       <div className="card p-4 mb-4 flex items-center justify-between gap-2">
-        <div className="text-[12px] text-muted-foreground">规则数：{rules.length}</div>
+        <div className="text-[12px] text-muted-foreground">Số quy tắc:{rules.length}</div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" className="h-8" onClick={runScan} disabled={scanRunning}>
             {scanRunning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-            立即扫描
+            Quét ngay
           </Button>
           <Button size="sm" className="h-8" onClick={openCreate}>
             <Plus className="w-3.5 h-3.5" />
@@ -319,7 +319,7 @@ export default function PriceAlertsPage() {
                     {(r.condition_group?.items || []).map(conditionText).join(r.condition_group?.op === 'or' ? ' hoặc ' : ' và ')}
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground/80">
-                    冷却 {r.cooldown_minutes} 分钟 · 日上限 {r.max_triggers_per_day} 次 · 最近触发 {fmt(r.last_trigger_at)}
+                    Chờ {r.cooldown_minutes} phút · trần mỗi ngày {r.max_triggers_per_day} lượt · chạm gần nhất {fmt(r.last_trigger_at)}
                   </div>
                 </div>
                 {/* Desktop: buttons on the right */}

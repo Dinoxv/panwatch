@@ -81,10 +81,10 @@ export function ContextPanel({ detail, loading, compressing, error, onCompress, 
           </div>
           {detail.snapshot && (
             <div className="mt-3 border-t border-border/40 pt-2 text-muted-foreground">
-              <div className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-600" />摘要 v{detail.snapshot.version}</div>
-              {detail.snapshot.summary.goal.length > 0 && <p className="mt-1 truncate">目标：{detail.snapshot.summary.goal[0]}</p>}
-              {detail.snapshot.summary.current_state && <p className="truncate">状态：{detail.snapshot.summary.current_state}</p>}
-              {detail.snapshot.summary.open_items.length > 0 && <p className="truncate">待办：{detail.snapshot.summary.open_items[0]}</p>}
+              <div className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-600" />Tóm tắt v{detail.snapshot.version}</div>
+              {detail.snapshot.summary.goal.length > 0 && <p className="mt-1 truncate">Mục tiêu:{detail.snapshot.summary.goal[0]}</p>}
+              {detail.snapshot.summary.current_state && <p className="truncate">Trạng thái:{detail.snapshot.summary.current_state}</p>}
+              {detail.snapshot.summary.open_items.length > 0 && <p className="truncate">Việc còn treo:{detail.snapshot.summary.open_items[0]}</p>}
             </div>
           )}
           {detail.last_compression && (
@@ -94,7 +94,7 @@ export function ContextPanel({ detail, loading, compressing, error, onCompress, 
               </div>
               {detail.last_compression.status === 'compressed' && (
                 <p className="mt-1">
-                  {detail.last_compression.usage_before.total_tokens.toLocaleString()} → {detail.last_compression.usage_after.total_tokens.toLocaleString()}，节省 {detail.last_compression.saved_tokens.toLocaleString()} Token（{detail.last_compression.saved_percent}%）
+                  {detail.last_compression.usage_before.total_tokens.toLocaleString()} → {detail.last_compression.usage_after.total_tokens.toLocaleString()}, tiết kiệm {detail.last_compression.saved_tokens.toLocaleString()} Token ({detail.last_compression.saved_percent}%)
                 </p>
               )}
             </div>

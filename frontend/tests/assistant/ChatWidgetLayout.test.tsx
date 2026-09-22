@@ -53,12 +53,12 @@ describe('ChatWidget layout', () => {
         pending_approvals: [],
       })
     vi.mocked(chatApi.getConversation).mockResolvedValue({
-      conversation: { id: 1, title: '恢复任务', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
-      messages: [{ id: 188, role: 'assistant', content: '后台任务已完成', created_at: '2026-09-12T00:00:00Z' }],
+      conversation: { id: 1, title: 'Khôi phục tác vụ', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
+      messages: [{ id: 188, role: 'assistant', content: 'Tác vụ nền đã hoàn tất', created_at: '2026-09-12T00:00:00Z' }],
     })
     vi.mocked(chatApi.subscribeAssistantTaskStream).mockImplementation(async (_taskId, callbacks) => {
       callbacks.onToolCallStart?.({ name: 'create_price_alert', arguments: {} })
-      callbacks.onDone?.({ message_id: 188, content: '后台任务已完成', created_at: '2026-09-12T00:00:00Z' })
+      callbacks.onDone?.({ message_id: 188, content: 'Tác vụ nền đã hoàn tất', created_at: '2026-09-12T00:00:00Z' })
     })
 
     render(<ChatWidget embedded conversationIdFromUrl={1} onConversationChange={vi.fn()} />)
@@ -68,19 +68,19 @@ describe('ChatWidget layout', () => {
       expect.any(Object),
       expect.any(AbortSignal),
     ))
-    await screen.findByText('后台任务已完成')
+    await screen.findByText('Tác vụ nền đã hoàn tất')
     await waitFor(() => expect(sessionStorage.getItem('panwatch:assistant-task:1')).toBeNull())
   })
 
   it('does not restore an approval from a conversation that was left before the response arrived', async () => {
     let resolveTask: ((value: unknown) => void) | undefined
     vi.mocked(chatApi.listConversations).mockResolvedValue([
-      { id: 1, title: '旧会话', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
-      { id: 2, title: '新会话', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
+      { id: 1, title: 'Phiên cũ', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
+      { id: 2, title: 'Phiên mới', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
     ])
     vi.mocked(chatApi.getConversation).mockImplementation(async (id) => ({
-      conversation: { id, title: id === 1 ? '旧会话' : '新会话', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
-      messages: [{ id: id * 10, role: 'assistant', content: `会话 ${id}`, created_at: '2026-09-12T00:00:00Z' }],
+      conversation: { id, title: id === 1 ? 'Phiên cũ' : 'Phiên mới', stock_symbol: null, stock_market: null, created_at: '2026-09-12T00:00:00Z' },
+      messages: [{ id: id * 10, role: 'assistant', content: `Phiên ${id}`, created_at: '2026-09-12T00:00:00Z' }],
     }))
     vi.mocked(chatApi.getAssistantTask).mockImplementationOnce(() => new Promise((resolve) => {
       resolveTask = resolve
@@ -91,10 +91,10 @@ describe('ChatWidget layout', () => {
     const { rerender } = render(
       <ChatWidget embedded conversationIdFromUrl={1} onConversationChange={onConversationChange} />,
     )
-    await screen.findByText('会话 1')
+    await screen.findByText('Phiên 1')
 
     rerender(<ChatWidget embedded conversationIdFromUrl={2} onConversationChange={onConversationChange} />)
-    await screen.findByText('会话 2')
+    await screen.findByText('Phiên 2')
 
     resolveTask?.({
       id: 99,
@@ -104,12 +104,12 @@ describe('ChatWidget layout', () => {
         id: 'old-approval',
         tool_name: 'delete_price_alert',
         risk: 'write',
-        presentation: { tool_title: '旧会话操作', summary: '不应显示' },
+        presentation: { tool_title: 'Thao tác của phiên cũ', summary: 'Không được hiện' },
         expires_at: '2026-09-12T01:00:00Z',
       }],
     })
 
-    await waitFor(() => expect(screen.queryByText('不应显示')).toBeNull())
+    await waitFor(() => expect(screen.queryByText('Không được hiện')).toBeNull())
     sessionStorage.removeItem('panwatch:assistant-task:1')
   })
 
@@ -117,7 +117,7 @@ describe('ChatWidget layout', () => {
     render(<ChatWidget embedded />)
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nghiên cứu mới' })).toBeTruthy())
-    expect(screen.queryByRole('button', { name: '新建对话' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mở phiên mới' })).toBeNull()
   })
 
   it('keeps the composer at the bottom while only the message list scrolls', async () => {
@@ -199,14 +199,14 @@ describe('ChatWidget layout', () => {
     vi.mocked(chatApi.sendAssistantMessageStream).mockImplementation(async (_conversationId, _content, callbacks) => {
       callbacks.onRunStarted?.({ taskId: 46 })
       callbacks.onTrace?.({ event: 'tool_call_start', data: { name: 'get_portfolio', arguments: { market: 'CN' } } })
-      callbacks.onTrace?.({ event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: '持仓查询完成' } })
-      callbacks.onDone?.({ message_id: 47, content: '已完成分析', created_at: '2026-09-12T00:00:00Z' })
+      callbacks.onTrace?.({ event: 'tool_result', data: { name: 'get_portfolio', ok: true, preview: 'Truy vấn danh mục xong' } })
+      callbacks.onDone?.({ message_id: 47, content: 'Đã phân tích xong', created_at: '2026-09-12T00:00:00Z' })
     })
 
     render(<ChatWidget embedded />)
     await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
-    await screen.findByText('已完成分析')
+    await screen.findByText('Đã phân tích xong')
     expect(screen.getAllByTestId('assistant-trace')).toHaveLength(1)
     expect(screen.queryByText('Gọi công cụ: get_portfolio')).toBeNull()
 
@@ -218,14 +218,14 @@ describe('ChatWidget layout', () => {
     const user = userEvent.setup()
     vi.mocked(chatApi.sendAssistantMessageStream).mockImplementation(async (_conversationId, _content, callbacks) => {
       callbacks.onRunStarted?.({ taskId: 45 })
-      callbacks.onError?.('助手没有执行写入操作，因为本轮没有收到对应工具的成功结果。')
-      throw new Error('助手没有执行写入操作，因为本轮没有收到对应工具的成功结果。')
+      callbacks.onError?.('Trợ lý không thực hiện thao tác ghi, vì vòng này chưa nhận được kết quả thành công của công cụ tương ứng.')
+      throw new Error('Trợ lý không thực hiện thao tác ghi, vì vòng này chưa nhận được kết quả thành công của công cụ tương ứng.')
     })
 
     render(<ChatWidget embedded />)
     await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
 
-    await waitFor(() => expect(screen.queryByRole('button', { name: '重试执行' })).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Chạy lại' })).toBeNull())
     expect(screen.queryByText(/尚未执行/)).toBeNull()
   })
 
@@ -247,24 +247,24 @@ describe('ChatWidget layout', () => {
       callbacks.onRunStarted?.({ taskId: 42 })
       callbacks.onApprovalRequired?.({
         id: 'approval-1',
-        tool_title: '创建提醒',
+        tool_title: 'Tạo cảnh báo',
         risk: 'write',
-        summary: '创建第一个提醒',
+        summary: 'Tạo cảnh báo thứ nhất',
         expires_at: '',
         status: 'pending',
       })
       callbacks.onApprovalRequired?.({
         id: 'approval-2',
-        tool_title: '创建提醒',
+        tool_title: 'Tạo cảnh báo',
         risk: 'write',
-        summary: '创建第二个提醒',
+        summary: 'Tạo cảnh báo thứ hai',
         expires_at: '',
         status: 'pending',
       })
       callbacks.onPaused?.({ taskId: 42, reason: 'approval_required' })
     })
     vi.mocked(chatApi.decideAssistantApprovalStream).mockImplementation(async (_approvalId, _decision, callbacks) => {
-      callbacks.onToolResult?.({ name: 'create_price_alert', ok: true, preview: '已创建第一个提醒' })
+      callbacks.onToolResult?.({ name: 'create_price_alert', ok: true, preview: 'Đã tạo cảnh báo thứ nhất' })
       callbacks.onPaused?.({
         taskId: 42,
         reason: 'approval_required',
@@ -275,8 +275,8 @@ describe('ChatWidget layout', () => {
 
     render(<ChatWidget embedded />)
     await user.click(screen.getByRole('button', { name: 'Soi danh mục của tôi' }))
-    await screen.findByText('创建第一个提醒')
-    await screen.findByText('创建第二个提醒')
+    await screen.findByText('Tạo cảnh báo thứ nhất')
+    await screen.findByText('Tạo cảnh báo thứ hai')
 
     await user.click(screen.getAllByRole('button', { name: 'Cho phép lần này' })[0])
 

@@ -57,7 +57,7 @@ export const insightApi = {
     fetchAPI<AddPositionEvalResult>('/insights/add-position-eval', {
       method: 'POST',
       body: JSON.stringify(params),
-      timeoutMs: 60000, // AI 评估较慢,放宽超时
+      timeoutMs: 60000, // AI đánh giá hơi chậm, nới thời gian chờ
     }),
 
   announcementEval: (params: { symbol: string; market: string; model_id?: number }) =>
@@ -71,7 +71,7 @@ export const insightApi = {
 export interface AnnouncementToneItem {
   title: string
   time: string
-  tone: string // 利好 / 利空 / 中性
+  tone: string // Thuận lợi / bất lợi / trung tính
   summary: string
 }
 
@@ -94,12 +94,12 @@ export interface AddPositionEvalParams {
 export interface AddPositionEvalResult {
   symbol: string
   market: string
-  action: string // 加仓 / 建仓
+  action: string // Mua thêm / mở vị thế
   new_cost: number
   dilute_abs: number
   dilute_pct: number
   total_quantity: number
   total_invested: number
-  verdict: string // 适合 / 谨慎 / 不适合 / 未知
-  content: string // markdown 结论
+  verdict: string // Hợp / thận trọng / không hợp / không rõ
+  content: string // Kết luận dạng markdown
 }

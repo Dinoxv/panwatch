@@ -46,8 +46,8 @@ export function KlineIndicators({ summary: s }: KlineIndicatorsProps) {
                 <div>
                   <span className="font-medium text-foreground">Nghĩa là gì:</span>
                   <ul className="list-disc pl-4 mt-1 space-y-1">
-                    <li><span className="font-medium text-foreground">金叉</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
-                    <li><span className="font-medium text-foreground">死叉</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
+                    <li><span className="font-medium text-foreground">Cắt lên</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
+                    <li><span className="font-medium text-foreground">Cắt xuống</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
                     <li><span className="font-medium text-foreground">Thanh dương/âm</span>: giá trị dương thường cho thấy động lượng bên mua trội hơn; giá trị âm thường cho thấy động lượng bên bán trội hơn.</li>
                   </ul>
                 </div>
@@ -79,7 +79,9 @@ export function KlineIndicators({ summary: s }: KlineIndicatorsProps) {
             trigger={
               <TechnicalBadge
                 label={`RSI ${s.rsi_status}${s.rsi6 != null ? ` (${s.rsi6.toFixed(0)})` : ''}`}
-                tone={s.rsi_status === '超买' ? 'bullish' : s.rsi_status === '超卖' ? 'bearish' : 'neutral'}
+                // rsi_status/volume_trend/boll_status do backend trả về bằng tiếng Trung;
+                      // đây là giá trị đối chiếu, chữ hiển thị nằm ở phần giải thích bên dưới.
+                      tone={s.rsi_status === '超买' ? 'bullish' : s.rsi_status === '超卖' ? 'bearish' : 'neutral'}
                 help
               />
             }

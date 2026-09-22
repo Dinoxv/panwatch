@@ -85,7 +85,7 @@ function EquityChart({ data }: { data: EquityCurvePoint[] }) {
         <g key={i}>
           <line x1={pad.left} x2={width - pad.right} y1={t.y} y2={t.y} stroke="hsl(var(--border))" strokeWidth={0.5} />
           <text x={pad.left - 6} y={t.y + 4} textAnchor="end" fill="hsl(var(--muted-foreground))" fontSize={10}>
-            {(t.v / 10000).toFixed(1)}万
+            {(t.v / 10000).toFixed(1)}vạn
           </text>
         </g>
       ))}
@@ -338,7 +338,7 @@ export default function PaperTradingPage() {
           {tradesTotal > 0 && (
             <Button variant="outline" size="sm" className="h-8" onClick={() => setTradesOpen(true)}>
               <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline ml-1">平仓记录 ({tradesTotal})</span>
+              <span className="hidden sm:inline ml-1">Bản ghi đã đóng ({tradesTotal})</span>
               <span className="sm:hidden ml-1">{tradesTotal}</span>
             </Button>
           )}
@@ -413,7 +413,7 @@ export default function PaperTradingPage() {
           <div className="card p-3">
             <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
               {account.total_pnl >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              总收益
+              Tổng lợi nhuận
             </div>
             <div className="text-lg font-bold"><PnlText value={account.total_pnl} /></div>
           </div>
@@ -423,7 +423,7 @@ export default function PaperTradingPage() {
               Tỷ lệ thắng
             </div>
             <div className="text-lg font-bold">{account.win_rate.toFixed(1)}%</div>
-            <div className="text-xs text-muted-foreground">{account.winning_trades}/{account.total_trades} 笔</div>
+            <div className="text-xs text-muted-foreground">{account.winning_trades}/{account.total_trades} lệnh</div>
           </div>
           <div className="card p-3">
             <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-1">
@@ -495,7 +495,7 @@ export default function PaperTradingPage() {
 
       {/* Open Positions */}
       <div className="card p-4">
-        <h2 className="text-sm font-semibold mb-3">当前持仓 ({positions.length})</h2>
+        <h2 className="text-sm font-semibold mb-3">Vị thế hiện tại ({positions.length})</h2>
         {positions.length === 0 ? (
           <div className="text-center text-muted-foreground text-sm py-8">Chưa có vị thế</div>
         ) : (
@@ -530,7 +530,7 @@ export default function PaperTradingPage() {
                     <td className="text-right py-2 px-2">{p.stop_loss?.toFixed(2) ?? '-'}</td>
                     <td className="text-right py-2 px-2">{p.target_price?.toFixed(2) ?? '-'}</td>
                     <td className="py-2 px-2 text-xs text-muted-foreground">{p.strategy_code || '-'}</td>
-                    <td className="text-right py-2 px-2">{p.holding_days}天</td>
+                    <td className="text-right py-2 px-2">{p.holding_days}ngày</td>
                     <td className="text-right py-2 pl-2">
                       <Button
                         variant="ghost"
@@ -554,7 +554,7 @@ export default function PaperTradingPage() {
       <Dialog open={tradesOpen} onOpenChange={setTradesOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>已平仓记录 ({tradesTotal})</DialogTitle>
+            <DialogTitle>Bản ghi đã đóng ({tradesTotal})</DialogTitle>
             <DialogDescription>Chi tiết giao dịch lịch sử</DialogDescription>
           </DialogHeader>
           {trades.length === 0 ? (
@@ -589,7 +589,7 @@ export default function PaperTradingPage() {
                         <td className="text-right py-2 px-2"><PnlPctText value={t.pnl_pct} /></td>
                         <td className="py-2 px-2 text-xs">{EXIT_REASON_MAP[t.exit_reason] || t.exit_reason}</td>
                         <td className="py-2 px-2 text-xs text-muted-foreground">{t.strategy_code || '-'}</td>
-                        <td className="text-right py-2 px-2">{t.holding_days}天</td>
+                        <td className="text-right py-2 px-2">{t.holding_days}ngày</td>
                         <td className="text-right py-2 pl-2 text-xs text-muted-foreground">{t.closed_at?.slice(0, 10) || '-'}</td>
                       </tr>
                     ))}
@@ -648,7 +648,7 @@ export default function PaperTradingPage() {
               <div className="flex items-center justify-between text-sm font-medium">
                 <span>Tỷ lệ rót vào từng thị trường</span>
                 <span className={`text-xs ${ratioSum > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                  合计 {ratioSum}%{ratioSum > 100 ? '(vượt quá 100%)' : ''}
+                  Tổng cộng {ratioSum}%{ratioSum > 100 ? '(vượt quá 100%)' : ''}
                 </span>
               </div>
               {(['CN', 'HK', 'US'] as const).map(m => {

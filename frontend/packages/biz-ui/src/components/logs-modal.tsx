@@ -311,7 +311,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                 {range.label}
               </button>
             ))}
-            <span className="ml-auto text-[11px] text-muted-foreground font-medium">{total} 条记录</span>
+            <span className="ml-auto text-[11px] text-muted-foreground font-medium">{total} bản ghi</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -366,7 +366,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
 
           <div className="flex items-center gap-2 text-[11px]">
             <div className="flex-1 rounded-md border border-border/50 px-2.5 py-1.5 text-muted-foreground bg-background/40">
-              过滤器：{filterSummary}
+              Bộ lọc: {filterSummary}
             </div>
             <Button variant="ghost" size="sm" className="h-7" onClick={clearFilters}>Xóa bộ lọc</Button>
           </div>
@@ -426,7 +426,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
               </div>
 
               <div className="flex items-center justify-between px-5 py-3 border-t border-border/30">
-                <span className="text-[12px] text-muted-foreground">已加载 {logs.length} / {total}</span>
+                <span className="text-[12px] text-muted-foreground">Đã nạp {logs.length} / {total}</span>
                 <Button
                   variant="ghost"
                   size="sm"

@@ -18,9 +18,9 @@ export interface PortfolioTodo {
 }
 
 export const homeApi = {
-  /** 今日(本地时区)全部提醒命中,跨规则聚合。 */
+  /** Toàn bộ lượt chạm cảnh báo hôm nay (múi giờ địa phương), gộp qua mọi quy tắc. */
   alertHitsToday: () => fetchAPI<AlertHitToday[]>('/price-alerts/hits/today'),
 
-  /** 首页空态待办:持仓未设提醒 / 提醒即将到期。 */
+  /** Việc còn treo ở trạng thái rỗng của trang chủ: vị thế chưa đặt cảnh báo / cảnh báo sắp hết hạn. */
   todos: () => fetchAPI<{ todos: PortfolioTodo[]; count: number }>('/portfolio/todos'),
 }

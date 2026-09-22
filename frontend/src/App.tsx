@@ -307,7 +307,7 @@ function App() {
           <DialogHeader>
             <DialogTitle>Có phiên bản mới</DialogTitle>
             <DialogDescription>
-              当前版本 v{version}，可升级到 v{upgradeInfo?.latest}。
+              Phiên bản hiện tại v{version}, nâng lên được v{upgradeInfo?.latest}.
             </DialogDescription>
           </DialogHeader>
           <div className="text-[12px] text-muted-foreground">

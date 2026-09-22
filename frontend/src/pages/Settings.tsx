@@ -1063,7 +1063,7 @@ export default function SettingsPage() {
           {fbStats ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
-                <span>近 {fbStats.range_days} 天</span>
+                <span> {fbStats.range_days} ngày gần nhất</span>
                 <span className="opacity-50">|</span>
                 <span>Phản hồi: <span className="font-mono text-foreground/90">{fbStats.total}</span></span>
                 <span className="opacity-50">|</span>
@@ -1212,7 +1212,7 @@ export default function SettingsPage() {
       <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>发现 {batchCandidates.length} 个模型</DialogTitle>
+            <DialogTitle>Thấy {batchCandidates.length} mô hình</DialogTitle>
             <DialogDescription>Tích chọn mô hình muốn thêm, và chỉ định được một mô hình mặc định</DialogDescription>
           </DialogHeader>
           <div className="mt-3 flex items-center justify-between px-0.5 text-xs text-muted-foreground">

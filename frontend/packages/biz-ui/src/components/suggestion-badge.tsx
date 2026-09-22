@@ -224,7 +224,7 @@ export function SuggestionBadge({
 
               {(suggestion.agent_label || timeStr) && (
                 <div className="mt-1 text-[10px] text-muted-foreground/70">
-                  来源: {suggestion.agent_label || (isAI ? 'AI' : 'Không rõ')}
+                  Nguồn: {suggestion.agent_label || (isAI ? 'AI' : 'Không rõ')}
                   {timeStr && ` · ${timeStr}`}
                   {suggestion.is_expired && <span className="ml-1 text-amber-600">(đã hết hạn)</span>}
                 </div>
@@ -265,7 +265,7 @@ export function SuggestionBadge({
               {/* Thông tin nguồn */}
               {(suggestion.agent_label || suggestion.created_at) && (
                 <div className="text-[11px] text-muted-foreground/70 mt-1">
-                  来源: {suggestion.agent_label || 'Không rõ'}
+                  Nguồn: {suggestion.agent_label || 'Không rõ'}
                   {suggestion.created_at && ` · ${formatSuggestionDateTime(suggestion.created_at)}`}
                   {suggestion.is_expired && <span className="ml-2 text-amber-500">(đã hết hạn)</span>}
                 </div>
@@ -442,7 +442,7 @@ export function SuggestionBadge({
         {/* Nguồn và thời gian (hiện dưới phù hiệu, chỉ với khuyến nghị AI để dễ phân biệt) */}
         {isAI && (
           <div className="mt-1 text-[10px] text-muted-foreground/70">
-            来源: {suggestion.agent_label || 'AI'}{timeStr && ` · ${timeStr}`}
+            Nguồn: {suggestion.agent_label || 'AI'}{timeStr && ` · ${timeStr}`}
             {suggestion.is_expired && <span className="ml-1 text-amber-600">(đã hết hạn)</span>}
           </div>
         )}
@@ -473,7 +473,7 @@ export function SuggestionBadge({
             {/* Thông tin nguồn */}
             {(suggestion.agent_label || suggestion.created_at) && (
               <div className="text-[11px] text-muted-foreground/70 mt-1">
-                来源: {suggestion.agent_label || 'Không rõ'}
+                Nguồn: {suggestion.agent_label || 'Không rõ'}
                 {suggestion.created_at && ` · ${formatSuggestionDateTime(suggestion.created_at)}`}
                 {suggestion.is_expired && <span className="ml-2 text-amber-500">(đã hết hạn)</span>}
               </div>
