@@ -1383,7 +1383,7 @@ export default function StockInsightModal(props: {
                 { id: 'suggestions', label: `建议 (${suggestions.length})` },
                 { id: 'reports', label: `报告 (${reports.length})` },
                 { id: 'deep', label: deepResult ? '深度 (1)' : '深度' },
-                { id: 'kline', label: 'K线' },
+                { id: 'kline', label: 'Nến' },
                 { id: 'announcements', label: `公告 (${announcements.length})` },
                 { id: 'news', label: `新闻 (${news.length})` },
               ].map(item => (
@@ -1907,10 +1907,10 @@ const DEEP_DECISION_COLOR: Record<string, string> = {
 }
 
 const DEEP_STAGE_LABEL: Record<string, string> = {
-  market: '技术分析师',
-  social: '情绪分析师',
-  news: '新闻分析师',
-  fundamentals: '基本面分析师',
+  market: 'Chuyên viên phân tích kỹ thuật',
+  social: 'Chuyên viên phân tích tâm lý',
+  news: 'Chuyên viên phân tích tin tức',
+  fundamentals: 'Chuyên viên phân tích cơ bản',
 }
 
 function DeepAnalysisSection({
@@ -2088,7 +2088,7 @@ function DeepHistoryComparison({
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
         <div className="rounded bg-accent/30 px-2 py-1.5">
-          <div className="text-muted-foreground">总命中率</div>
+          <div className="text-muted-foreground">Tỷ lệ trúng chung</div>
           <div className="font-semibold">{fmtPct(stats.overall_hit_rate)}</div>
         </div>
         <div className="rounded bg-accent/30 px-2 py-1.5">
@@ -2100,7 +2100,7 @@ function DeepHistoryComparison({
           <div className="font-semibold text-rose-600 dark:text-rose-400">{fmtPct(stats.sell_hit_rate)}</div>
         </div>
         <div className="rounded bg-accent/30 px-2 py-1.5">
-          <div className="text-muted-foreground">平均 20 日收益</div>
+          <div className="text-muted-foreground">Lợi nhuận bình quân 20 ngày</div>
           <div className={`font-semibold ${retCls(stats.avg_return_20d_pct)}`}>{fmtRet(stats.avg_return_20d_pct)}</div>
         </div>
       </div>
@@ -2108,12 +2108,12 @@ function DeepHistoryComparison({
         <table className="w-full text-[11px]">
           <thead className="text-muted-foreground">
             <tr className="border-b border-border/40">
-              <th className="text-left px-1 py-1 font-normal">日期</th>
-              <th className="text-left px-1 py-1 font-normal">决策</th>
-              <th className="text-right px-1 py-1 font-normal">分析价</th>
-              <th className="text-right px-1 py-1 font-normal">1日</th>
-              <th className="text-right px-1 py-1 font-normal">5日</th>
-              <th className="text-right px-1 py-1 font-normal">20日</th>
+              <th className="text-left px-1 py-1 font-normal">Ngày</th>
+              <th className="text-left px-1 py-1 font-normal">Quyết định</th>
+              <th className="text-right px-1 py-1 font-normal">Giá lúc phân tích</th>
+              <th className="text-right px-1 py-1 font-normal">1 ngày</th>
+              <th className="text-right px-1 py-1 font-normal">5 ngày</th>
+              <th className="text-right px-1 py-1 font-normal">20 ngày</th>
               <th className="text-center px-1 py-1 font-normal">Trúng</th>
             </tr>
           </thead>

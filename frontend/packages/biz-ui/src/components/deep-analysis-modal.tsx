@@ -31,11 +31,11 @@ import {
 
 const STAGE_LABEL: Record<string, string> = {
   data_collection: '数据准备',
-  market_analyst: '技术分析师',
-  social_analyst: '情绪分析师',
-  news_analyst: '新闻分析师',
-  fundamentals_analyst: '基本面分析师',
-  bull_bear_debate: '看多看空辩论',
+  market_analyst: 'Chuyên viên phân tích kỹ thuật',
+  social_analyst: 'Chuyên viên phân tích tâm lý',
+  news_analyst: 'Chuyên viên phân tích tin tức',
+  fundamentals_analyst: 'Chuyên viên phân tích cơ bản',
+  bull_bear_debate: 'Tranh luận xem tăng xem giảm',
   research_manager: '研究主管',
   trader: '交易员决策',
   risk_judge: '风控判定',

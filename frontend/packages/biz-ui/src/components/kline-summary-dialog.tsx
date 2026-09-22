@@ -221,7 +221,7 @@ export function KlineSummaryDialog({
                     size="sm"
                   />
                   <span className="text-[10px] text-muted-foreground">
-                    {hasPosition ? '已持仓' : '未持仓'} · score {suggestion.score}
+                    {hasPosition ? '已持仓' : 'Chưa nắm giữ'} · score {suggestion.score}
                   </span>
                 </div>
                 <div className="mt-2 text-[12px] text-foreground font-medium">
@@ -260,19 +260,19 @@ export function KlineSummaryDialog({
             <div className="flex flex-wrap gap-2 text-[11px]">
               {effectiveSummary.trend && (
                 <HoverPopover
-                  title="趋势（均线排列）"
+                  title="Xu thế (cách xếp đường trung bình)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         趋势标签来自均线（MA5/MA10/MA20）的相对位置，基于日K收盘价计算。MA越短越敏感，越长越平滑。
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">常见解读：</span>
+                        <span className="font-medium text-foreground">Cách đọc thường gặp:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">多头排列</span>（MA5 &gt; MA10 &gt; MA20）：上升趋势更“顺”，回调通常先看 MA5/MA10 的支撑。</li>
-                          <li><span className="font-medium text-foreground">空头排列</span>（MA5 &lt; MA10 &lt; MA20）：下降趋势占优，反弹到 MA10/MA20 往往遇到压力。</li>
-                          <li><span className="font-medium text-foreground">均线交织</span>：震荡/换手期，信号更依赖成交量与关键价位。</li>
+                          <li><span className="font-medium text-foreground">Xếp tăng</span>(MA5 &gt; MA10 &gt; MA20): xu hướng đi lên «thuận» hơn, nhịp chỉnh thường nhìn hỗ trợ ở MA5/MA10 trước.</li>
+                          <li><span className="font-medium text-foreground">Xếp giảm</span>(MA5 &lt; MA10 &lt; MA20): xu hướng đi xuống chiếm ưu thế, bật lại tới MA10/MA20 thường gặp kháng cự.</li>
+                          <li><span className="font-medium text-foreground">Đường trung bình đan xen</span>: giai đoạn giằng co/sang tay, tín hiệu phụ thuộc nhiều hơn vào khối lượng và các mốc giá then chốt.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.trend}</div>
@@ -294,19 +294,19 @@ export function KlineSummaryDialog({
 
               {effectiveSummary.macd_status && (
                 <HoverPopover
-                  title="MACD（趋势/动能）"
+                  title="MACD (xu thế/động lượng)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         MACD 由两条线（DIF/DEA）与柱体（hist）组成。常见口径：DIF=EMA12-EMA26，DEA=EMA(DIF,9)，hist≈(DIF-DEA)*2。
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li><span className="font-medium text-foreground">金叉</span>：DIF 上穿 DEA，短线动能由弱转强。</li>
-                          <li><span className="font-medium text-foreground">死叉</span>：DIF 下穿 DEA，短线动能由强转弱。</li>
-                          <li><span className="font-medium text-foreground">柱体正/负</span>：正值通常表示多头动能占优；负值通常表示空头动能占优。</li>
+                          <li><span className="font-medium text-foreground">金叉</span>: DIF cắt lên DEA, động lượng ngắn hạn từ yếu chuyển mạnh.</li>
+                          <li><span className="font-medium text-foreground">死叉</span>: DIF cắt xuống DEA, động lượng ngắn hạn từ mạnh chuyển yếu.</li>
+                          <li><span className="font-medium text-foreground">Thanh dương/âm</span>: giá trị dương thường cho thấy động lượng bên mua trội hơn; giá trị âm thường cho thấy động lượng bên bán trội hơn.</li>
                         </ul>
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">
@@ -325,18 +325,18 @@ export function KlineSummaryDialog({
 
               {effectiveSummary.rsi_status && (
                 <HoverPopover
-                  title="RSI（相对强弱）"
+                  title="RSI (sức mạnh tương đối)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         RSI 用于衡量一段时间内上涨与下跌力度的相对强弱（0-100）。这里展示的是 RSI6（近6个交易日）。
                       </div>
                       <div>
                         <span className="font-medium text-foreground">项目内阈值：</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li>RSI6 &gt; 80：超买（回撤风险更高）</li>
-                          <li>RSI6 70-80：偏强（动能偏多）</li>
+                          <li>RSI6 &gt; 80: quá mua (rủi ro điều chỉnh cao hơn)</li>
+                          <li>RSI6 70-80: thiên mạnh (động lượng nghiêng mua)</li>
                           <li>RSI6 &lt; 20：超卖（可能反弹，但下跌趋势中可长期超卖）</li>
                           <li>RSI6 20-30：偏弱（动能偏空）</li>
                         </ul>
@@ -365,11 +365,11 @@ export function KlineSummaryDialog({
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         KDJ 属于动量类指标，反映价格在一段区间内所处位置（类似随机振荡器）。常用信号是 K 与 D 的金叉/死叉。
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
                           <li><span className="font-medium text-foreground">金叉</span>：短线转强的提示，配合上升趋势更有效。</li>
                           <li><span className="font-medium text-foreground">死叉</span>：短线转弱的提示，配合下降趋势更有效。</li>
@@ -403,7 +403,7 @@ export function KlineSummaryDialog({
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         量能用于判断行情“是否有成交支撑”。这里的量能趋势来自 volume_ratio（当日量 / 近5日均量）。
                       </div>
                       <div>
@@ -437,11 +437,11 @@ export function KlineSummaryDialog({
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         布林带由中轨（通常是 MA20）和上下轨（中轨±2倍标准差）组成，用于刻画价格通道与波动变化。
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         <ul className="list-disc pl-4 mt-1 space-y-1">
                           <li><span className="font-medium text-foreground">突破上轨</span>：短期偏强，但也可能“冲高回落”，需结合量能确认。</li>
                           <li><span className="font-medium text-foreground">跌破下轨</span>：短期偏弱，但在恐慌下跌时也可能出现超跌反弹。</li>
@@ -480,15 +480,15 @@ export function KlineSummaryDialog({
 
               {effectiveSummary?.kline_pattern && (
                 <HoverPopover
-                  title="K线形态（局部结构）"
+                  title="Hình mẫu nến (cấu trúc cục bộ)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         形态来自对最近1-2根K线的形状识别（如十字星、锤子线、吞没等），属于“局部信号”。
                       </div>
                       <div>
-                        <span className="font-medium text-foreground">代表什么：</span>
+                        <span className="font-medium text-foreground">Nghĩa là gì:</span>
                         多数形态需要结合趋势、量能与关键位确认。比如锤子线出现在下跌末端更有意义；吞没形态更看重“前后两根K线对比”。
                       </div>
                       <div className="text-[10px] text-muted-foreground/70">当前：{effectiveSummary.kline_pattern}</div>
@@ -507,11 +507,11 @@ export function KlineSummaryDialog({
             <div className="flex flex-wrap gap-2 text-[11px]">
               {effectiveSummary && effectiveSummary.support != null && (
                 <HoverPopover
-                  title="支撑位（关键支撑区）"
+                  title="Vùng hỗ trợ (vùng hỗ trợ then chốt)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         支撑位可以理解为“买盘更容易出现”的价格区域。接近支撑时，价格更可能出现止跌、反弹或盘整。
                       </div>
                       <div>
@@ -557,11 +557,11 @@ export function KlineSummaryDialog({
               )}
               {effectiveSummary && effectiveSummary.resistance != null && (
                 <HoverPopover
-                  title="压力位（关键压力区）"
+                  title="Vùng kháng cự (vùng kháng cự then chốt)"
                   content={
                     <div className="space-y-2">
                       <div>
-                        <span className="font-medium text-foreground">是什么：</span>
+                        <span className="font-medium text-foreground">Là gì:</span>
                         压力位可以理解为“卖盘更容易出现”的价格区域。接近压力时，上行更容易受阻、回落或进入震荡。
                       </div>
                       <div>
@@ -615,7 +615,7 @@ export function KlineSummaryDialog({
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
+                          <span className="font-medium text-foreground">Là gì:</span>
                           5日涨跌幅表示最近5个交易日的整体收益率，用来快速观察短期动量强弱。
                         </div>
                         <div>
@@ -651,7 +651,7 @@ export function KlineSummaryDialog({
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
+                          <span className="font-medium text-foreground">Là gì:</span>
                           20日涨跌幅接近一个交易月的整体收益率，更偏向“波段趋势”的表现。
                         </div>
                         <div>
@@ -687,7 +687,7 @@ export function KlineSummaryDialog({
                     content={
                       <div className="space-y-2">
                         <div>
-                          <span className="font-medium text-foreground">是什么：</span>
+                          <span className="font-medium text-foreground">Là gì:</span>
                           振幅描述当天高低价之间的波动范围，用来衡量“波动有多大”。
                         </div>
                         <div>

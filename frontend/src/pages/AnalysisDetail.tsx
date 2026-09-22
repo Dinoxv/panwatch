@@ -33,7 +33,7 @@ const DECISION_COLOR: Record<string, string> = {
   sell: 'text-emerald-500',
 }
 
-/** 各 section 配图标(决策/技术/情绪/新闻/基本面/辩论/风控),与 buildAnalysisSections 的 id 对齐 */
+/** Biểu tượng cho từng section (quyết định/kỹ thuật/tâm lý/tin tức/cơ bản/tranh luận/kiểm soát rủi ro), khớp id của buildAnalysisSections */
 const SECTION_ICON: Record<string, LucideIcon> = {
   decision: Target,
   market: TrendingUp,
@@ -44,10 +44,10 @@ const SECTION_ICON: Record<string, LucideIcon> = {
   risk: ShieldAlert,
 }
 
-/** 二级目录显示开关的 localStorage 键(记住用户选择) */
+/** Khóa localStorage cho công tắc hiện mục lục cấp hai (nhớ lựa chọn của người dùng) */
 const TOC_SUB_KEY = 'panwatch_toc_show_sub'
 
-/** 从代码粗略推断市场:6 位数字=A股, 5 位数字=港股, 其余=美股 */
+/** Đoán thô thị trường từ mã: 6 chữ số = cổ phiếu A, 5 chữ số = cổ phiếu HK, còn lại = cổ phiếu Mỹ */
 function inferMarket(symbol: string): string {
   if (/^\d{6}$/.test(symbol)) return 'CN'
   if (/^\d{5}$/.test(symbol)) return 'HK'
@@ -64,8 +64,8 @@ function fmtPct(v: number | null | undefined): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(2)}%`
 }
 
-/** 标题 → 锚点 slug(去掉 markdown 强调/井号/emoji,空白转连字符)。
- *  解析目录与渲染标题两侧用同一份逻辑,保证 id 一致、点击可跳。 */
+/** Tiêu đề → slug neo (bỏ nhấn mạnh markdown/dấu thăng/emoji, khoảng trắng thành gạch nối).
+ *  Lúc đọc mục lục và lúc dựng tiêu đề đều dùng chung logic này, để id khớp nhau và bấm là nhảy được. */
 function slugify(text: string): string {
   return text
     .trim()
@@ -77,7 +77,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '')
 }
 
-/** 从 ReactMarkdown 标题节点的 children 里递归取纯文本(用于算锚点 id)。 */
+/** Lấy đệ quy văn bản thuần từ children của nút tiêu đề ReactMarkdown (để tính id neo). */
 function nodeText(children: ReactNode): string {
   if (typeof children === 'string') return children
   if (typeof children === 'number') return String(children)
@@ -88,7 +88,7 @@ function nodeText(children: ReactNode): string {
   return ''
 }
 
-/** 从一段 markdown 里抽出 2~4 级标题(用于二级目录)。 */
+/** Rút các tiêu đề cấp 2~4 trong một đoạn markdown (dùng cho mục lục cấp hai). */
 function parseHeadings(markdown: string): { text: string; slug: string }[] {
   const out: { text: string; slug: string }[] = []
   for (const raw of markdown.split('\n')) {
@@ -143,7 +143,7 @@ export default function AnalysisDetailPage() {
       .catch(() => setHistory(null))
   }, [symbol, date])
 
-  // 记住二级目录开关
+  // Nhớ công tắc mục lục cấp hai
   useEffect(() => {
     try {
       localStorage.setItem(TOC_SUB_KEY, showSub ? '1' : '0')
@@ -161,7 +161,7 @@ export default function AnalysisDetailPage() {
   const stats = history?.stats
   const items = history?.items || []
 
-  // 完整目录:每个 section(一级) + 其 markdown 内 2~4 级标题(二级) + 历史决策对比
+  // Mục lục đầy đủ: mỗi section (cấp một) + các tiêu đề cấp 2~4 trong markdown của nó (cấp hai) + đối chiếu quyết định lịch sử
   const fullToc: { id: string; title: string; level: 0 | 1 }[] = []
   for (const s of sections) {
     fullToc.push({ id: `sec-${s.id}`, title: s.title, level: 0 })
@@ -169,11 +169,11 @@ export default function AnalysisDetailPage() {
       fullToc.push({ id: `h-${s.id}-${h.slug}`, title: h.text, level: 1 })
     }
   }
-  fullToc.push({ id: 'sec-history', title: '历史决策对比', level: 0 })
-  // 开关决定是否展示/联动二级目录
+  fullToc.push({ id: 'sec-history', title: 'Đối chiếu quyết định lịch sử', level: 0 })
+  // Công tắc quyết định có hiện/liên động mục lục cấp hai hay không
   const toc = showSub ? fullToc : fullToc.filter((t) => t.level === 0)
 
-  // 滚动联动:正文滚动时自动高亮当前段(取视口内最靠上、避开顶部导航的标题)
+  // Liên động khi cuộn: cuộn nội dung thì tự tô sáng đoạn hiện tại (lấy tiêu đề cao nhất trong khung nhìn, tránh thanh điều hướng ở đỉnh)
   useEffect(() => {
     if (!result) return
     const els = toc
@@ -202,7 +202,7 @@ export default function AnalysisDetailPage() {
       <div className="p-12 text-center text-muted-foreground space-y-3">
         <div>未找到 {symbol} 在 {date} 的深度分析记录</div>
         <button onClick={() => navigate(-1)} className="text-primary hover:underline">
-          返回
+          Quay lại
         </button>
       </div>
     )
@@ -212,10 +212,10 @@ export default function AnalysisDetailPage() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // 当前所在段标题(移动端折叠条上显示,让用户知道读到哪了)
+  // Tiêu đề đoạn đang đọc (hiện trên thanh gập ở di động, để người dùng biết mình đang ở đâu)
   const currentTitle = toc.find((t) => t.id === activeId)?.title || ''
 
-  // markdown 标题渲染:挂上与目录一致的锚点 id + 顶部留白(避开吸顶导航)
+  // Dựng tiêu đề markdown: gắn id neo trùng với mục lục + chừa khoảng trên (tránh thanh điều hướng dính đỉnh)
   const headingComponents = (sectionId: string) => {
     const make = (Tag: 'h2' | 'h3' | 'h4') =>
       function Heading({ children }: { children?: ReactNode }) {
@@ -229,20 +229,20 @@ export default function AnalysisDetailPage() {
     return { h2: make('h2'), h3: make('h3'), h4: make('h4') }
   }
 
-  // 目录头(标题 + 二级目录开关),桌面右栏 / 移动下拉共用
+  // Đầu mục lục (tiêu đề + công tắc mục lục cấp hai), dùng chung cho cột phải desktop / xổ xuống di động
   const tocHeader = (
     <div className="flex items-center justify-between gap-2 mb-2 px-2">
-      <span className="text-[11px] font-medium text-muted-foreground/70">目录</span>
+      <span className="text-[11px] font-medium text-muted-foreground/70">Mục lục</span>
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="cursor-pointer select-none" onClick={() => setShowSub((v) => !v)}>
-          二级目录
+          Mục lục cấp hai
         </span>
         <Switch checked={showSub} onCheckedChange={setShowSub} />
       </div>
     </div>
   )
 
-  // 目录列表(桌面右栏 / 移动下拉共用);onAfter 用于移动端选完自动收起
+  // Danh sách mục lục (dùng chung cột phải desktop / xổ xuống di động); onAfter để di động chọn xong tự thu lại
   const tocNav = (onAfter?: () => void) => (
     <nav className="space-y-0.5 text-[13px]">
       {toc.map((t) => (
@@ -269,47 +269,47 @@ export default function AnalysisDetailPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-4 pb-12 flex gap-8">
-        {/* 左列:标题栏 + 正文(标题栏只占左列宽度,不压到右侧目录) */}
+        {/* Cột trái: thanh tiêu đề + nội dung (thanh tiêu đề chỉ chiếm bề ngang cột trái, không đè lên mục lục bên phải) */}
         <div className="flex-1 min-w-0 max-w-3xl">
-          {/* 顶部栏 */}
+          {/* Thanh trên cùng */}
           <div className="border-b border-border/40 pb-3 mb-4 flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all shrink-0"
-              aria-label="返回"
+              aria-label="Quay lại"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <h1 className="text-base font-bold truncate min-w-0">{result.title || `${symbol} 深度分析`}</h1>
+            <h1 className="text-base font-bold truncate min-w-0">{result.title || `Phân tích chuyên sâu ${symbol}`}</h1>
             <span className="text-[12px] text-muted-foreground shrink-0">{date}</span>
             <button
               onClick={() => setShareOpen(true)}
               className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/50 text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-              title="生成可分享的结论卡片图"
+              title="Dựng thẻ kết luận chia sẻ được"
             >
               <ImageDown className="w-3.5 h-3.5" />
-              分享图
+              Ảnh chia sẻ
             </button>
             <button
               onClick={handleExportPdf}
               disabled={pdfBusy}
               className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/50 text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
-              title="导出 PDF 文件"
+              title="Xuất tệp PDF"
             >
               <FileDown className="w-3.5 h-3.5" />
-              {pdfBusy ? '导出中…' : '导出 PDF'}
+              {pdfBusy ? 'Đang xuất…' : 'Xuất PDF'}
             </button>
           </div>
 
-          {/* 正文 */}
+          {/* Nội dung */}
           <article>
-          {/* 决策摘要(移动端在正文顶部;桌面端移到右侧目录区,见下方 aside) */}
+          {/* Tóm tắt quyết định (di động đặt ở đầu nội dung; desktop dời sang vùng mục lục bên phải, xem aside phía dưới) */}
           {sug && (
             <div className="lg:hidden rounded-xl bg-accent/30 p-4 mb-6 flex items-center gap-3 flex-wrap">
               <span className={`text-[24px] font-bold ${decisionColor}`}>
                 {decisionLabel}
               </span>
-              {reviewRequired && <span className="text-[12px] text-orange-600">数据或结论存在不确定性，请人工核验后再决策</span>}
+              {reviewRequired && <span className="text-[12px] text-orange-600">Dữ liệu hoặc kết luận còn điểm chưa chắc chắn, xin kiểm chứng bằng tay rồi mới quyết</span>}
               <span className="text-[13px] text-muted-foreground">
                 置信度 {sug.confidence?.toFixed(1) ?? '-'} / 10
               </span>
@@ -319,7 +319,7 @@ export default function AnalysisDetailPage() {
             </div>
           )}
 
-          {/* 移动端目录:吸顶折叠条,显示当前段,展开下拉(覆盖式),选完/点外部收起(桌面隐藏) */}
+          {/* Mục lục di động: thanh gập dính đỉnh, hiện đoạn hiện tại, mở ra thành xổ xuống (dạng phủ lên), chọn xong/bấm ra ngoài thì thu lại (desktop ẩn) */}
           <div className="lg:hidden sticky top-16 z-30 mb-6">
             <div className="relative">
               <button
@@ -327,7 +327,7 @@ export default function AnalysisDetailPage() {
                 className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-border/50 bg-card/95 backdrop-blur text-[13px] font-medium shadow-sm"
               >
                 <List className="w-4 h-4 shrink-0" />
-                <span className="truncate">{currentTitle || '目录'}</span>
+                <span className="truncate">{currentTitle || 'Mục lục'}</span>
                 <ChevronDown
                   className={`w-4 h-4 ml-auto shrink-0 transition-transform ${tocOpen ? 'rotate-180' : ''}`}
                 />
@@ -344,7 +344,7 @@ export default function AnalysisDetailPage() {
             </div>
           </div>
 
-          {/* 各部分长文 */}
+          {/* Bài dài của từng phần */}
           {sections.map((s) => {
             const Icon = SECTION_ICON[s.id]
             return (
@@ -362,28 +362,28 @@ export default function AnalysisDetailPage() {
             )
           })}
 
-          {/* 历史决策对比 */}
+          {/* Đối chiếu quyết định lịch sử */}
           <section id="sec-history" className="mb-10 scroll-mt-24">
             <h2 className="flex items-center gap-2 text-[18px] font-bold mb-4 pb-2 border-b border-border/40">
               <History className="w-[18px] h-[18px] text-primary/70 shrink-0" />
-              历史决策 vs 实际涨跌
+              Quyết định lịch sử vs tăng giảm thực tế
             </h2>
             {stats && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-[13px]">
                 <div className="rounded-lg bg-accent/30 p-3">
-                  <div className="text-[11px] text-muted-foreground mb-1">总命中率</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Tỷ lệ trúng chung</div>
                   <div className="font-bold">{stats.overall_hit_rate != null ? `${(stats.overall_hit_rate * 100).toFixed(0)}%` : '-'}</div>
                 </div>
                 <div className="rounded-lg bg-accent/30 p-3">
-                  <div className="text-[11px] text-muted-foreground mb-1">买入命中</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Trúng lệnh mua</div>
                   <div className="font-bold">{stats.buy_hit_rate != null ? `${(stats.buy_hit_rate * 100).toFixed(0)}%` : '-'}</div>
                 </div>
                 <div className="rounded-lg bg-accent/30 p-3">
-                  <div className="text-[11px] text-muted-foreground mb-1">卖出命中</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Trúng lệnh bán</div>
                   <div className="font-bold">{stats.sell_hit_rate != null ? `${(stats.sell_hit_rate * 100).toFixed(0)}%` : '-'}</div>
                 </div>
                 <div className="rounded-lg bg-accent/30 p-3">
-                  <div className="text-[11px] text-muted-foreground mb-1">平均 20 日收益</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Lợi nhuận bình quân 20 ngày</div>
                   <div className={`font-bold ${pctClass(stats.avg_return_20d_pct)}`}>{fmtPct(stats.avg_return_20d_pct)}</div>
                 </div>
               </div>
@@ -393,12 +393,12 @@ export default function AnalysisDetailPage() {
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground text-[12px]">
-                      <th className="text-left py-2 pr-3">日期</th>
-                      <th className="text-left py-2 px-2">决策</th>
-                      <th className="text-right py-2 px-2">分析价</th>
-                      <th className="text-right py-2 px-2">1日</th>
-                      <th className="text-right py-2 px-2">5日</th>
-                      <th className="text-right py-2 px-2">20日</th>
+                      <th className="text-left py-2 pr-3">Ngày</th>
+                      <th className="text-left py-2 px-2">Quyết định</th>
+                      <th className="text-right py-2 px-2">Giá lúc phân tích</th>
+                      <th className="text-right py-2 px-2">1 ngày</th>
+                      <th className="text-right py-2 px-2">5 ngày</th>
+                      <th className="text-right py-2 px-2">20 ngày</th>
                       <th className="text-right py-2 pl-2">Trúng</th>
                     </tr>
                   </thead>
@@ -418,21 +418,21 @@ export default function AnalysisDetailPage() {
                 </table>
               </div>
             ) : (
-              <div className="text-[13px] text-muted-foreground py-4">暂无历史决策记录</div>
+              <div className="text-[13px] text-muted-foreground py-4">Chưa có bản ghi quyết định lịch sử</div>
             )}
           </section>
 
-          {/* 免责 */}
+          {/* Miễn trừ trách nhiệm */}
           <div className="text-[11px] text-muted-foreground/70 italic border-t border-border/30 pt-4">
-            本分析由 AI 多 Agent 框架生成,仅供学习研究参考,不构成任何投资建议。投资有风险,决策需自主判断。
+            Bản phân tích này do khung nhiều Agent AI dựng ra, chỉ để học hỏi nghiên cứu tham khảo, không phải khuyến nghị đầu tư. Đầu tư có rủi ro, quyết định phải tự cân nhắc.
           </div>
           </article>
         </div>
 
-        {/* 右列:最终决策 + 目录合并到同一张卡片(与标题同高起始,不被标题压住;主题 token 适配日/夜) */}
+        {/* Cột phải: quyết định cuối + mục lục gộp chung một thẻ (bắt đầu ngang với tiêu đề, không bị tiêu đề đè; token giao diện hợp cả ngày lẫn đêm) */}
         <aside className="hidden lg:block w-52 shrink-0">
           <div className="sticky top-24 rounded-xl border border-border bg-card overflow-hidden">
-            {/* 最终决策摘要 */}
+            {/* Tóm tắt quyết định cuối */}
             {sug && (
               <div className="p-3.5 border-b border-border">
                 <div className="flex items-baseline justify-between gap-2">
@@ -445,7 +445,7 @@ export default function AnalysisDetailPage() {
                 </div>
                 {reviewRequired && (
                   <p className="mt-2 text-[11px] leading-4 text-orange-600">
-                    上游无法安全生成可执行评级，请人工核验数据与报告。
+                    Thượng nguồn không thể sinh xếp hạng chạy được một cách an toàn, xin kiểm chứng dữ liệu và báo cáo bằng tay.
                   </p>
                 )}
                 {sug.confidence != null && (
@@ -470,7 +470,7 @@ export default function AnalysisDetailPage() {
                 )}
               </div>
             )}
-            {/* 目录 */}
+            {/* Mục lục */}
             <div className="p-2">
               {tocHeader}
               <div className="max-h-[calc(100vh-19rem)] overflow-y-auto scrollbar">{tocNav()}</div>
@@ -479,7 +479,7 @@ export default function AnalysisDetailPage() {
         </aside>
       </div>
 
-      {/* 分享卡片(导出 PNG) */}
+      {/* Thẻ chia sẻ (xuất PNG) */}
       <ShareCardModal
         open={shareOpen}
         onClose={() => setShareOpen(false)}

@@ -751,7 +751,7 @@ export default function SettingsPage() {
             </Button>
           </div>
           {services.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-6">暂无 AI 服务商，点击"Thêm nhà cung cấp"创建</p>
+            <p className="text-[13px] text-muted-foreground text-center py-6">Chưa có nhà cung cấp AI nào, bấm "Thêm nhà cung cấp" để tạo</p>
           ) : (
             <div className="space-y-4">
               {services.map(svc => (

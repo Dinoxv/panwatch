@@ -12,7 +12,7 @@ describe('klinesApi', () => {
       new Response(JSON.stringify({
         code: 0,
         success: true,
-        data: [{ symbol: '600519', market: 'CN', summary: { trend: '多头排列' } }],
+        data: [{ symbol: '600519', market: 'CN', summary: { trend: 'Xếp tăng' } }],
         message: '',
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     )

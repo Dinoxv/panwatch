@@ -341,7 +341,7 @@ export default function OpportunitiesPage() {
           timeoutMs: 45000,
         })
         if (fallback.items && fallback.items.length > 0) {
-          setError(`当前${marketLabel(market)}暂无满足条件机会，已展示全市场结果`)
+          setError(`${marketLabel(market)} hiện chưa có cơ hội nào đạt điều kiện, đã hiện kết quả toàn thị trường`)
           data = fallback
         }
       }
@@ -372,7 +372,7 @@ export default function OpportunitiesPage() {
         const state = await recommendationsApi.getStrategyRefreshStatus()
         if (!state.running) {
           if (state.last_error) {
-            setError(`后台刷新失败: ${state.last_error}`)
+            setError(`Làm mới nền thất bại: ${state.last_error}`)
           } else {
             setError('')
           }
@@ -525,14 +525,14 @@ export default function OpportunitiesPage() {
         <div>
           <h1 className="text-[20px] md:text-[22px] font-bold text-foreground tracking-tight flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            机会页
+            Trang cơ hội
           </h1>
           <p className="text-[12px] text-muted-foreground mt-1">
-            市场池优先，候选必须具备可执行入场计划
+            Ưu tiên kho thị trường, ứng viên bắt buộc phải có kế hoạch vào lệnh chạy được
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">{snapshotDate || '最新快照'}</span>
+          <span className="text-[11px] text-muted-foreground">{snapshotDate || 'Ảnh chụp mới nhất'}</span>
           <Button
             variant="secondary"
             size="sm"
@@ -548,28 +548,28 @@ export default function OpportunitiesPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="card p-3">
-          <div className="text-[11px] text-muted-foreground">当前候选(全局)</div>
+          <div className="text-[11px] text-muted-foreground">Ứng viên hiện tại (toàn cục)</div>
           <div className="text-[18px] font-bold mt-1">{globalCoverage?.total_signals ?? '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
             可执行: {globalCoverage?.active_signals ?? '--'}，观察: {(globalCoverage?.total_signals != null && globalCoverage?.active_signals != null) ? Math.max(0, globalCoverage.total_signals - globalCoverage.active_signals) : '--'}
           </div>
         </div>
         <div className="card p-3">
-          <div className="text-[11px] text-muted-foreground">市场池占比</div>
+          <div className="text-[11px] text-muted-foreground">Tỷ trọng kho thị trường</div>
           <div className="text-[18px] font-bold mt-1">{globalCoverage?.market_scan_share_pct != null ? `${globalCoverage.market_scan_share_pct.toFixed(1)}%` : '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
             市场池: {globalCoverage?.market_scan_signals ?? '--'}，关注池: {globalCoverage?.watchlist_signals ?? '--'}，融合: {globalCoverage?.mixed_signals ?? '--'}
           </div>
         </div>
         <div className="card p-3">
-          <div className="text-[11px] text-muted-foreground">本次筛选结果</div>
+          <div className="text-[11px] text-muted-foreground">Kết quả lọc lần này</div>
           <div className="text-[18px] font-bold mt-1">{filteredSummary.total}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
             未持仓: {filteredSummary.unheld}，市场池: {filteredSummary.marketPool}
           </div>
         </div>
         <div className="card p-3">
-          <div className="text-[11px] text-muted-foreground">3日胜率(自动评估)</div>
+          <div className="text-[11px] text-muted-foreground">Tỷ lệ thắng 3 ngày (hậu kiểm tự động)</div>
           <div className="text-[18px] font-bold mt-1">{outcome3d ? `${outcome3d.win_rate.toFixed(1)}%` : '--'}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
             自动样本: {outcome3d ? `${outcome3d.total}` : '--'}
@@ -580,35 +580,35 @@ export default function OpportunitiesPage() {
       {(factorStats || constraintStats) && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="card p-3">
-            <div className="text-[11px] text-muted-foreground">平均Alpha因子</div>
+            <div className="text-[11px] text-muted-foreground">Nhân tố Alpha bình quân</div>
             <div className="text-[18px] font-bold mt-1">{factorStats ? factorStats.avg_alpha_score.toFixed(1) : '--'}</div>
             <div className="text-[10px] text-muted-foreground mt-1">样本 {factorStats?.sample_size ?? '--'}</div>
           </div>
           <div className="card p-3">
-            <div className="text-[11px] text-muted-foreground">平均事件催化</div>
+            <div className="text-[11px] text-muted-foreground">Xúc tác sự kiện bình quân</div>
             <div className="text-[18px] font-bold mt-1">{factorStats ? factorStats.avg_catalyst_score.toFixed(1) : '--'}</div>
             <div className="text-[10px] text-muted-foreground mt-1">
               拥挤惩罚 {factorStats ? factorStats.avg_crowd_penalty.toFixed(1) : '--'}
             </div>
           </div>
           <div className="card p-3">
-            <div className="text-[11px] text-muted-foreground">平均质量/风险</div>
+            <div className="text-[11px] text-muted-foreground">Chất lượng/rủi ro bình quân</div>
             <div className="text-[18px] font-bold mt-1">
               {factorStats ? `${factorStats.avg_quality_score.toFixed(1)} / ${factorStats.avg_risk_penalty.toFixed(1)}` : '--'}
             </div>
-            <div className="text-[10px] text-muted-foreground mt-1">质量分越高越好</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Điểm chất lượng càng cao càng tốt</div>
           </div>
           <div className="card p-3">
-            <div className="text-[11px] text-muted-foreground">组合约束降级</div>
+            <div className="text-[11px] text-muted-foreground">Hạ cấp do ràng buộc danh mục</div>
             <div className="text-[18px] font-bold mt-1">{constraintStats?.constrained_top20 ?? 0}</div>
-            <div className="text-[10px] text-muted-foreground mt-1">Top20 被风控降级数量</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Số mã Top20 bị kiểm soát rủi ro hạ cấp</div>
           </div>
         </div>
       )}
 
       {(regimeSummary.length > 0 || riskSummary.length > 0) && (
         <div className="card p-3 mb-4">
-          <div className="text-[11px] text-muted-foreground mb-2">市场状态与组合风险</div>
+          <div className="text-[11px] text-muted-foreground mb-2">Trạng thái thị trường và rủi ro danh mục</div>
           <div className="flex flex-wrap gap-2">
             {regimeSummary.map((r) => (
               <span key={`regime-${r.market}`} className={`text-[11px] px-2.5 py-1 rounded ${regimeToneClass(r.regime)}`}>
@@ -638,24 +638,24 @@ export default function OpportunitiesPage() {
           <Select value={source} onValueChange={(v) => setSource(v as SourceFilter)}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部来源</SelectItem>
+              <SelectItem value="all">Mọi nguồn</SelectItem>
               <SelectItem value="market_scan">Kho thị trường</SelectItem>
-              <SelectItem value="mixed">融合池</SelectItem>
+              <SelectItem value="mixed">Kho hợp nhất</SelectItem>
               <SelectItem value="watchlist">Kho theo dõi</SelectItem>
             </SelectContent>
           </Select>
           <Select value={holding} onValueChange={(v) => setHolding(v as HoldingFilter)}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部持仓状态</SelectItem>
-              <SelectItem value="unheld">仅未持仓</SelectItem>
-              <SelectItem value="held">仅持仓中</SelectItem>
+              <SelectItem value="all">Mọi trạng thái nắm giữ</SelectItem>
+              <SelectItem value="unheld">Chỉ chưa nắm giữ</SelectItem>
+              <SelectItem value="held">Chỉ đang nắm giữ</SelectItem>
             </SelectContent>
           </Select>
           <Select value={strategy} onValueChange={setStrategy}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部策略</SelectItem>
+              <SelectItem value="all">Mọi chiến lược</SelectItem>
               {strategyOptions.map((op) => (
                 <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
               ))}
@@ -664,7 +664,7 @@ export default function OpportunitiesPage() {
           <Select value={risk} onValueChange={(v) => setRisk(v as RiskFilter)}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部风险等级</SelectItem>
+              <SelectItem value="all">Mọi mức rủi ro</SelectItem>
               <SelectItem value="low">Rủi ro thấp</SelectItem>
               <SelectItem value="medium">Rủi ro vừa</SelectItem>
               <SelectItem value="high">Rủi ro cao</SelectItem>
@@ -673,19 +673,19 @@ export default function OpportunitiesPage() {
           <Select value={minScore} onValueChange={setMinScore}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="90">评分90+</SelectItem>
-              <SelectItem value="80">评分80+</SelectItem>
-              <SelectItem value="70">评分70+</SelectItem>
-              <SelectItem value="60">评分60+</SelectItem>
-              <SelectItem value="50">评分50+</SelectItem>
-              <SelectItem value="0">评分不过滤</SelectItem>
+              <SelectItem value="90">Điểm 90+</SelectItem>
+              <SelectItem value="80">Điểm 80+</SelectItem>
+              <SelectItem value="70">Điểm 70+</SelectItem>
+              <SelectItem value="60">Điểm 60+</SelectItem>
+              <SelectItem value="50">Điểm 50+</SelectItem>
+              <SelectItem value="0">Không lọc theo điểm</SelectItem>
             </SelectContent>
           </Select>
           <Button size="sm" className="h-8 text-[12px]" onClick={load} disabled={loading}>
-            {loading ? 'Đang tải...' : '应用筛选'}
+            {loading ? 'Đang tải...' : 'Áp bộ lọc'}
           </Button>
           <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={resetFilters}>
-            清空筛选
+            Xóa bộ lọc
           </Button>
         </div>
       </div>
@@ -720,8 +720,8 @@ export default function OpportunitiesPage() {
           const eventScore = toNumberOrNull(newsMetric.event_score)
           const eventCount = Number(newsMetric.news_count || 0)
           const sourceFlags: string[] = []
-          if (group.hasMarketScan) sourceFlags.push('市场候选')
-          if (inWatchlist) sourceFlags.push('已关注标的')
+          if (group.hasMarketScan) sourceFlags.push('Ứng viên thị trường')
+          if (inWatchlist) sourceFlags.push('Mã đang theo dõi')
           if (sourceFlags.length <= 0) sourceFlags.push('Kho theo dõi')
           const sourcePoolLabel = group.hasMarketScan
             ? (group.members.some((x) => x.source_pool === 'mixed') ? 'Thị trường + theo dõi' : 'Kho thị trường')
@@ -770,7 +770,7 @@ export default function OpportunitiesPage() {
                   </div>
                   <div>风险: {item.risk_level_label || item.risk_level || '--'}</div>
                   <div>市场状态: {marketRegime.regime_label || marketRegime.regime || '--'}</div>
-                  <div>持仓: {item.is_holding_snapshot ? 'Đang nắm giữ' : '未持仓'}</div>
+                  <div>持仓: {item.is_holding_snapshot ? 'Đang nắm giữ' : 'Chưa nắm giữ'}</div>
                   <div>市场: {marketLabel(item.stock_market)}</div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
@@ -778,8 +778,8 @@ export default function OpportunitiesPage() {
                   <div>催化: {formatMetric(breakdown.catalyst_score)}</div>
                   <div>质量: {formatMetric(breakdown.quality_score)}</div>
                   <div>风险惩罚: {formatMetric(breakdown.risk_penalty)}</div>
-                  <div>相对强弱: {crossFeature.relative_strength_pct != null ? `${Number(crossFeature.relative_strength_pct).toFixed(0)}分位` : '--'}</div>
-                  <div>事件催化: {eventScore != null ? eventScore.toFixed(1) : '--'}{eventCount > 0 ? `（${eventCount}条）` : '（无命中）'}</div>
+                  <div>相对强弱: {crossFeature.relative_strength_pct != null ? `phân vị ${Number(crossFeature.relative_strength_pct).toFixed(0)}` : '--'}</div>
+                  <div>事件催化: {eventScore != null ? eventScore.toFixed(1) : '--'}{eventCount > 0 ? `(${eventCount} sự kiện)` : '(không trúng)'}</div>
                 </div>
                 {item.factor_explain && (((item.factor_explain.positive?.length ?? 0) > 0) || ((item.factor_explain.negative?.length ?? 0) > 0)) && (
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -797,7 +797,7 @@ export default function OpportunitiesPage() {
                 )}
                 {item.constrained && (
                   <div className="mt-2 text-[10px] text-amber-400">
-                    组合约束: {(item.constraint_reasons || []).join('；') || '已自动降级'}
+                    组合约束: {(item.constraint_reasons || []).join('；') || 'Đã tự hạ cấp'}
                   </div>
                 )}
               </button>
@@ -811,12 +811,12 @@ export default function OpportunitiesPage() {
                     type="button"
                     onClick={() => setShareSignal(item)}
                     className="inline-flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-primary"
-                    title="生成 AI 评分分享图"
+                    title="Dựng ảnh chia sẻ điểm AI"
                   >
                     <Share2 className="h-3 w-3" />
-                    分享图
+                    Ảnh chia sẻ
                   </button>
-                  <div className="text-[10px] text-muted-foreground">评估: 自动后验</div>
+                  <div className="text-[10px] text-muted-foreground">Hậu kiểm: tự động</div>
                 </div>
               </div>
             </div>
@@ -825,13 +825,13 @@ export default function OpportunitiesPage() {
       </div>
 
       {!loading && groupedItems.length === 0 && (
-        <div className="card p-8 text-center text-[12px] text-muted-foreground mt-4">暂无满足条件的机会</div>
+        <div className="card p-8 text-center text-[12px] text-muted-foreground mt-4">Chưa có cơ hội nào đạt điều kiện</div>
       )}
 
       <details className="mt-6 group">
         <summary className="cursor-pointer list-none flex items-center gap-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">
           <span className="text-[11px] opacity-60 transition-transform group-open:rotate-90">▶</span>
-          因子权重与战绩
+          Trọng số nhân tố và thành tích
         </summary>
         <div className="mt-3">
           <FactorWeightsPanel />

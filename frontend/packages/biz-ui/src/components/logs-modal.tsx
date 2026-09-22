@@ -43,12 +43,12 @@ const TIME_RANGES = [
   { label: 'Tất cả', value: 0 },
 ]
 const DOMAIN_OPTIONS: Array<{ label: string, value: 'business' | 'all' | 'infra' }> = [
-  { label: '业务优先', value: 'business' },
+  { label: 'Ưu tiên nghiệp vụ', value: 'business' },
   { label: 'Tất cả', value: 'all' },
-  { label: '基础设施', value: 'infra' },
+  { label: 'Hạ tầng', value: 'infra' },
 ]
 const FLOW_PRESETS: Array<{ key: string, label: string, loggers: string[] }> = [
-  { key: '', label: '全部链路', loggers: [] },
+  { key: '', label: 'Mọi chuỗi', loggers: [] },
   {
     key: 'premarket_outlook',
     label: 'Phân tích trước phiên',
@@ -67,7 +67,7 @@ const FLOW_PRESETS: Array<{ key: string, label: string, loggers: string[] }> = [
   {
     key: 'tradingagents',
     label: 'Phân tích chuyên sâu',
-    // 'tradingagents' 子串同时匹配 PanWatch 适配层 (src.agents.tradingagents.*) 和上游 (tradingagents.*)
+    // Chuỗi con 'tradingagents' khớp cả tầng khớp nối của PanWatch (src.agents.tradingagents.*) lẫn thượng nguồn (tradingagents.*)
     loggers: ['tradingagents', 'src.agents.base', 'src.core.scheduler', 'src.core.notifier'],
   },
 ]
@@ -152,15 +152,15 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
     void load({ append: false, cursor: 0 })
   }, [load])
 
-  // 初次打开或筛选变更时刷新（关键词搜索走防抖）
+  // Làm mới lúc mở lần đầu hoặc khi đổi bộ lọc (tìm theo từ khóa thì đi qua chống dội)
   useEffect(() => {
     if (!open) return
     loadLatest()
-    // query 由 handleSearchInput 防抖触发，避免每次键入都立即请求。
+    // query do handleSearchInput kích hoạt qua chống dội, tránh gõ phím nào cũng gọi ngay.
   }, [open, selectedLevels, selectedLoggers, selectedFlow, domain, timeRange])
 
-  // 自动刷新：优先 SSE tail（服务端推增量，事件 id 即日志 id，断线自动续推），
-  // SSE 不可用/关流时降级为原 3s 轮询（轮询代码保留兜底）
+  // Tự làm mới: ưu tiên SSE tail (server đẩy phần tăng thêm, id sự kiện chính là id nhật ký, đứt là tự đẩy tiếp),
+  // SSE không dùng được/đóng luồng thì hạ xuống lối hỏi vòng 3s như cũ (mã hỏi vòng vẫn giữ để hứng)
   useEffect(() => {
     if (!(open && autoRefresh)) {
       return () => { if (refreshTimer.current) clearInterval(refreshTimer.current) }
@@ -188,14 +188,14 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
           const incoming = ev.data.items as LogEntry[]
           setLogs(prev => {
             const seen = new Set(prev.map(x => x.id))
-            // 服务端按 id 升序推，列表按最新在前展示 → 反转后插到最前
+            // Server đẩy theo id tăng dần, danh sách hiện mới nhất trước → đảo lại rồi chèn lên đầu
             const fresh = incoming.filter(x => !seen.has(x.id)).reverse()
             return fresh.length > 0 ? [...fresh, ...prev] : prev
           })
           setTotal(t => t + incoming.length)
         }
       },
-      // 服务端流超时正常关闭 / 连接重试用尽 → 降级轮询
+      // Luồng server hết giờ đóng bình thường / thử lại kết nối đã cạn → hạ xuống hỏi vòng
       onClosed: () => startPolling(),
       onFailed: () => startPolling(),
     })
@@ -236,7 +236,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
   }
 
   const handleClear = async () => {
-    if (!confirm('确定清空所有日志？')) return
+    if (!confirm('Chắc chắn xóa sạch mọi nhật ký?')) return
     await fetchAPI('/logs', { method: 'DELETE' })
     setLogs([])
     setTotal(0)
@@ -252,16 +252,16 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
 
   const filterSummary = useMemo(() => {
     const parts: string[] = []
-    if (query) parts.push(`关键词:${query}`)
-    if (selectedLevels.length) parts.push(`级别:${selectedLevels.join(',')}`)
-    if (timeRange > 0) parts.push(`时间:${timeRange}h`)
-    if (domain !== 'all') parts.push(`范围:${domain === 'business' ? '业务优先' : '基础设施'}`)
+    if (query) parts.push(`Từ khóa:${query}`)
+    if (selectedLevels.length) parts.push(`Mức:${selectedLevels.join(',')}`)
+    if (timeRange > 0) parts.push(`Thời gian:${timeRange}h`)
+    if (domain !== 'all') parts.push(`Phạm vi:${domain === 'business' ? 'Ưu tiên nghiệp vụ' : 'Hạ tầng'}`)
     if (selectedFlow) {
       const flow = FLOW_PRESETS.find(x => x.key === selectedFlow)
-      if (flow) parts.push(`链路:${flow.label}`)
+      if (flow) parts.push(`Chuỗi:${flow.label}`)
     }
     if (selectedLoggers.length) parts.push(`自选Logger:${selectedLoggers.length}`)
-    return parts.length > 0 ? parts.join(' | ') : '当前无额外过滤'
+    return parts.length > 0 ? parts.join(' | ') : 'Hiện không lọc thêm gì'
   }, [query, selectedLevels, timeRange, domain, selectedFlow, selectedLoggers])
 
   const loggerFilterOptions = loggerOptions()
@@ -288,7 +288,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
         <div className="card p-3 md:p-4 mb-3 space-y-3">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-            <Input value={query} onChange={e => handleSearchInput(e.target.value)} placeholder="搜索日志内容 / trace_id / logger..." className="pl-10" />
+            <Input value={query} onChange={e => handleSearchInput(e.target.value)} placeholder="Tìm nội dung nhật ký / trace_id / logger..." className="pl-10" />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -433,7 +433,7 @@ export default function LogsModal({ open, onOpenChange }: { open: boolean, onOpe
                   disabled={!hasMore || loadingMore}
                   onClick={() => load({ append: true, cursor: beforeId })}
                 >
-                  {loadingMore ? 'Đang tải...' : hasMore ? '加载更多' : '没有更多了'}
+                  {loadingMore ? 'Đang tải...' : hasMore ? 'Tải thêm' : 'Hết rồi'}
                 </Button>
               </div>
             </div>
