@@ -1,4 +1,4 @@
-"""价格提醒引擎：规则评估、命中落库与通知发送。"""
+"""Engine cảnh báo giá: xét quy tắc, ghi lượt chạm xuống kho và gửi thông báo."""
 
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ class RuleEvalResult:
 
 
 class PriceAlertEngine:
-    """价格提醒扫描执行引擎（支持小规模缓存和去重）。"""
+    """Engine chạy quét cảnh báo giá (có đệm quy mô nhỏ và gộp trùng)."""
 
     def __init__(self):
         self._quote_cache: dict[str, tuple[float, dict]] = {}
@@ -111,7 +111,7 @@ class PriceAlertEngine:
         self.kline_ttl_sec = 60.0
 
     async def _fetch_quotes_map(self, stocks: list[Stock]) -> dict[tuple[str, str], dict]:
-        """走 QuoteOrchestrator,支持多 provider 主备故障转移。"""
+        """Đi qua QuoteOrchestrator, hỗ trợ chuyển dự phòng giữa nhiều provider."""
         grouped: dict[MarketCode, list[Stock]] = {}
         for s in stocks:
             grouped.setdefault(_to_market(s.market), []).append(s)

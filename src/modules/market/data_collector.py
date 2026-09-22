@@ -1,4 +1,4 @@
-"""统一数据源管理器"""
+"""Bộ quản lý nguồn dữ liệu thống nhất"""
 
 import asyncio
 import logging
@@ -36,7 +36,7 @@ _TEST_SYMBOL_LIMIT = 10
 
 @dataclass
 class CollectorResult:
-    """采集结果"""
+    """Kết quả thu thập"""
 
     success: bool
     data: Any = None
@@ -53,7 +53,7 @@ class CollectorResult:
 
 @dataclass
 class CollectorLog:
-    """采集日志"""
+    """Nhật ký thu thập"""
 
     timestamp: datetime
     source_name: str
@@ -66,12 +66,12 @@ class CollectorLog:
 
 class DataCollectorManager:
     """
-    统一数据源管理器
+    Bộ quản lý nguồn dữ liệu thống nhất
 
-    提供统一的数据采集接口，支持：
-    - 从数据库配置加载数据源
-    - 记录采集日志
-    - 批量/单个采集
+    Cung cấp giao diện thu thập dữ liệu thống nhất, hỗ trợ:
+    - Nạp nguồn dữ liệu từ cấu hình trong cơ sở dữ liệu
+    - Ghi nhật ký thu thập
+    - Thu thập hàng loạt/từng mục
     """
 
     # Loại nguồn dữ liệu -> (provider -> hàm nhà máy tạo bộ thu thập)
@@ -82,7 +82,7 @@ class DataCollectorManager:
         self._register_collectors()
 
     def _register_collectors(self):
-        """注册所有采集器"""
+        """Đăng ký mọi bộ thu thập"""
         from src.platform.marketdata.collectors.kline_collector import KlineCollector
         from src.platform.marketdata.collectors.capital_flow_collector import CapitalFlowCollector
         from src.platform.marketdata.collectors.events_collector import EastMoneyEventsCollector
@@ -112,7 +112,7 @@ class DataCollectorManager:
         duration_ms: int = 0,
         count: int = 0,
     ):
-        """记录日志"""
+        """Ghi nhật ký"""
         log = CollectorLog(
             timestamp=datetime.now(),
             source_name=source_name,
@@ -132,7 +132,7 @@ class DataCollectorManager:
             logger.debug(f"[{source_name}] {message}")
 
     def get_logs(self) -> list[dict]:
-        """获取日志（用于 UI 展示）"""
+        """Lấy nhật ký (để hiển thị trên giao diện)"""
         return [
             {
                 "timestamp": log.timestamp.strftime("%H:%M:%S"),
@@ -147,11 +147,11 @@ class DataCollectorManager:
         ]
 
     def clear_logs(self):
-        """清空日志"""
+        """Xóa sạch nhật ký"""
         self.logs = []
 
     def get_enabled_sources(self, source_type: str) -> list[DataSource]:
-        """获取指定类型的已启用数据源"""
+        """Lấy các nguồn dữ liệu đang bật thuộc loại chỉ định"""
         db = SessionLocal()
         try:
             return (
@@ -164,7 +164,7 @@ class DataCollectorManager:
             db.close()
 
     def get_source_by_id(self, source_id: int) -> DataSource | None:
-        """根据 ID 获取数据源"""
+        """Lấy nguồn dữ liệu theo ID"""
         db = SessionLocal()
         try:
             return db.query(DataSource).filter(DataSource.id == source_id).first()
@@ -172,7 +172,7 @@ class DataCollectorManager:
             db.close()
 
     def _get_stock_names(self, symbols: list[str]) -> dict[str, str]:
-        """获取股票代码到名称的映射"""
+        """Lấy ánh xạ từ mã cổ phiếu sang tên"""
         from src.platform.persistence.models import Stock
 
         # Ánh xạ tên cho các mã kiểm thử mặc định
@@ -205,7 +205,7 @@ class DataCollectorManager:
     async def collect_news(
         self, symbols: list[str], hours: int = 12
     ) -> CollectorResult:
-        """采集新闻（使用所有已启用的新闻数据源）"""
+        """Thu thập tin tức (dùng mọi nguồn dữ liệu tin tức đang bật)"""
         from src.platform.marketdata.collectors.news_collector import NewsCollector
 
         start_time = datetime.now()

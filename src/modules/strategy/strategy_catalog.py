@@ -1,4 +1,4 @@
-"""策略目录与权重读取。"""
+"""Đọc danh mục chiến lược và trọng số."""
 
 from __future__ import annotations
 

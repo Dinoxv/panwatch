@@ -1,4 +1,4 @@
-"""模拟盘调度器：60 秒间隔扫描建仓/平仓。"""
+"""Bộ lập lịch mô phỏng bàn giao dịch: quét mở/đóng vị thế mỗi 60 giây."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def _any_market_trading() -> bool:
-    """CN/HK/US 任一在交易时段即为 True。全休市时行情不动,扫描可跳过(行为中性)。"""
+    """Chỉ cần một trong CN/HK/US đang trong phiên là True. Nghỉ hết thì bảng giá không động, bỏ qua lượt quét được (trung tính về hành vi)."""
     for m in (MarketCode.CN, MarketCode.HK, MarketCode.US):
         md = MARKETS.get(m)
         if md and md.is_trading_time():
@@ -56,7 +56,7 @@ class PaperTradingScheduler:
             self._running = False
 
     async def _premarket_job(self):
-        """盘前计划通知。非交易日(周末/节假日)跳过。"""
+        """Thông báo kế hoạch trước phiên. Ngày không giao dịch (cuối tuần/nghỉ lễ) thì bỏ qua."""
         if not any_market_trading_day():
             logger.debug("[模拟盘] 非交易日,跳过盘前计划通知")
             return
@@ -67,7 +67,7 @@ class PaperTradingScheduler:
             logger.exception(f"[模拟盘] 盘前计划通知异常: {e}")
 
     async def _summary_job(self):
-        """日终摘要通知。非交易日(周末/节假日)跳过。"""
+        """Thông báo tóm tắt cuối ngày. Ngày không giao dịch (cuối tuần/nghỉ lễ) thì bỏ qua."""
         if not any_market_trading_day():
             logger.debug("[模拟盘] 非交易日,跳过日终摘要通知")
             return

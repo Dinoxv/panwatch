@@ -1,13 +1,15 @@
-"""A 股交易成本模型 —— 回测(Phase 0)与模拟盘(Phase 1)共用。
+"""Mô hình chi phí giao dịch cổ phiếu A — dùng chung cho kiểm thử lịch sử (Phase 0) và mô phỏng bàn giao dịch (Phase 1).
 
-成本口径(2023-08-28 印花税下调后):
-- 印花税:**卖出单边** 0.05%(万 5)
-- 佣金:双边,默认万 2.5,单笔最低 5 元
-- 过户费:双边,成交额 0.001%(沪深统一,2022-04 起)
-- 滑点:可配置基点(默认 5bps),买入价上滑 / 卖出价下滑,模拟冲击成本
+Khẩu độ chi phí (sau khi thuế trước bạ hạ ngày 2023-08-28):
+- Thuế trước bạ: **chỉ chiều bán** 0,05%
+- Phí môi giới: cả hai chiều, mặc định 0,025%, mỗi lệnh tối thiểu 5 đồng
+- Phí chuyển nhượng: cả hai chiều, 0,001% giá trị khớp lệnh (Thượng Hải và Thâm Quyến thống nhất, từ 2022-04)
+- Trượt giá: điểm cơ bản cấu hình được (mặc định 5bps), giá mua trượt lên / giá bán trượt xuống, mô phỏng chi phí tác động
 
-滑点体现在实际成交价(fill_price),不重复计入显式规费;显式规费 = 佣金+印花税+过户费。
-现金变动(cash_delta)= 买入为负、卖出为正,已扣全部成本与滑点,PnL 由买卖两腿 cash_delta 相加得出。
+Trượt giá thể hiện ở giá khớp thực tế (fill_price), không tính trùng vào phí tường minh;
+phí tường minh = môi giới + thuế trước bạ + phí chuyển nhượng.
+Biến động tiền mặt (cash_delta) = mua thì âm, bán thì dương, đã trừ toàn bộ chi phí và
+trượt giá; PnL là tổng cash_delta của hai chân mua và bán.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CostConfig:
-    """成本参数(可配置;默认值贴近 A 股散户实际)。"""
+    """Tham số chi phí (cấu hình được; giá trị mặc định bám sát thực tế nhà đầu tư cá nhân ở cổ phiếu A)."""
 
     commission_rate: float = 0.00025   # Tỷ lệ hoa hồng (cả hai chiều) 0,025%
     min_commission: float = 5.0        # Hoa hồng tối thiểu mỗi lệnh (đồng)
@@ -28,7 +30,7 @@ class CostConfig:
 
 @dataclass(frozen=True)
 class Fill:
-    """一次成交的净结果(含成本拆解,便于展示与审计)。"""
+    """Kết quả ròng của một lần khớp lệnh (kèm bóc tách chi phí, tiện hiển thị và kiểm toán)."""
 
     side: str            # "buy" | "sell"
     price: float         # Giá danh nghĩa (giá tín hiệu / giá thị trường, chưa tính trượt giá)
@@ -45,7 +47,7 @@ class Fill:
 
 
 class CostModel:
-    """A 股交易成本计算器。线程无关,可全局复用。"""
+    """Bộ tính chi phí giao dịch cổ phiếu A. Không liên quan tới luồng, dùng lại toàn cục được."""
 
     def __init__(self, config: CostConfig | None = None) -> None:
         self.cfg = config or CostConfig()
@@ -55,12 +57,12 @@ class CostModel:
         return price + adj if side == "buy" else max(0.0, price - adj)
 
     def fill(self, side: str, price: float, quantity: int) -> Fill:
-        """计算一笔成交的成本与现金变动。
+        """Tính chi phí và biến động tiền mặt của một lần khớp lệnh.
 
         Args:
-            side: "buy" 或 "sell"
-            price: 名义价(未含滑点)
-            quantity: 股数(正整数)
+            side: "buy" hoặc "sell"
+            price: giá danh nghĩa (chưa gồm trượt giá)
+            quantity: số cổ (số nguyên dương)
         """
         side = (side or "").strip().lower()
         if side not in ("buy", "sell"):
@@ -100,7 +102,7 @@ class CostModel:
     def round_trip_pnl(
         self, entry_price: float, exit_price: float, quantity: int
     ) -> dict:
-        """一买一卖的完整盈亏(扣全部成本)。便于单笔回测与对账。"""
+        """Lãi lỗ trọn vẹn của một vòng mua rồi bán (trừ toàn bộ chi phí). Tiện cho kiểm thử lịch sử từng lệnh và đối soát."""
         buy = self.fill("buy", entry_price, quantity)
         sell = self.fill("sell", exit_price, quantity)
         # Khẩu độ tiền mặt: tiền chi khi mua là -cash_delta (số dương), tiền thu khi bán là cash_delta

@@ -1,10 +1,11 @@
-"""因子权重存取层(M1)。
+"""Tầng đọc ghi trọng số nhân tố (M1).
 
-把信号合成时各因子的权重从「隐式 = 1 的硬编码」变成「外置 + 可标定」:
-- `get_factor_weights(market)`:读取某市场各因子权重,缺失则 lazy seed 为 1.0;
-  供 `strategy_engine._compute_factor_breakdown` 合成 raw_score 时按因子相乘。
+Đổi trọng số của từng nhân tố lúc tổng hợp tín hiệu từ «ngầm định = 1 ghi cứng» thành
+«để ngoài + chuẩn định được»:
+- `get_factor_weights(market)`: đọc trọng số từng nhân tố của một thị trường, thiếu thì lazy seed bằng 1.0;
+  cho `strategy_engine._compute_factor_breakdown` nhân theo nhân tố lúc tổng hợp raw_score.
 
-标定逻辑见 `factor_calibration.py`;只读/手动覆盖的 API 在 `web/api/factors.py`。
+Phần chuẩn định xem `factor_calibration.py`; API chỉ đọc/ghi đè tay nằm ở `web/api/factors.py`.
 """
 
 from __future__ import annotations
@@ -34,10 +35,10 @@ MARKETS = ("CN", "HK", "US")
 
 
 def get_factor_weights(market: str, *, db=None) -> dict[str, float]:
-    """读取某市场各可标定因子的权重;缺失因子 lazy seed 为 1.0。
+    """Đọc trọng số của các nhân tố chuẩn định được trong một thị trường; nhân tố thiếu thì lazy seed bằng 1.0.
 
-    返回 {factor_code: weight},键恒为 CALIBRATABLE_FACTORS 全集。
-    消费方对未登记因子应用 `.get(code, 1.0)` 兜底。
+    Trả về {factor_code: weight}, khóa luôn là trọn bộ CALIBRATABLE_FACTORS.
+    Bên tiêu thụ nên dùng `.get(code, 1.0)` để hứng cho nhân tố chưa đăng ký.
     """
     own = db is None
     db = db or SessionLocal()
@@ -75,7 +76,7 @@ def _serialize(row: FactorWeight) -> dict:
 
 
 def get_all_factor_weights(*, db=None) -> list[dict]:
-    """列出所有市场 × 因子的权重(含最近 IC/IR 观测),供只读 API/UI 展示。"""
+    """Liệt kê trọng số của mọi thị trường × nhân tố (kèm quan sát IC/IR gần nhất), cho API/giao diện chỉ đọc hiển thị."""
     own = db is None
     db = db or SessionLocal()
     try:
@@ -97,7 +98,7 @@ def set_factor_weight(
     weight: float | None = None, is_pinned: bool | None = None,
     auto_calibrate: bool | None = None, db=None,
 ) -> dict:
-    """手动覆盖某因子权重 / pin / 开关自动标定;权重变化写 manual 审计。"""
+    """Ghi đè tay trọng số của một nhân tố / pin / bật tắt tự chuẩn định; trọng số đổi thì ghi kiểm toán manual."""
     if factor_code not in CALIBRATABLE_FACTORS:
         raise ValueError(f"未知因子: {factor_code}")
     if market not in MARKETS:

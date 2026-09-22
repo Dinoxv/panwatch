@@ -1,6 +1,6 @@
-"""因子权重 API(M5):只读列表 + 手动覆盖(pin / 设权重 / 开关自动标定)。
+"""API trọng số nhân tố (M5): danh sách chỉ đọc + ghi đè tay (pin / đặt trọng số / bật tắt tự chuẩn định).
 
-响应由 ResponseWrapperMiddleware 统一包成 {code,data,message},路由直接返回原始数据。
+Phản hồi do ResponseWrapperMiddleware bọc thống nhất thành {code,data,message}, route trả thẳng dữ liệu gốc.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 class FactorWeightUpdate(BaseModel):
-    """手动覆盖入参,均可选(只传要改的字段)。"""
+    """Tham số ghi đè tay, đều tùy chọn (chỉ truyền trường muốn đổi)."""
 
     weight: float | None = None
     is_pinned: bool | None = None
@@ -25,7 +25,7 @@ class FactorWeightUpdate(BaseModel):
 
 @router.get("/weights")
 def list_weights(db: Session = Depends(get_db)):
-    """列出所有市场 × 因子的权重 + 最近 IC/IR 观测。"""
+    """Liệt kê trọng số của mọi thị trường × nhân tố + quan sát IC/IR gần nhất."""
     return {"items": get_all_factor_weights(db=db)}
 
 
@@ -34,7 +34,7 @@ def update_weight(
     factor_code: str, market: str, payload: FactorWeightUpdate,
     db: Session = Depends(get_db),
 ):
-    """手动覆盖某因子权重 / pin / 开关自动标定(权重变化写 manual 审计)。"""
+    """Ghi đè tay trọng số của một nhân tố / pin / bật tắt tự chuẩn định (trọng số đổi thì ghi kiểm toán manual)."""
     try:
         return set_factor_weight(
             factor_code, market,

@@ -283,7 +283,7 @@ class PaperTradingEngine:
     def _check_entries(
         self, db: Session, account: PaperTradingAccount,
     ) -> tuple[int, set[tuple[str, str]], list[tuple[PaperTradingPosition, StrategySignalRun | None]]]:
-        """检查可入场的策略信号，自动建仓。返回 (建仓数, 新建仓股票key集合, 建仓事件列表)。"""
+        """Kiểm các tín hiệu chiến lược vào lệnh được rồi tự mở vị thế. Trả về (số vị thế mở, tập khóa mã vừa mở, danh sách sự kiện mở vị thế)."""
         # Truy vấn tín hiệu mua đang hoạt động mới nhất
         query = (
             db.query(StrategySignalRun)
@@ -445,7 +445,7 @@ class PaperTradingEngine:
         exit_price: float,
         exit_reason: str,
     ) -> PaperTradingTrade:
-        """平仓单个持仓，返回交易记录。"""
+        """Đóng một vị thế, trả về bản ghi giao dịch."""
         now = _utc_now()
         # Lãi lỗ ròng đã gồm chi phí giao dịch: tiền thu ròng khi bán − tiền chi có phí lúc mở vị thế (cùng khẩu độ với lúc mở, bảo toàn dòng tiền)
         buy_cost = -COST_MODEL.fill("buy", pos.entry_price, pos.quantity).cash_delta
@@ -506,7 +506,7 @@ class PaperTradingEngine:
     def _check_exits(
         self, db: Session, account: PaperTradingAccount, skip_keys: set[tuple[str, str]] | None = None,
     ) -> tuple[int, list[tuple[PaperTradingPosition, PaperTradingTrade]]]:
-        """检查持仓止损/止盈/信号反转，自动平仓。skip_keys 中的股票跳过（本轮新建仓）。"""
+        """Kiểm cắt lỗ/chốt lời/tín hiệu đảo chiều của vị thế rồi tự đóng. Mã nằm trong skip_keys thì bỏ qua (vừa mở trong vòng này)."""
         exit_events: list[tuple[PaperTradingPosition, PaperTradingTrade]] = []
         positions = (
             db.query(PaperTradingPosition)
@@ -624,7 +624,7 @@ class PaperTradingEngine:
         return closed, exit_events
 
     def _update_account_metrics(self, db: Session, account: PaperTradingAccount) -> None:
-        """更新账户峰值和最大回撤。"""
+        """Cập nhật đỉnh và sụt giảm tối đa của tài khoản."""
         # Tính tổng tài sản đã gồm lãi lỗ chưa thực hiện
         open_positions = (
             db.query(PaperTradingPosition)
@@ -645,7 +645,7 @@ class PaperTradingEngine:
                 account.max_drawdown_pct = round(drawdown, 2)
 
     def _scan_sync(self) -> dict:
-        """同步扫描（在线程中执行）。"""
+        """Quét đồng bộ (chạy trong luồng riêng)."""
         db = SessionLocal()
         try:
             account = self._get_or_create_account(db)
@@ -679,14 +679,14 @@ class PaperTradingEngine:
             db.close()
 
     async def scan_once(self) -> dict:
-        """异步扫描入口。"""
+        """Lối vào quét bất đồng bộ."""
         result = await asyncio.to_thread(self._scan_sync)
         # Gửi thông báo (bất đồng bộ, lỗi cũng không ảnh hưởng việc giao dịch)
         await self._send_notifications(result)
         return result
 
     def close_position_manual(self, position_id: int) -> dict:
-        """手动平仓。"""
+        """Đóng vị thế bằng tay."""
         db = SessionLocal()
         try:
             account = self._get_or_create_account(db)
@@ -724,7 +724,7 @@ class PaperTradingEngine:
             db.close()
 
     async def close_position_manual_async(self, position_id: int) -> dict:
-        """异步手动平仓，含通知。"""
+        """Đóng vị thế bằng tay theo kiểu bất đồng bộ, kèm thông báo."""
         result = await asyncio.to_thread(self.close_position_manual, position_id)
         if result.get("ok"):
             try:
@@ -738,7 +738,7 @@ class PaperTradingEngine:
         return result
 
     async def _send_notifications(self, result: dict) -> None:
-        """从扫描结果中取出序列化事件，发送通知。"""
+        """Lấy các sự kiện đã tuần tự hóa từ kết quả quét rồi gửi thông báo."""
         try:
             from src.modules.paper_trading.paper_trading_notifier import notify_entry, notify_exit
 
@@ -750,7 +750,7 @@ class PaperTradingEngine:
             logger.exception("[模拟盘] 通知发送失败")
 
     def reset_account(self) -> dict:
-        """重置模拟盘（清空所有数据）。"""
+        """Đặt lại mô phỏng bàn giao dịch (xóa sạch mọi dữ liệu)."""
         db = SessionLocal()
         try:
             db.query(PaperTradingPosition).delete()

@@ -1,4 +1,4 @@
-"""策略层：信号生成、后验评估、调权与统计。"""
+"""Tầng chiến lược: sinh tín hiệu, hậu kiểm, điều chỉnh trọng số và thống kê."""
 
 from __future__ import annotations
 

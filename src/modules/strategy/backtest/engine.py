@@ -1,17 +1,18 @@
-"""轻量事件式回测内核(纯 Python,无第三方依赖)。
+"""Lõi kiểm thử lịch sử theo sự kiện, nhẹ (thuần Python, không phụ thuộc bên thứ ba).
 
-职责:给定信号 + 历史 K 线 → 模拟「信号次日开盘入场、逐日止损/止盈/到期平仓」,
-扣 A 股交易成本,产出每笔交易、净值曲线与绩效指标。
+Nhiệm vụ: cho trước tín hiệu + nến lịch sử → mô phỏng «vào lệnh lúc mở cửa phiên sau
+tín hiệu, mỗi phiên kiểm cắt lỗ/chốt lời/đóng khi tới hạn», trừ chi phí giao dịch cổ
+phiếu A, rồi xuất ra từng lệnh, đường giá trị ròng và các chỉ tiêu hiệu quả.
 
-设计取舍(Phase 0):
-- 入场:信号日之后的**下一交易日开盘价**入场(无未来函数);T+1 起才可平仓(符合 A 股)。
-- 平仓(event):逐日检查止损/止盈;同日双触保守判为先止损;达最大持有交易日按收盘平。
-- 跳空:开盘已越过止损/止盈则按开盘价成交(gap)。
-- 仓位:默认每笔固定名义资金,买 A 股 100 股整数倍(可注入 sizer 供 Phase 1 替换)。
-- 净值曲线:按平仓日累积已实现盈亏(简化);并发持仓的逐日浮动 mark 留作后续扩展。
-- 涨跌停无法成交约束未建模(TODO:需前收 + 板块判定)。
+Đánh đổi thiết kế (Phase 0):
+- Vào lệnh: **giá mở cửa của phiên giao dịch kế tiếp** sau ngày tín hiệu (không có hàm nhìn trước tương lai); từ T+1 mới đóng được (đúng lệ cổ phiếu A).
+- Đóng lệnh (event): mỗi phiên kiểm cắt lỗ/chốt lời; cùng phiên chạm cả hai thì thận trọng xử là cắt lỗ trước; tới số phiên nắm giữ tối đa thì đóng theo giá đóng cửa.
+- Nhảy giá: mở cửa đã vượt qua mức cắt lỗ/chốt lời thì khớp theo giá mở cửa (gap).
+- Tỷ trọng: mặc định mỗi lệnh một lượng vốn danh nghĩa cố định, mua cổ phiếu A theo bội số 100 cổ (tiêm sizer được để Phase 1 thay).
+- Đường giá trị ròng: cộng dồn lãi lỗ đã thực hiện theo ngày đóng lệnh (đơn giản hóa); phần mark lãi lỗ tạm tính theo ngày cho nhiều vị thế song song để mở rộng sau.
+- Ràng buộc không khớp được khi chạm trần/sàn chưa mô hình hóa (TODO: cần giá tham chiếu + xét nhóm ngành).
 
-另提供 horizon_return():复刻 strategy_engine.evaluate_strategy_outcomes 口径,用于交叉验证。
+Còn cung cấp horizon_return(): sao lại khẩu độ của strategy_engine.evaluate_strategy_outcomes, dùng để đối chiếu chéo.
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Signal:
-    """一条待回测信号(对齐 StrategySignalRun 的可执行字段)。"""
+    """Một tín hiệu chờ kiểm thử lịch sử (khớp các trường chạy được của StrategySignalRun)."""
 
     symbol: str
     market: str
@@ -76,7 +77,7 @@ PositionSizer = Callable[[float], int]  # price -> qty
 
 
 def fixed_cash_sizer(cash_per_trade: float, lot: int = 100) -> PositionSizer:
-    """每笔固定名义资金,买入 lot 的整数倍。"""
+    """Mỗi lệnh một lượng vốn danh nghĩa cố định, mua theo bội số của lot."""
 
     def _size(price: float) -> int:
         if price <= 0:
@@ -108,7 +109,7 @@ class Backtester:
         self.sizer = sizer or fixed_cash_sizer(cash_per_trade, lot)
 
     def run_single(self, signal: Signal, bars: list[PriceBar]) -> BTTrade | None:
-        """单信号回测:下一交易日开盘入场,逐日止损/止盈/到期平仓。"""
+        """Kiểm thử lịch sử cho một tín hiệu: vào lệnh lúc mở cửa phiên kế tiếp, mỗi phiên kiểm cắt lỗ/chốt lời/đóng khi tới hạn."""
         if not bars:
             return None
         ei = first_index_after(bars, signal.signal_date)
@@ -174,9 +175,9 @@ class Backtester:
     def run(
         self, signals: list[Signal], bars_by_symbol: dict
     ) -> BacktestResult:
-        """批量回测,聚合净值曲线与绩效指标。
+        """Kiểm thử lịch sử hàng loạt, gộp đường giá trị ròng và các chỉ tiêu hiệu quả.
 
-        bars_by_symbol: 键可为 (symbol, market) 或 symbol。
+        bars_by_symbol: khóa có thể là (symbol, market) hoặc symbol.
         """
         trades: list[BTTrade] = []
         skipped = 0

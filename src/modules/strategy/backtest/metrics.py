@@ -1,8 +1,8 @@
-"""回测绩效指标 —— 纯函数,仅依赖标准库。
+"""Chỉ tiêu hiệu quả của kiểm thử lịch sử — hàm thuần, chỉ dựa vào thư viện chuẩn.
 
-约定:
-- equity_curve: list[float],逐(交易日)净值序列(含浮动盈亏),首元素为期初资金。
-- trade_pnls: list[float],每笔已平仓交易的净盈亏(已扣成本)。
+Quy ước:
+- equity_curve: list[float], chuỗi giá trị ròng theo từng (phiên giao dịch) (gồm lãi lỗ tạm tính), phần tử đầu là vốn đầu kỳ.
+- trade_pnls: list[float], lãi lỗ ròng của từng lệnh đã đóng (đã trừ chi phí).
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ TRADING_DAYS_PER_YEAR = 252
 
 
 def daily_returns(equity_curve: list[float]) -> list[float]:
-    """由净值序列推日收益率。"""
+    """Suy ra tỷ suất lợi nhuận ngày từ chuỗi giá trị ròng."""
     out: list[float] = []
     for i in range(1, len(equity_curve)):
         prev = equity_curve[i - 1]
@@ -42,7 +42,7 @@ def annualized_return(
 
 
 def max_drawdown(equity_curve: list[float]) -> float:
-    """最大回撤(正数,如 0.23 表示 -23%)。"""
+    """Sụt giảm tối đa (số dương, ví dụ 0,23 nghĩa là -23%)."""
     if len(equity_curve) < 2:
         return 0.0
     peak = equity_curve[0]
@@ -62,7 +62,7 @@ def sharpe(
     risk_free: float = 0.0,
     periods_per_year: int = TRADING_DAYS_PER_YEAR,
 ) -> float:
-    """年化夏普(样本标准差)。returns 为周期收益率序列。"""
+    """Sharpe quy năm (độ lệch chuẩn mẫu). returns là chuỗi tỷ suất lợi nhuận theo chu kỳ."""
     if len(returns) < 2:
         return 0.0
     rf_per_period = risk_free / periods_per_year
@@ -82,7 +82,7 @@ def win_rate(trade_pnls: list[float]) -> float:
 
 
 def profit_factor(trade_pnls: list[float]) -> float:
-    """盈亏比 = 总盈利 / 总亏损(绝对值)。无亏损时返回 inf。"""
+    """Tỷ lệ lãi/lỗ = tổng lãi / tổng lỗ (trị tuyệt đối). Không có lỗ thì trả inf."""
     gains = sum(p for p in trade_pnls if p > 0)
     losses = -sum(p for p in trade_pnls if p < 0)
     if losses == 0:
@@ -99,7 +99,7 @@ def avg_win_loss(trade_pnls: list[float]) -> tuple[float, float]:
 
 
 def summarize(equity_curve: list[float], trade_pnls: list[float]) -> dict:
-    """汇总所有绩效指标为一个 dict。"""
+    """Gộp mọi chỉ tiêu hiệu quả vào một dict."""
     rets = daily_returns(equity_curve)
     avg_w, avg_l = avg_win_loss(trade_pnls)
     return {
