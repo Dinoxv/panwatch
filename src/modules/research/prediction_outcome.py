@@ -3,6 +3,10 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, timedelta
 
+from src.platform.marketdata.bars import (
+    close_after_n_trading_days,
+    close_on_or_before,
+)
 from src.platform.marketdata.collectors.kline_collector import KlineCollector
 from src.modules.research.context_store import (
     list_pending_prediction_outcomes,
@@ -35,25 +39,8 @@ def _to_market(value: str | None) -> MarketCode:
 
 
 def _pick_close_on_or_before(klines: list, target: date) -> float | None:
-    if not klines:
-        return None
-    rows: list[tuple[date, float]] = []
-    for k in klines:
-        d = _parse_day(getattr(k, "date", None))
-        c = getattr(k, "close", None)
-        if d is None or c is None:
-            continue
-        try:
-            rows.append((d, float(c)))
-        except Exception:
-            continue
-    if not rows:
-        return None
-    rows.sort(key=lambda x: x[0])
-    for d, c in reversed(rows):
-        if d <= target:
-            return c
-    return None
+    """Giá đóng cửa của phiên gần nhất không muộn hơn `target` (dùng cho giá gốc)."""
+    return close_on_or_before(klines, target)
 
 
 def _latest_kline_day_on_or_before(klines: list, target: date) -> date | None:
@@ -71,26 +58,8 @@ def _find_close_after_n_trading_days(
     base_day: date,
     horizon: int,
 ) -> float | None:
-    """从基准交易日严格往后数 N 条实际 K 线，返回对应收盘价。
-
-    K 线序列本身就是交易日历：停牌、周末、节假日不会占用 horizon。
-    """
-    rows: list[tuple[date, float]] = []
-    for k in klines or []:
-        day = _parse_day(getattr(k, "date", None))
-        close = getattr(k, "close", None)
-        if day is None or close is None:
-            continue
-        try:
-            rows.append((day, float(close)))
-        except (TypeError, ValueError):
-            continue
-    rows.sort(key=lambda item: item[0])
-    future_rows = [item for item in rows if item[0] > base_day]
-    index = max(1, int(horizon)) - 1
-    if index >= len(future_rows):
-        return None
-    return future_rows[index][1]
+    """Giá đóng cửa sau đúng N phiên kể từ phiên gốc. None = chuỗi chưa đủ phiên."""
+    return close_after_n_trading_days(klines, base_day, horizon)
 
 
 def evaluate_pending_prediction_outcomes(

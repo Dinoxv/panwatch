@@ -87,12 +87,24 @@ def test_engine_expire():
 
 
 def test_horizon_return_matches_manual():
-    """horizon_return 复刻 StrategyOutcome 口径:(后收盘-基准)/基准。"""
+    """horizon_return sao lại khẩu độ StrategyOutcome: (đóng cửa sau N phiên - gốc)/gốc.
+
+    Đếm theo **phiên giao dịch**, không theo ngày tự nhiên: 01-02 → 01-06 nghỉ
+    cuối tuần ở giữa nhưng vẫn chỉ là 1 phiên kế tiếp.
+    """
     bars = [_bar("2026-01-01", 10, 10, 10, 10), _bar("2026-01-02", 10, 11, 10, 11),
             _bar("2026-01-06", 11, 12, 11, 12)]
     sig = Signal("X", "CN", "2026-01-01", entry_price=10.0)
-    r = horizon_return(sig, bars, horizon_days=5)  # target_day=01-06 → outcome=12 → +20%
+    r = horizon_return(sig, bars, horizon_days=2)  # phiên +2 = 01-06 → 12 → +20%
     assert r is not None and abs(r - 20.0) < 1e-6
+
+
+def test_horizon_return_is_none_when_bars_are_insufficient():
+    """Chưa đủ phiên để chốt → None (chưa tới hạn), không phải lợi nhuận 0."""
+    bars = [_bar("2026-01-01", 10, 10, 10, 10), _bar("2026-01-02", 10, 11, 10, 11),
+            _bar("2026-01-06", 11, 12, 11, 12)]
+    sig = Signal("X", "CN", "2026-01-01", entry_price=10.0)
+    assert horizon_return(sig, bars, horizon_days=5) is None
 
 
 def test_backtest_run_aggregates():

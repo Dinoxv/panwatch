@@ -7,6 +7,13 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import and_, case, func, or_
 
 from src.platform.runtime.config import Settings
+from src.platform.marketdata.bars import (
+    HORIZON_UNIT_TRADING_DAYS,
+    base_index_on_or_before,
+    bar_after_n_trading_days,
+    close_on_or_before,
+    close_series,
+)
 from src.platform.marketdata.collectors.discovery_collector import EastMoneyDiscoveryCollector
 from src.platform.marketdata.collectors.kline_collector import KlineCollector
 from src.platform.persistence.json_safe import to_jsonable
@@ -603,25 +610,8 @@ def _parse_day(value: str | None) -> date | None:
 
 
 def _pick_close_on_or_before(klines: list, target: date) -> float | None:
-    if not klines:
-        return None
-    rows: list[tuple[date, float]] = []
-    for k in klines:
-        d = _parse_day(getattr(k, "date", None))
-        c = getattr(k, "close", None)
-        if d is None or c is None:
-            continue
-        try:
-            rows.append((d, float(c)))
-        except Exception:
-            continue
-    if not rows:
-        return None
-    rows.sort(key=lambda x: x[0])
-    for d, c in reversed(rows):
-        if d <= target:
-            return c
-    return None
+    """Giá đóng cửa của phiên gần nhất không muộn hơn `target` (dùng cho giá gốc)."""
+    return close_on_or_before(klines, target)
 
 
 def _derive_market_scan_decision(quote: dict | None, kline: dict | None) -> dict:
@@ -1724,19 +1714,31 @@ def evaluate_entry_candidate_outcomes(
                     kline_cache[key] = []
             klines = kline_cache[key]
 
+            # Chuỗi K-line chính là lịch giao dịch: đếm tiến N phần tử cho ra
+            # đúng "N phiên sau", không bị nghỉ lễ / cuối tuần / đình chỉ làm lệch.
+            rows = close_series(klines)
+            base_index = base_index_on_or_before(rows, snap_day)
+
             for horizon in safe_horizons:
                 if (c.id, horizon) in existing:
                     continue
-                target_day = snap_day + timedelta(days=horizon)
-                if target_day > today:
+                # Cận dưới rẻ tiền: số phiên trôi qua không bao giờ vượt quá số
+                # ngày tự nhiên trôi qua, nên đây chắc chắn là chưa tới hạn.
+                if snap_day + timedelta(days=horizon) > today:
                     stats["skipped_not_due"] += 1
                     continue
 
                 stats["eligible"] += 1
-                outcome_price = _pick_close_on_or_before(klines, target_day)
-                if outcome_price is None:
+                if base_index is None:
                     stats["skipped_no_price"] += 1
                     continue
+                bar = bar_after_n_trading_days(rows, base_index, horizon)
+                if bar is None:
+                    # Chưa đủ phiên để chốt horizon này — chưa tới hạn, không
+                    # phải thiếu giá.
+                    stats["skipped_not_due"] += 1
+                    continue
+                target_day, outcome_price = bar
 
                 base_price = None
                 if c.entry_low is not None and c.entry_high is not None:
@@ -1750,7 +1752,7 @@ def evaluate_entry_candidate_outcomes(
                     quote = meta.get("quote") if isinstance(meta.get("quote"), dict) else {}
                     base_price = _safe_float(quote.get("current_price"))
                 if base_price is None:
-                    base_price = _pick_close_on_or_before(klines, snap_day)
+                    base_price = rows[base_index][1]
                 if base_price is None or base_price <= 0:
                     stats["skipped_no_base_price"] += 1
                     status = "no_base_price"
@@ -1783,6 +1785,7 @@ def evaluate_entry_candidate_outcomes(
                     candidate_source=c.candidate_source or "watchlist",
                     strategy_tags=to_jsonable(c.strategy_tags or []),
                     horizon_days=horizon,
+                    horizon_unit=HORIZON_UNIT_TRADING_DAYS,
                     target_date=target_day.strftime("%Y-%m-%d"),
                     base_price=base_price,
                     outcome_price=outcome_price,

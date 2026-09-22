@@ -579,6 +579,8 @@ class EntryCandidateOutcome(Base):
     candidate_source = Column(String, nullable=False, default="watchlist")
     strategy_tags = Column(JSON, default=[])
     horizon_days = Column(Integer, nullable=False, default=1)
+    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
     outcome_price = Column(Float, nullable=True)
@@ -698,6 +700,8 @@ class StrategyOutcome(Base):
     stock_market = Column(String, nullable=False, default="CN")
     source_pool = Column(String, default="watchlist")
     horizon_days = Column(Integer, nullable=False, default=1)
+    # 旧数据按自然日评估；新写入统一按实际 K 线交易日评估。
+    horizon_unit = Column(String, nullable=False, default="trading_days")
     target_date = Column(String, nullable=False, default="")  # YYYY-MM-DD
     base_price = Column(Float, nullable=True)
     outcome_price = Column(Float, nullable=True)

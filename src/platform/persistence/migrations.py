@@ -1965,6 +1965,23 @@ def _m126_assistant_task_events(conn: Connection) -> None:
     )
 
 
+def _m127_outcome_horizon_unit(conn: Connection) -> None:
+    """策略/候选后验统一改按交易日计 horizon。
+
+    沿用 v120 在 agent_prediction_outcomes 上已验证的口径切换方式:已存在的行
+    保留旧自然日口径(calendar_days_legacy),不回溯改写历史统计;新写入由 ORM
+    默认写 trading_days。两种口径的行因此可以在同一张表里共存并被分别筛选。
+    """
+    for table in ("strategy_outcomes", "entry_candidate_outcomes"):
+        _add_column_if_missing(
+            conn,
+            table,
+            "horizon_unit",
+            f"ALTER TABLE {table} "
+            "ADD COLUMN horizon_unit TEXT NOT NULL DEFAULT 'calendar_days_legacy'",
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(101, "agent_config_kind_and_visibility", _m101_agent_config_kind),
     Migration(102, "backfill_agent_kind_data", _m102_backfill_agent_kind),
@@ -1992,6 +2009,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(124, "assistant_context_snapshots", _m124_assistant_context_snapshots),
     Migration(125, "assistant_task_protocol", _m125_assistant_task_protocol),
     Migration(126, "assistant_task_events", _m126_assistant_task_events),
+    Migration(127, "outcome_horizon_unit", _m127_outcome_horizon_unit),
 )
 
 

@@ -21,6 +21,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable
 
+from src.platform.marketdata.bars import (
+    base_index_on_or_before,
+    bar_after_n_trading_days,
+    close_series,
+)
 from src.modules.strategy.backtest import metrics as M
 from src.modules.strategy.backtest.cost_model import CostModel
 from src.modules.strategy.backtest.data_adapter import PriceBar, first_index_after
@@ -207,25 +212,25 @@ class Backtester:
 
 
 def horizon_return(signal: Signal, bars: list[PriceBar], horizon_days: int) -> float | None:
-    """复刻 strategy_engine.evaluate_strategy_outcomes 口径,用于交叉验证。
+    """Sao lại đúng khẩu độ của strategy_engine.evaluate_strategy_outcomes, dùng để đối chiếu chéo.
 
-    base = signal.entry_price;target_day = signal_date + horizon_days(自然日);
-    outcome = 最近 <= target_day 的收盘价;return% = (outcome-base)/base*100。
+    base = signal.entry_price; outcome = giá đóng cửa sau đúng `horizon_days`
+    **phiên giao dịch** kể từ phiên gần nhất không muộn hơn signal_date;
+    return% = (outcome - base) / base * 100.
+
+    Đếm theo phiên chứ không theo ngày tự nhiên: chuỗi bar chính là lịch giao
+    dịch, nên cuối tuần, nghỉ lễ và phiên đình chỉ không ăn vào horizon. Trả None
+    khi chuỗi chưa đủ phiên để chốt.
     """
     snap = _parse_day(signal.signal_date)
     base = signal.entry_price
     if snap is None or not bars or not base or base <= 0:
         return None
-    target_day = snap + timedelta(days=int(horizon_days))
-    outcome = None
-    for b in bars:
-        d = _parse_day(b.date)
-        if d is None:
-            continue
-        if d <= target_day:
-            outcome = b.close
-        else:
-            break
-    if outcome is None:
+    rows = close_series(bars)
+    base_index = base_index_on_or_before(rows, snap)
+    if base_index is None:
         return None
-    return (outcome - base) / base * 100.0
+    bar = bar_after_n_trading_days(rows, base_index, horizon_days)
+    if bar is None:
+        return None
+    return (bar[1] - base) / base * 100.0
