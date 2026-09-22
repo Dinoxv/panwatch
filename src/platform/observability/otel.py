@@ -1,24 +1,27 @@
-"""OpenTelemetry 导出层(可选,默认关闭)。
+"""Tầng xuất OpenTelemetry (tùy chọn, mặc định tắt).
 
-在**不改动** PanWatch 自建可观测体系(``log_context`` / ``agent_runs`` /
-``tradingagents.observability``)的前提下,额外挂一层标准 OTel 导出,让"自建 + 标准栈"
-都能拿到实证。三类桥接:
+**Không đụng** tới hệ quan sát tự dựng của PanWatch (``log_context`` / ``agent_runs`` /
+``tradingagents.observability``), chỉ gắn thêm một tầng xuất OTel chuẩn, để cả "bản tự
+dựng + ngăn xếp chuẩn" đều có bằng chứng. Ba chỗ bắc cầu:
 
-- Agent 一次运行        -> root span(复用 ``agent_runs`` 的 ``trace_id`` 作关联)
-- 单次 LLM 调用         -> gen_ai 子 span(复用 ``ai_client`` 已有的 token 用量)
-- TradingAgents 节点    -> 子 span(复用 ``observability.py`` 的节点/LLM 事件)
+- Một lượt chạy Agent      -> root span (dùng lại ``trace_id`` của ``agent_runs`` để liên kết)
+- Một lời gọi LLM          -> span con gen_ai (dùng lại lượng token mà ``ai_client`` đã có)
+- Nút TradingAgents        -> span con (dùng lại sự kiện nút/LLM của ``observability.py``)
 
-设计原则(生产项目,增量可回退):
+Nguyên tắc thiết kế (dự án sản xuất, thêm dần và lùi lại được):
 
-1. **默认零副作用**:未配置 ``OTEL_EXPORTER_OTLP_ENDPOINT``,或未安装 opentelemetry
-   SDK 时,``init_otel()`` 直接返回 False,后续所有 span 接口降级为 no-op —— 不抛错、
-   不引入运行时依赖、不改变任何既有行为。
-2. **薄桥接**:只在既有埋点处包一层 context manager;埋点本身不感知 OTel 细节。
-3. **懒加载**:本模块顶层**不** import opentelemetry,只有 ``init_otel()`` 被调用且
-   endpoint 已配置时才尝试导入,因此 ``import src.platform.observability.otel`` 永远安全、零成本。
+1. **Mặc định không tác dụng phụ**: chưa cấu hình ``OTEL_EXPORTER_OTLP_ENDPOINT``, hoặc
+   chưa cài SDK opentelemetry, thì ``init_otel()`` trả về False luôn, mọi giao diện span
+   sau đó hạ xuống no-op — không ném lỗi, không kéo thêm phụ thuộc lúc chạy, không đổi
+   bất kỳ hành vi sẵn có nào.
+2. **Bắc cầu mỏng**: chỉ bọc thêm một context manager ở những chỗ đã cắm mốc; bản thân
+   chỗ cắm mốc không biết gì về chi tiết OTel.
+3. **Nạp lười**: đầu module này **không** import opentelemetry, chỉ khi ``init_otel()``
+   được gọi và endpoint đã cấu hình thì mới thử import, nên
+   ``import src.platform.observability.otel`` luôn an toàn, không tốn gì.
 
-GenAI 语义约定(OpenTelemetry Semantic Conventions for Generative AI)让 span 能被
-Jaeger / Tempo / Langfuse(OTLP)等标准 APM 直接识别为"一次模型调用"。
+Giao ước ngữ nghĩa GenAI (OpenTelemetry Semantic Conventions for Generative AI) giúp span
+được các APM chuẩn như Jaeger / Tempo / Langfuse (OTLP) nhận ra ngay là "một lời gọi mô hình".
 """
 
 from __future__ import annotations
@@ -57,12 +60,12 @@ _tracer: Any = None
 
 
 def is_enabled() -> bool:
-    """OTel 导出当前是否已启用(endpoint 已配置且 SDK 可用且初始化成功)。"""
+    """Việc xuất OTel hiện đã bật chưa (endpoint đã cấu hình, SDK dùng được và khởi tạo thành công)."""
     return _enabled
 
 
 def _import_sdk():
-    """尝试导入 OTel SDK。未安装则返回 None(优雅降级)。"""
+    """Thử import SDK OTel. Chưa cài thì trả None (hạ cấp êm)."""
     try:
         from opentelemetry import trace
         from opentelemetry.sdk.resources import Resource
@@ -75,11 +78,11 @@ def _import_sdk():
 
 
 def _build_otlp_exporter():
-    """构造 OTLP span exporter。
+    """Dựng span exporter OTLP.
 
-    优先 HTTP(``proto/http``,端口约定 4318),回退 gRPC(``proto/grpc``,4317)。
-    两者都会自动读取 ``OTEL_EXPORTER_OTLP_ENDPOINT`` 等标准环境变量,因此这里不显式
-    传 endpoint,交给 SDK 按标准约定解析(最少惊讶原则)。
+    Ưu tiên HTTP (``proto/http``, cổng quy ước 4318), lùi về gRPC (``proto/grpc``, 4317).
+    Cả hai đều tự đọc các biến môi trường chuẩn như ``OTEL_EXPORTER_OTLP_ENDPOINT``, nên ở
+    đây không truyền endpoint tường minh, để SDK tự đọc theo giao ước chuẩn (nguyên tắc ít bất ngờ nhất).
     """
     try:
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
@@ -100,10 +103,11 @@ def _build_otlp_exporter():
 
 
 def init_otel(*, force: bool = False) -> bool:
-    """从环境变量初始化 OTel 导出。幂等;返回是否成功启用。
+    """Khởi tạo việc xuất OTel từ biến môi trường. Bất biến; trả về có bật thành công không.
 
-    仅当 ``OTEL_EXPORTER_OTLP_ENDPOINT`` 非空**且** opentelemetry SDK/exporter 均可
-    导入时才真正启用;任一缺失都静默降级为 no-op(不影响现有部署)。
+    Chỉ thật sự bật khi ``OTEL_EXPORTER_OTLP_ENDPOINT`` khác rỗng **và** import được cả
+    SDK/exporter opentelemetry; thiếu bên nào cũng im lặng hạ xuống no-op (không ảnh
+    hưởng bản triển khai sẵn có).
     """
     global _enabled, _initialized, _provider, _tracer
 
@@ -161,9 +165,9 @@ def init_otel(*, force: bool = False) -> bool:
 # ---- Dành cho kiểm thử: xuất đồng bộ bằng InMemorySpanExporter ------------
 
 def install_test_exporter():
-    """测试专用:重置并安装 InMemorySpanExporter(SimpleSpanProcessor 同步导出)。
+    """Chỉ dùng cho test: đặt lại và cài InMemorySpanExporter (SimpleSpanProcessor xuất đồng bộ).
 
-    返回 exporter 实例,可直接 ``get_finished_spans()`` 断言。生产代码不应调用。
+    Trả về thực thể exporter, gọi thẳng ``get_finished_spans()`` để assert. Mã sản xuất không được gọi.
     """
     global _enabled, _initialized, _provider, _tracer
 
@@ -193,7 +197,7 @@ def install_test_exporter():
 
 
 def reset() -> None:
-    """重置模块状态(测试 teardown 用)。"""
+    """Đặt lại trạng thái module (dùng khi teardown test)."""
     global _enabled, _initialized, _provider, _tracer
     _enabled = False
     _initialized = False
@@ -209,9 +213,9 @@ def agent_run_span(
     trace_id: str = "",
     trigger_source: str = "",
 ) -> Iterator[Any]:
-    """一次 Agent 运行的 root span。关闭时 no-op(yield None)。
+    """root span của một lượt chạy Agent. Khi tắt thì no-op (yield None).
 
-    复用 ``agent_runs`` 的 ``trace_id`` 作为 span 属性,方便在 APM 里与 run 表对齐。
+    Dùng lại ``trace_id`` của ``agent_runs`` làm thuộc tính span, để trong APM dễ khớp với bảng run.
     """
     if not _enabled or _tracer is None:
         yield None
@@ -229,7 +233,7 @@ def agent_run_span(
 
 
 class _LLMSpan:
-    """gen_ai span 的薄句柄:调用返回后回填 token 用量/响应模型。"""
+    """Tay cầm mỏng của span gen_ai: sau khi lời gọi trả về thì điền ngược lượng token/mô hình phản hồi."""
 
     __slots__ = ("_span",)
 
@@ -263,10 +267,10 @@ def llm_span(
     system: str = "openai",
     operation: str = "chat",
 ) -> Iterator[_LLMSpan]:
-    """单次 LLM 调用的 gen_ai 子 span。关闭时 yield 一个 no-op 句柄。
+    """span con gen_ai cho một lời gọi LLM. Khi tắt thì yield một tay cầm no-op.
 
-    span 名遵循 GenAI 约定 ``{operation} {model}``;请求侧属性在进入时写入,响应侧
-    (token/响应模型)由调用方拿到 usage 后通过返回句柄回填。
+    Tên span theo giao ước GenAI ``{operation} {model}``; thuộc tính phía yêu cầu ghi lúc
+    vào, phía phản hồi (token/mô hình phản hồi) do bên gọi điền ngược qua tay cầm trả về sau khi có usage.
     """
     if not _enabled or _tracer is None:
         yield _LLMSpan(None)
@@ -284,10 +288,10 @@ def llm_span(
 
 
 def capture_context() -> Any:
-    """捕获当前 OTel 上下文(供跨线程传播 root span 关系)。关闭时返回 None。
+    """Bắt ngữ cảnh OTel hiện tại (để truyền quan hệ root span qua luồng khác). Khi tắt thì trả None.
 
-    TradingAgents 在 ``asyncio.to_thread`` 里同步执行,OTel 上下文不会自动跨线程,
-    需在异步侧捕获、在工作线程侧显式作为 parent 传入。
+    TradingAgents chạy đồng bộ trong ``asyncio.to_thread``, ngữ cảnh OTel không tự đi qua
+    luồng, nên phải bắt ở phía bất đồng bộ rồi truyền tường minh sang luồng worker làm parent.
     """
     if not _enabled:
         return None
@@ -305,11 +309,11 @@ def start_detached_span(
     parent_context: Any = None,
     attributes: Optional[dict] = None,
 ) -> Any:
-    """启动一个"游离" span(不设为 current,需手动 ``end``)。关闭时返回 None。
+    """Mở một span "rời" (không đặt làm current, phải tự ``end``). Khi tắt thì trả None.
 
-    用于 callback 式埋点(如 TradingAgents 节点)——start/end 分处两次回调、且可能
-    运行在工作线程,无法用 with 语法。传入 ``capture_context()`` 的结果作为 parent
-    以挂到 root span 下。
+    Dùng cho việc cắm mốc kiểu callback (như nút TradingAgents) — start/end nằm ở hai lần
+    callback khác nhau và có thể chạy trên luồng worker, không dùng cú pháp with được.
+    Truyền kết quả của ``capture_context()`` làm parent để móc vào dưới root span.
     """
     if not _enabled or _tracer is None:
         return None
@@ -327,7 +331,7 @@ def start_detached_span(
 
 
 def set_span_attributes(span: Any, attributes: dict) -> None:
-    """给游离 span 补属性。span 为 None 时 no-op。"""
+    """Bù thuộc tính cho span rời. span là None thì no-op."""
     if span is None:
         return
     for k, v in attributes.items():
@@ -338,7 +342,7 @@ def set_span_attributes(span: Any, attributes: dict) -> None:
 
 
 def end_span(span: Any) -> None:
-    """结束一个游离 span。span 为 None 时 no-op。"""
+    """Kết thúc một span rời. span là None thì no-op."""
     if span is None:
         return
     try:

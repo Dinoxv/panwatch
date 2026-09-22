@@ -1394,7 +1394,7 @@ WHERE source_pool = 'market_scan'
 
 
 def _m114_paper_trading_tables(conn: Connection) -> None:
-    """创建模拟盘三张表。"""
+    """Tạo ba bảng của mô phỏng bàn giao dịch."""
     if not _has_table(conn, "paper_trading_account"):
         conn.execute(
             text(
@@ -1475,7 +1475,7 @@ CREATE TABLE paper_trading_trades (
 
 
 def _m115_paper_trading_excluded_markets(conn: Connection) -> None:
-    """模拟盘账户新增 excluded_markets 字段。"""
+    """Thêm trường excluded_markets cho tài khoản mô phỏng."""
     _add_column_if_missing(
         conn,
         "paper_trading_account",
@@ -1485,7 +1485,7 @@ def _m115_paper_trading_excluded_markets(conn: Connection) -> None:
 
 
 def _m116_chat_tables(conn: Connection) -> None:
-    """AI 对话表。"""
+    """Bảng phiên trò chuyện AI."""
     conn.execute(
         text("""
         CREATE TABLE IF NOT EXISTS chat_conversations (
@@ -1533,7 +1533,7 @@ def _m117_chat_initial_context(conn: Connection) -> None:
 
 
 def _m118_paper_trading_market_allocations(conn: Connection) -> None:
-    """模拟盘账户新增 market_allocations（各市场投资比例），并由 excluded_markets 回填。"""
+    """Thêm market_allocations (tỷ lệ rót vào từng thị trường) cho tài khoản mô phỏng, và điền ngược từ excluded_markets."""
     _add_column_if_missing(
         conn,
         "paper_trading_account",
@@ -1593,7 +1593,7 @@ def _m118_paper_trading_market_allocations(conn: Connection) -> None:
 
 
 def _m119_pat_and_mcp_tables(conn: Connection) -> None:
-    """PAT 令牌表 + MCP 调用日志表(MCP Server 鉴权与审计)。"""
+    """Bảng mã PAT + bảng nhật ký gọi MCP (xác thực và kiểm toán cho MCP Server)."""
     conn.execute(
         text(
             """
@@ -1655,10 +1655,10 @@ def _m119_pat_and_mcp_tables(conn: Connection) -> None:
 
 
 def _m120_agent_prediction_evaluation(conn: Connection) -> None:
-    """建议后验分组与交易日口径。
+    """Nhóm hậu kiểm khuyến nghị và khẩu độ phiên giao dịch.
 
-    已存在记录保留旧自然日口径，避免升级时把历史结果悄悄改写；新记录由 ORM
-    默认写入 trading_days。
+    Bản ghi đã có giữ khẩu độ ngày tự nhiên cũ, tránh việc nâng cấp âm thầm viết lại kết
+    quả lịch sử; bản ghi mới thì ORM mặc định ghi trading_days.
     """
     _add_column_if_missing(
         conn,
@@ -1682,7 +1682,7 @@ def _m120_agent_prediction_evaluation(conn: Connection) -> None:
 
 
 def _m121_backtest_runs(conn: Connection) -> None:
-    """可持久化的策略回测运行记录。"""
+    """Bản ghi lượt chạy kiểm thử lịch sử chiến lược, lưu bền được."""
     conn.execute(
         text(
             """
@@ -1966,11 +1966,12 @@ def _m126_assistant_task_events(conn: Connection) -> None:
 
 
 def _m127_outcome_horizon_unit(conn: Connection) -> None:
-    """策略/候选后验统一改按交易日计 horizon。
+    """Hậu kiểm chiến lược/ứng viên thống nhất đổi sang tính horizon theo phiên giao dịch.
 
-    沿用 v120 在 agent_prediction_outcomes 上已验证的口径切换方式:已存在的行
-    保留旧自然日口径(calendar_days_legacy),不回溯改写历史统计;新写入由 ORM
-    默认写 trading_days。两种口径的行因此可以在同一张表里共存并被分别筛选。
+    Dùng lại cách chuyển khẩu độ mà v120 đã kiểm chứng trên agent_prediction_outcomes:
+    dòng đã có giữ khẩu độ ngày tự nhiên cũ (calendar_days_legacy), không truy ngược viết
+    lại thống kê lịch sử; bản ghi mới thì ORM mặc định ghi trading_days. Nhờ vậy hai khẩu
+    độ cùng tồn tại trong một bảng mà vẫn lọc riêng được.
     """
     for table in ("strategy_outcomes", "entry_candidate_outcomes"):
         _add_column_if_missing(

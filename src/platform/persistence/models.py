@@ -18,7 +18,7 @@ from src.platform.persistence.database import Base
 
 
 class AIService(Base):
-    """AI 服务商（base_url + api_key）"""
+    """Nhà cung cấp AI (base_url + api_key)"""
 
     __tablename__ = "ai_services"
 
@@ -34,7 +34,7 @@ class AIService(Base):
 
 
 class AIModel(Base):
-    """AI 模型（属于某个服务商）"""
+    """Mô hình AI (thuộc về một nhà cung cấp)"""
 
     __tablename__ = "ai_models"
 
@@ -63,7 +63,7 @@ class NotifyChannel(Base):
 
 
 class Account(Base):
-    """交易账户"""
+    """Tài khoản giao dịch"""
 
     __tablename__ = "accounts"
 
@@ -103,7 +103,7 @@ class Stock(Base):
 
 
 class Position(Base):
-    """持仓记录（多账户多股票）"""
+    """Bản ghi vị thế (nhiều tài khoản nhiều mã)"""
 
     __tablename__ = "positions"
     __table_args__ = (
@@ -132,7 +132,7 @@ class Position(Base):
 
 
 class StockAgent(Base):
-    """多对多: 每只股票可被多个 Agent 监控"""
+    """Nhiều-nhiều: mỗi mã được nhiều Agent giám sát"""
 
     __tablename__ = "stock_agents"
     __table_args__ = (
@@ -230,7 +230,7 @@ class AppSettings(Base):
 
 
 class DataSource(Base):
-    """数据源配置（新闻、K线图、行情）"""
+    """Cấu hình nguồn dữ liệu (tin tức, đồ thị nến, bảng giá)"""
 
     __tablename__ = "data_sources"
 
@@ -249,7 +249,7 @@ class DataSource(Base):
 
 
 class NewsCache(Base):
-    """新闻缓存（用于去重）"""
+    """Đệm tin tức (dùng để gộp trùng)"""
 
     __tablename__ = "news_cache"
     __table_args__ = (
@@ -268,7 +268,7 @@ class NewsCache(Base):
 
 
 class NotifyThrottle(Base):
-    """通知节流记录（防止同一股票短时间内重复通知）"""
+    """Bản ghi tiết lưu thông báo (chặn báo lặp cùng một mã trong thời gian ngắn)"""
 
     __tablename__ = "notify_throttle"
     __table_args__ = (
@@ -283,7 +283,7 @@ class NotifyThrottle(Base):
 
 
 class AnalysisHistory(Base):
-    """分析历史记录（盘后分析、盘前分析等）"""
+    """Bản ghi lịch sử phân tích (phân tích sau phiên, phân tích trước phiên…)"""
 
     __tablename__ = "analysis_history"
     __table_args__ = (
@@ -305,7 +305,7 @@ class AnalysisHistory(Base):
 
 
 class StockContextSnapshot(Base):
-    """按股票/日期保存结构化上下文快照（用于跨天记忆）"""
+    """Lưu ảnh chụp ngữ cảnh có cấu trúc theo mã/ngày (dùng cho ký ức xuyên ngày)"""
 
     __tablename__ = "stock_context_snapshots"
     __table_args__ = (
@@ -335,7 +335,7 @@ class StockContextSnapshot(Base):
 
 
 class NewsTopicSnapshot(Base):
-    """新闻主题快照（按日期和窗口聚合）"""
+    """Ảnh chụp chủ đề tin tức (gộp theo ngày và theo cửa sổ)"""
 
     __tablename__ = "news_topic_snapshots"
     __table_args__ = (
@@ -359,7 +359,7 @@ class NewsTopicSnapshot(Base):
 
 
 class AgentContextRun(Base):
-    """每次 Agent 执行时使用的上下文摘要"""
+    """Tóm tắt ngữ cảnh dùng cho mỗi lượt chạy Agent"""
 
     __tablename__ = "agent_context_runs"
     __table_args__ = (
@@ -377,7 +377,7 @@ class AgentContextRun(Base):
 
 
 class AgentPredictionOutcome(Base):
-    """建议后验评估记录（用于回放与效果统计）"""
+    """Bản ghi hậu kiểm khuyến nghị (dùng để phát lại và thống kê hiệu quả)"""
 
     __tablename__ = "agent_prediction_outcomes"
     __table_args__ = (
@@ -414,7 +414,7 @@ class AgentPredictionOutcome(Base):
 
 
 class StockSuggestion(Base):
-    """股票建议池 - 汇总各 Agent 建议"""
+    """Kho khuyến nghị cho mã - gom khuyến nghị của các Agent"""
 
     __tablename__ = "stock_suggestions"
 
@@ -463,7 +463,7 @@ class StockSuggestion(Base):
 
 
 class EntryCandidate(Base):
-    """入场候选榜快照（按天去重，可追溯来源建议与证据）。"""
+    """Ảnh chụp bảng ứng viên vào lệnh (gộp trùng theo ngày, truy ngược được khuyến nghị nguồn và bằng chứng)."""
 
     __tablename__ = "entry_candidates"
     __table_args__ = (
@@ -509,7 +509,7 @@ class EntryCandidate(Base):
 
 
 class MarketScanSnapshot(Base):
-    """市场池候选快照（用于多源回退与覆盖诊断）。"""
+    """Ảnh chụp ứng viên trong kho thị trường (dùng cho việc lùi nhiều nguồn và soi mức phủ)."""
 
     __tablename__ = "market_scan_snapshots"
     __table_args__ = (
@@ -537,7 +537,7 @@ class MarketScanSnapshot(Base):
 
 
 class EntryCandidateFeedback(Base):
-    """入场候选反馈（用于策略迭代与质量评估）。"""
+    """Phản hồi về ứng viên vào lệnh (dùng để cải tiến chiến lược và đánh giá chất lượng)."""
 
     __tablename__ = "entry_candidate_feedback"
     __table_args__ = (
@@ -558,7 +558,7 @@ class EntryCandidateFeedback(Base):
 
 
 class EntryCandidateOutcome(Base):
-    """入场候选后验结果（自动评估）。"""
+    """Kết quả hậu kiểm ứng viên vào lệnh (hậu kiểm tự động)."""
 
     __tablename__ = "entry_candidate_outcomes"
     __table_args__ = (
@@ -594,7 +594,7 @@ class EntryCandidateOutcome(Base):
 
 
 class StrategyCatalog(Base):
-    """策略目录（可版本化、可启停、可调权重）。"""
+    """Danh mục chiến lược (đánh phiên bản được, bật tắt được, chỉnh trọng số được)."""
 
     __tablename__ = "strategy_catalog"
     __table_args__ = (
@@ -617,7 +617,7 @@ class StrategyCatalog(Base):
 
 
 class StrategySignalRun(Base):
-    """策略信号执行快照（按日/股票/策略去重）。"""
+    """Ảnh chụp lượt chạy tín hiệu chiến lược (gộp trùng theo ngày/mã/chiến lược)."""
 
     __tablename__ = "strategy_signal_runs"
     __table_args__ = (
@@ -676,7 +676,7 @@ class StrategySignalRun(Base):
 
 
 class StrategyOutcome(Base):
-    """策略后验结果。"""
+    """Kết quả hậu kiểm chiến lược."""
 
     __tablename__ = "strategy_outcomes"
     __table_args__ = (
@@ -715,7 +715,7 @@ class StrategyOutcome(Base):
 
 
 class BacktestRun(Base):
-    """一次可回看的策略历史回测。"""
+    """Một lượt kiểm thử lịch sử chiến lược xem lại được."""
 
     __tablename__ = "backtest_runs"
     __table_args__ = (
@@ -740,7 +740,7 @@ class BacktestRun(Base):
 
 
 class StrategyWeight(Base):
-    """策略权重（当前生效值）。"""
+    """Trọng số chiến lược (giá trị đang có hiệu lực)."""
 
     __tablename__ = "strategy_weights"
     __table_args__ = (
@@ -766,7 +766,7 @@ class StrategyWeight(Base):
 
 
 class StrategyWeightHistory(Base):
-    """策略调权历史。"""
+    """Lịch sử điều chỉnh trọng số chiến lược."""
 
     __tablename__ = "strategy_weight_history"
     __table_args__ = (
@@ -788,10 +788,10 @@ class StrategyWeightHistory(Base):
 
 
 class FactorWeight(Base):
-    """因子权重（当前生效值）——每因子 × 市场,由 IC/IR 自动标定 + 可手动覆盖。
+    """Trọng số nhân tố (giá trị đang có hiệu lực) — mỗi nhân tố × thị trường, do IC/IR tự chuẩn định + ghi đè tay được.
 
-    镜像 StrategyWeight,但作用于因子级(alpha/catalyst/quality/risk/crowd),
-    让信号合成从「隐式权重=1 的黑盒」变成「外置可标定」。
+    Soi gương StrategyWeight, nhưng tác dụng ở cấp nhân tố (alpha/catalyst/quality/risk/crowd),
+    để việc tổng hợp tín hiệu từ «hộp đen với trọng số ngầm = 1» thành «để ngoài, chuẩn định được».
     """
 
     __tablename__ = "factor_weights"
@@ -814,7 +814,7 @@ class FactorWeight(Base):
 
 
 class FactorWeightHistory(Base):
-    """因子调权历史(审计)。"""
+    """Lịch sử điều chỉnh trọng số nhân tố (kiểm toán)."""
 
     __tablename__ = "factor_weight_history"
     __table_args__ = (
@@ -836,7 +836,7 @@ class FactorWeightHistory(Base):
 
 
 class MarketRegimeSnapshot(Base):
-    """市场状态快照（用于按市场动态调权与解释）。"""
+    """Ảnh chụp trạng thái thị trường (dùng để điều chỉnh trọng số động theo thị trường và để giải thích)."""
 
     __tablename__ = "market_regime_snapshots"
     __table_args__ = (
@@ -866,7 +866,7 @@ class MarketRegimeSnapshot(Base):
 
 
 class StrategyFactorSnapshot(Base):
-    """每条策略信号的因子分解快照。"""
+    """Ảnh chụp bóc tách nhân tố của từng tín hiệu chiến lược."""
 
     __tablename__ = "strategy_factor_snapshots"
     __table_args__ = (
@@ -897,7 +897,7 @@ class StrategyFactorSnapshot(Base):
 
 
 class PortfolioRiskSnapshot(Base):
-    """按快照/市场聚合的组合风险画像。"""
+    """Chân dung rủi ro danh mục gộp theo ảnh chụp/thị trường."""
 
     __tablename__ = "portfolio_risk_snapshots"
     __table_args__ = (
@@ -926,7 +926,7 @@ class PortfolioRiskSnapshot(Base):
 
 
 class SuggestionFeedback(Base):
-    """建议反馈（匿名、轻量）"""
+    """Phản hồi về khuyến nghị (ẩn danh, nhẹ)"""
 
     __tablename__ = "suggestion_feedback"
 
@@ -942,7 +942,7 @@ class SuggestionFeedback(Base):
 
 
 class PriceAlertRule(Base):
-    """价格提醒规则"""
+    """Quy tắc cảnh báo giá"""
 
     __tablename__ = "price_alert_rules"
     __table_args__ = (
@@ -974,7 +974,7 @@ class PriceAlertRule(Base):
 
 
 class PriceAlertHit(Base):
-    """价格提醒命中记录"""
+    """Bản ghi lượt chạm cảnh báo giá"""
 
     __tablename__ = "price_alert_hits"
     __table_args__ = (
@@ -1005,7 +1005,7 @@ class PriceAlertHit(Base):
 
 
 class PaperTradingAccount(Base):
-    """模拟盘账户（单例）"""
+    """Tài khoản mô phỏng bàn giao dịch (đơn nhất)"""
 
     __tablename__ = "paper_trading_account"
 
@@ -1026,7 +1026,7 @@ class PaperTradingAccount(Base):
 
 
 class PaperTradingPosition(Base):
-    """模拟盘持仓"""
+    """Vị thế mô phỏng bàn giao dịch"""
 
     __tablename__ = "paper_trading_positions"
     __table_args__ = (
@@ -1056,7 +1056,7 @@ class PaperTradingPosition(Base):
 
 
 class PaperTradingTrade(Base):
-    """模拟盘已平仓记录"""
+    """Bản ghi đã đóng của mô phỏng bàn giao dịch"""
 
     __tablename__ = "paper_trading_trades"
     __table_args__ = (
@@ -1084,7 +1084,7 @@ class PaperTradingTrade(Base):
 
 
 class ChatConversation(Base):
-    """AI 对话会话"""
+    """Phiên trò chuyện AI"""
 
     __tablename__ = "chat_conversations"
     __table_args__ = (
@@ -1103,7 +1103,7 @@ class ChatConversation(Base):
 
 
 class ChatMessage(Base):
-    """AI 对话消息"""
+    """Tin nhắn trong phiên trò chuyện AI"""
 
     __tablename__ = "chat_messages"
     __table_args__ = (
@@ -1291,11 +1291,13 @@ class AssistantArtifact(Base):
 
 
 class PersonalAccessToken(Base):
-    """个人访问令牌(PAT)—— MCP 端点专用的独立长期凭据。
+    """Mã truy cập cá nhân (PAT) — chứng thực dài hạn riêng cho điểm cuối MCP.
 
-    与登录 JWT 分流:JWT 是单用户会话态(30 天、不可吊销、无 scope),不适合作为
-    分发给外部 MCP client 的长期凭据;PAT 可独立吊销/审计、天然只读 scope。
-    库里只存 sha256(token_hash),明文仅创建时返回一次。单用户应用,不设 user_id。
+    Tách khỏi JWT đăng nhập: JWT là trạng thái phiên của một người dùng (30 ngày, không
+    thu hồi được, không có scope), không hợp làm chứng thực dài hạn phát cho MCP client
+    bên ngoài; PAT thu hồi/kiểm toán độc lập được, tự nhiên mang scope chỉ đọc.
+    Trong kho chỉ lưu sha256(token_hash), bản chữ thường chỉ trả về một lần lúc tạo.
+    Ứng dụng một người dùng nên không đặt user_id.
     """
 
     __tablename__ = "personal_access_tokens"
@@ -1316,7 +1318,7 @@ class PersonalAccessToken(Base):
 
 
 class MCPCallLog(Base):
-    """每次 MCP tool 调用的审计记录(只存元数据,不存参数/结果明文)。"""
+    """Bản ghi kiểm toán cho mỗi lần gọi tool MCP (chỉ lưu siêu dữ liệu, không lưu tham số/kết quả dạng chữ thường)."""
 
     __tablename__ = "mcp_call_logs"
     __table_args__ = (

@@ -1,8 +1,8 @@
-"""股票标的清单的数据源适配器、项目级缓存与模糊搜索。
+"""Adapter nguồn dữ liệu cho danh sách mã, đệm ở cấp dự án và tìm kiếm kiểu mờ.
 
-清单可被 API、任务调度和业务模块共同使用，因此属于市场数据平台，而不是
-HTTP 层。缓存仍固定保存在项目根目录的 ``data/``，避免移动代码后悄然生成
-另一份 ``src/data`` 缓存。
+Danh sách này API, lập lịch tác vụ và các module nghiệp vụ đều dùng chung, nên nó thuộc
+nền tảng dữ liệu thị trường chứ không phải tầng HTTP. Đệm vẫn cố định nằm trong ``data/``
+ở gốc dự án, tránh việc dời mã đi rồi âm thầm sinh thêm một bản đệm ``src/data``.
 """
 import json
 import os
@@ -94,7 +94,7 @@ HEADERS = {
 
 
 def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富股票列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu của Đông Tài"""
     params = {**EASTMONEY_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -104,7 +104,7 @@ def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_from_eastmoney() -> list[dict]:
-    """东方财富 A 股列表（HTTP 分页并发获取）"""
+    """Danh sách cổ phiếu A của Đông Tài (phân trang HTTP, lấy song song)"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         # Trang đầu: lấy tổng số
         params = {**EASTMONEY_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
@@ -133,7 +133,7 @@ def _fetch_from_eastmoney() -> list[dict]:
 
 
 def _fetch_hk_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富港股列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu HK của Đông Tài"""
     params = {**EASTMONEY_HK_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -143,7 +143,7 @@ def _fetch_hk_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_hk_from_eastmoney() -> list[dict]:
-    """东方财富港股列表"""
+    """Danh sách cổ phiếu HK của Đông Tài"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         params = {**EASTMONEY_HK_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
@@ -170,7 +170,7 @@ def _fetch_hk_from_eastmoney() -> list[dict]:
 
 
 def _fetch_bj_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富北交所列表的单页"""
+    """Lấy một trang trong danh sách sàn Bắc Kinh của Đông Tài"""
     params = {**EASTMONEY_BJ_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -180,7 +180,7 @@ def _fetch_bj_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_bj_from_eastmoney() -> list[dict]:
-    """东方财富北交所列表（HTTP 分页并发获取）"""
+    """Danh sách sàn Bắc Kinh của Đông Tài (phân trang HTTP, lấy song song)"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         # Trang đầu: lấy tổng số
         params = {**EASTMONEY_BJ_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
@@ -209,7 +209,7 @@ def _fetch_bj_from_eastmoney() -> list[dict]:
 
 
 def _fetch_us_page(client: httpx.Client, page: int) -> list[dict]:
-    """获取东方财富美股列表的单页"""
+    """Lấy một trang trong danh sách cổ phiếu Mỹ của Đông Tài"""
     params = {**EASTMONEY_US_PARAMS, "pn": str(page), "pz": str(PAGE_SIZE)}
     resp = client.get(EASTMONEY_URL, params=params, timeout=30, follow_redirects=True)
     data = resp.json()
@@ -219,7 +219,7 @@ def _fetch_us_page(client: httpx.Client, page: int) -> list[dict]:
 
 
 def _fetch_us_from_eastmoney() -> list[dict]:
-    """东方财富美股列表"""
+    """Danh sách cổ phiếu Mỹ của Đông Tài"""
     with httpx.Client(follow_redirects=True, headers=HEADERS, timeout=30) as client:
         params = {**EASTMONEY_US_PARAMS, "pn": "1", "pz": str(PAGE_SIZE)}
         resp = client.get(EASTMONEY_URL, params=params)
@@ -246,7 +246,7 @@ def _fetch_us_from_eastmoney() -> list[dict]:
 
 
 def _fetch_from_akshare() -> list[dict]:
-    """akshare 数据源（备用，可能有 SSL 问题）"""
+    """Nguồn dữ liệu akshare (dự phòng, có thể gặp vấn đề SSL)"""
     import akshare as ak
 
     df = ak.stock_info_a_code_name()
@@ -261,7 +261,7 @@ def _fetch_from_akshare() -> list[dict]:
 
 
 def refresh_stock_list() -> list[dict]:
-    """拉取 A 股和港股列表并缓存"""
+    """Kéo danh sách cổ phiếu A và cổ phiếu HK rồi đệm lại"""
     stocks = []
 
     # Cổ phiếu A: ưu tiên EastMoney, akshare là dự phòng

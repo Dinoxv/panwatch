@@ -538,7 +538,7 @@ def _migrate_positions_to_accounts(engine):
 
 
 def _migrate_remove_stock_enabled(engine):
-    """移除历史 stocks.enabled 软删除字段并清理残留数据。"""
+    """Bỏ trường xóa mềm stocks.enabled cũ và dọn dữ liệu còn sót."""
     with engine.connect() as conn:
         if not _has_table(conn, "stocks") or not _has_column(conn, "stocks", "enabled"):
             return

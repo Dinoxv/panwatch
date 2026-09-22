@@ -1,11 +1,11 @@
-"""SSE（Server-Sent Events）基础设施。
+"""Hạ tầng SSE (Server-Sent Events).
 
-提供两块能力：
-1. `format_sse_event`：把事件编码为 SSE wire 格式（带自增序号 id，供 Last-Event-ID 续推）。
-2. `SSEStream` / `SSEHub`：生成过程与连接解耦的事件缓冲。
-   - 生产者（后台任务）往 `SSEStream` publish 事件，与 HTTP 连接无关，断线不中断生成；
-   - 消费者（SSE 端点）从任意序号开始 subscribe，断线重连带 Last-Event-ID 即可续推；
-   - 流结束（finish）后仍保留一段时间（TTL），供迟到的重连读取完整事件。
+Cung cấp hai năng lực:
+1. `format_sse_event`: mã hóa sự kiện thành định dạng SSE wire (kèm id tự tăng, cho Last-Event-ID đẩy tiếp).
+2. `SSEStream` / `SSEHub`: vùng đệm sự kiện tách rời quá trình sinh nội dung khỏi kết nối.
+   - Bên sản xuất (tác vụ nền) publish sự kiện vào `SSEStream`, không liên quan tới kết nối HTTP, đứt kết nối không làm gián đoạn việc sinh;
+   - Bên tiêu thụ (điểm cuối SSE) subscribe từ số thứ tự bất kỳ, đứt rồi nối lại mang Last-Event-ID là đẩy tiếp được;
+   - Luồng kết thúc (finish) rồi vẫn giữ lại một khoảng (TTL), cho các lần nối lại muộn đọc trọn sự kiện.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ MAX_EVENTS_PER_STREAM = 10000
 
 
 def format_sse_event(seq: int, event: str, data: dict | str) -> str:
-    """编码单条 SSE 事件（id + event + data，data 统一 JSON）。"""
+    """Mã hóa một sự kiện SSE (id + event + data, data thống nhất là JSON)."""
     if not isinstance(data, str):
         data = json.dumps(data, ensure_ascii=False)
     # data có xuống dòng thì tách thành nhiều dòng data: theo giao thức SSE
@@ -32,7 +32,7 @@ def format_sse_event(seq: int, event: str, data: dict | str) -> str:
 
 
 def format_sse_comment(text: str = "keepalive") -> str:
-    """编码 SSE 注释行（心跳，防止代理断开空闲连接）。"""
+    """Mã hóa dòng chú thích SSE (nhịp tim, chống proxy ngắt kết nối rảnh)."""
     return f": {text}\n\n"
 
 
@@ -45,7 +45,7 @@ class _Event:
 
 @dataclass
 class SSEStream:
-    """一条可重放的事件流（生产端与消费端解耦）。"""
+    """Một luồng sự kiện phát lại được (bên sản xuất và bên tiêu thụ tách rời)."""
 
     stream_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     created_at: float = field(default_factory=time.monotonic)
@@ -56,7 +56,7 @@ class SSEStream:
         self._cond = asyncio.Condition()
 
     async def publish(self, event: str, data: dict | str) -> int:
-        """追加一条事件，返回其序号（从 1 开始）。"""
+        """Thêm một sự kiện, trả về số thứ tự của nó (bắt đầu từ 1)."""
         async with self._cond:
             if len(self._events) >= MAX_EVENTS_PER_STREAM:
                 # Vượt trần thì đặt luôn trạng thái kết thúc, tránh phình vô hạn
@@ -69,17 +69,17 @@ class SSEStream:
             return seq
 
     async def finish(self) -> None:
-        """标记流结束（订阅者读完缓冲后自然退出）。"""
+        """Đánh dấu luồng kết thúc (bên đăng ký đọc hết vùng đệm rồi tự thoát)."""
         async with self._cond:
             self.done = True
             self._cond.notify_all()
 
     async def subscribe(self, after_seq: int = 0, heartbeat_sec: float = 15.0):
-        """从 after_seq 之后开始消费事件（异步生成器，产出 SSE wire 格式字符串）。
+        """Tiêu thụ sự kiện từ sau after_seq (generator bất đồng bộ, sinh ra chuỗi định dạng SSE wire).
 
-        - 先重放缓冲中已存在的事件（断线重连 Last-Event-ID 续推的关键）；
-        - 追平后阻塞等待新事件；等待超过 heartbeat_sec 则产出心跳注释；
-        - 流 done 且缓冲读完后结束。
+        - Phát lại các sự kiện đã có trong vùng đệm trước (mấu chốt để đứt rồi nối lại đẩy tiếp theo Last-Event-ID);
+        - Đuổi kịp rồi thì chặn chờ sự kiện mới; chờ quá heartbeat_sec thì sinh chú thích nhịp tim;
+        - Luồng đã done và đọc hết vùng đệm thì kết thúc.
         """
         cursor = max(0, int(after_seq))
         while True:
@@ -106,7 +106,7 @@ class SSEStream:
 
 
 class SSEHub:
-    """按 stream_id 管理多条 SSEStream，带 TTL 清理。"""
+    """Quản lý nhiều SSEStream theo stream_id, có dọn theo TTL."""
 
     def __init__(self, ttl_sec: float = STREAM_TTL_SEC):
         self._streams: dict[str, SSEStream] = {}
@@ -123,7 +123,7 @@ class SSEHub:
         return self._streams.get(stream_id)
 
     def _prune(self) -> None:
-        """清掉超过 TTL 的旧流。"""
+        """Dọn các luồng cũ quá TTL."""
         now = time.monotonic()
         expired = [
             sid for sid, s in self._streams.items()

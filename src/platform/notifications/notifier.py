@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_global_proxy() -> str:
-    """获取全局 HTTP 代理设置"""
+    """Lấy thiết lập proxy HTTP toàn cục"""
     try:
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import AppSettings
@@ -28,7 +28,7 @@ def get_global_proxy() -> str:
 
 
 def sanitize_for_telegram(content: str) -> str:
-    """清理内容以适配 Telegram（移除 HTML 和 Markdown 格式）"""
+    """Làm sạch nội dung cho hợp Telegram (bỏ định dạng HTML và Markdown)"""
     # Bỏ thẻ HTML
     content = re.sub(r"</?table[^>]*>", "", content)
     content = re.sub(r"</?thead[^>]*>", "", content)
@@ -125,10 +125,10 @@ _PLAIN_TEXT_CHANNELS = {"telegram", "bark", "pushover"}
 
 def build_apprise_url(channel_type: str, config: dict) -> str | None:
     """
-    根据渠道类型和配置构建 Apprise URL
+    Dựng URL Apprise theo loại kênh và cấu hình
 
     Returns:
-        Apprise URL 或 None（如果需要使用自定义方式发送，如带代理的 Telegram）
+        URL Apprise hoặc None (nếu cần gửi theo cách riêng, như Telegram có proxy)
     """
     if channel_type == "telegram":
         bot_token = config.get("bot_token", "")
@@ -198,7 +198,7 @@ def build_apprise_url(channel_type: str, config: dict) -> str | None:
 
 
 class NotifierManager:
-    """通知管理器: Apprise 渠道 + 自定义渠道"""
+    """Bộ quản lý thông báo: kênh Apprise + kênh tự viết"""
 
     def __init__(self, policy=None):
         self._ap = apprise.Apprise()
@@ -209,7 +209,7 @@ class NotifierManager:
         self.policy = policy
 
     def add_channel(self, channel_type: str, config: dict):
-        """添加通知渠道"""
+        """Thêm kênh thông báo"""
         try:
             if channel_type in _APPRISE_TYPES:
                 url = build_apprise_url(channel_type, config)
@@ -235,7 +235,7 @@ class NotifierManager:
             logger.error(f"注册通知渠道失败: {e}")
 
     async def notify(self, title: str, content: str, images: list[str] | None = None):
-        """向所有已注册渠道发送通知（忽略错误）"""
+        """Gửi thông báo tới mọi kênh đã đăng ký (bỏ qua lỗi)"""
         await self.notify_with_result(title, content, images)
 
     async def notify_with_result(
@@ -246,7 +246,7 @@ class NotifierManager:
         *,
         bypass_quiet_hours: bool = False,
     ) -> dict:
-        """向所有已注册渠道发送通知，返回结果"""
+        """Gửi thông báo tới mọi kênh đã đăng ký, trả về kết quả"""
         if self._channel_count == 0:
             logger.warning("没有可用的通知渠道")
             return {"success": False, "error": "没有可用的通知渠道"}
@@ -349,7 +349,7 @@ class NotifierManager:
         return {"success": True}
 
     async def _send_custom(self, ch_type: str, config: dict, title: str, content: str):
-        """发送自定义渠道通知"""
+        """Gửi thông báo qua kênh tự viết"""
         if ch_type == "telegram":
             await self._send_telegram(config, title, content)
         elif ch_type == "wecom":
@@ -362,13 +362,13 @@ class NotifierManager:
             logger.warning(f"未知的自定义渠道类型: {ch_type}")
 
     async def _send_telegram(self, config: dict, title: str, content: str):
-        """Telegram Bot API（支持代理）
+        """Telegram Bot API (hỗ trợ proxy)
 
-        Telegram 老 Markdown 解析很脆弱:
-        - 不认 `**粗体**`(只认 `*粗体*`),GitHub 风格会导致 Can't find end of entity
-        - 不认 `### 标题`(把 # 当普通字符,但 ### 后面可能被截断)
-        - 单条上限 4096 字符,超过会被截断破坏实体
-        发送前做兼容性预处理 + 截断。
+        Bộ đọc Markdown cũ của Telegram rất mong manh:
+        - Không nhận `**đậm**` (chỉ nhận `*đậm*`), kiểu GitHub sẽ gây lỗi Can't find end of entity
+        - Không nhận `### tiêu đề` (coi # là ký tự thường, nhưng phần sau ### có thể bị cắt)
+        - Mỗi tin tối đa 4096 ký tự, vượt thì bị cắt làm hỏng thực thể
+        Nên tiền xử lý cho tương thích + cắt bớt trước khi gửi.
         """
         bot_token = config.get("bot_token", "")
         chat_id = config.get("chat_id", "")
@@ -431,7 +431,7 @@ class NotifierManager:
             raise
 
     async def _send_wecom(self, config: dict, title: str, content: str):
-        """企业微信机器人 Webhook"""
+        """Webhook bot WeCom"""
         key = config.get("webhook_key", "")
         if not key:
             raise ValueError("企业微信需要 webhook_key")
@@ -448,7 +448,7 @@ class NotifierManager:
             logger.info(f"企业微信通知发送成功: {title}")
 
     async def _send_serverchan(self, config: dict, title: str, content: str):
-        """Server酱推送"""
+        """Đẩy tin qua ServerChan"""
         sendkey = config.get("sendkey", "")
         if not sendkey:
             raise ValueError("Server酱需要 sendkey")
@@ -464,7 +464,7 @@ class NotifierManager:
             logger.info(f"Server酱通知发送成功: {title}")
 
     async def _send_pushplus(self, config: dict, title: str, content: str):
-        """PushPlus 推送"""
+        """Đẩy tin qua PushPlus"""
         token = config.get("token", "")
         if not token:
             raise ValueError("PushPlus 需要 token")
