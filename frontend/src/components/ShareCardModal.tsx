@@ -132,7 +132,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
               flexShrink: 0,
             }}
           >
-            AI 投研结论
+            Kết luận nghiên cứu của AI
           </div>
           <div
             style={{
@@ -206,7 +206,7 @@ export default function ShareCardModal({ open, onClose, result, symbol, date }: 
 
       {/* Phụ đề riêng của thẻ TA (9-Agent), đặt phía trên đường phân cách và chân thẻ */}
       <div style={{ marginTop: 22, fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>
-        AI 投研团队(9-Agent)深度分析
+        Phân tích chuyên sâu của nhóm nghiên cứu AI (9-Agent)
       </div>
     </ShareCardDialog>
   )

@@ -102,7 +102,7 @@ export default function DiagnosticsShareCard({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, opacity: 0.92, flexShrink: 0 }}>
-            集中度(HHI)
+            Mức tập trung (HHI)
           </div>
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
             <span style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -196,7 +196,7 @@ export default function DiagnosticsShareCard({
               color: '#065f46',
             }}
           >
-            ✓ 集中度 / 分布未见明显风险
+            ✓ Mức tập trung / phân bố chưa thấy rủi ro rõ rệt
           </div>
         )}
       </div>

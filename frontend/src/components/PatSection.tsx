@@ -75,7 +75,7 @@ export default function PatSection() {
             <KeyRound className="w-3.5 h-3.5" /> Mã truy cập MCP
           </h3>
           <p className="text-[11px] text-muted-foreground mt-1">
-            供 Claude 等 MCP 客户端连接本站 MCP 端点(<span className="font-mono">/mcp</span>), chỉ đọc dữ liệu giá và vị thế. Bản rõ chỉ hiện một lần lúc tạo.
+            Dành cho các MCP client như Claude kết nối tới endpoint MCP của trang này (<span className="font-mono">/mcp</span>), chỉ đọc dữ liệu giá và vị thế. Bản rõ chỉ hiện một lần lúc tạo.
           </p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function PatSection() {
       {newToken ? (
         <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/20 p-3">
           <div className="text-[11px] text-amber-700 dark:text-amber-400 mb-1.5">
-            请立即复制并妥善保存,关闭后无法再次查看:
+            Hãy sao chép và cất giữ cẩn thận ngay bây giờ, đóng lại là không xem được nữa:
           </div>
           <div className="flex items-center gap-2">
             <code className="flex-1 min-w-0 truncate rounded bg-background/70 px-2 py-1 font-mono text-[12px]">{newToken}</code>

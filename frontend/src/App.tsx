@@ -311,7 +311,7 @@ function App() {
             </DialogDescription>
           </DialogHeader>
           <div className="text-[12px] text-muted-foreground">
-            建议升级以获取最新功能和修复。
+            Nên nâng cấp để có tính năng mới nhất và các bản vá.
           </div>
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -321,7 +321,7 @@ function App() {
                 setUpgradeOpen(false)
               }}
             >
-              稍后提醒
+              Nhắc sau
             </Button>
             <Button
               onClick={() => {
@@ -329,7 +329,7 @@ function App() {
                 window.open(url, '_blank', 'noopener,noreferrer')
               }}
             >
-              去升级
+              Nâng cấp
             </Button>
           </div>
         </DialogContent>

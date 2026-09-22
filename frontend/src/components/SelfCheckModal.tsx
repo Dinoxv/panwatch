@@ -264,18 +264,18 @@ export default function SelfCheckModal({ open, onClose }: SelfCheckModalProps) {
         <div className="mt-4 flex items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-[12px] text-muted-foreground cursor-pointer select-none">
             <Switch checked={notifySend} disabled={running} onCheckedChange={setNotifySend} />
-            含真实发送通知
+            Gửi thông báo thật
           </label>
           <Button size="sm" className="h-8" onClick={() => void runCheck()} disabled={running}>
             <RefreshCw className={`w-3.5 h-3.5 ${running ? 'animate-spin' : ''}`} />
-            重新检查
+            Kiểm tra lại
           </Button>
         </div>
 
         {listError && <div className="mt-3 text-[12px] text-rose-600">{listError}</div>}
         {!listError && total === 0 && !running && (
           <div className="mt-4 rounded-xl border border-border/40 bg-accent/20 p-4 text-center text-[12px] text-muted-foreground">
-            未配置 数据源 / AI / 通知,先去设置里配置后再自检。
+            Chưa cấu hình nguồn dữ liệu / AI / thông báo, hãy vào phần cài đặt rồi mới tự kiểm tra.
           </div>
         )}
 

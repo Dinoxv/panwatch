@@ -13,7 +13,7 @@ export function RouteLoadingFallback() {
     <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border/40 bg-card/30">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
         <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-        页面加载中…
+        Đang tải trang…
       </div>
     </div>
   )
@@ -41,7 +41,7 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
             className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
             onClick={() => window.location.reload()}
           >
-            重新加载
+            Tải lại
           </button>
         </div>
       )

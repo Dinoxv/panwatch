@@ -86,10 +86,10 @@ export default function FactorWeightsPanel() {
         <div>
           <h3 className="text-[12px] md:text-[13px] font-semibold text-foreground flex items-center gap-1.5">
             <Scale className="w-3.5 h-3.5 text-muted-foreground" />
-            因子权重自校准
+            Tự hiệu chỉnh trọng số nhân tố
           </h3>
           <p className="text-[11px] text-muted-foreground mt-1">
-            每因子权重由 IC/IR 每日自动标定;锁定或关闭自动标定可手动接管(仅供参考)。
+            Trọng số từng nhân tố được IC/IR hiệu chỉnh tự động hằng ngày; khóa lại hoặc tắt hiệu chỉnh tự động thì bạn tiếp quản thủ công (chỉ mang tính tham khảo).
           </p>
         </div>
       </div>
