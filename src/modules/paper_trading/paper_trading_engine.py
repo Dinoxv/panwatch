@@ -87,6 +87,14 @@ def _to_market(market: str) -> MarketCode:
 
 
 def _is_trading_time(market: str) -> bool:
+    """Thị trường của mã này có đang trong phiên không.
+
+    Bộ lập lịch chỉ chặn ở mức "cả ba thị trường đều nghỉ", nên vòng quét vẫn
+    chạy trong phiên Mỹ (21:30–04:00 giờ Bắc Kinh) khi A股/港股đã đóng cửa từ
+    lâu. Báo giá lúc đó là giá đóng cửa đóng băng và **không mang dấu thời
+    gian**, nên nếu không chặn theo từng thị trường, engine sẽ khớp lệnh tại một
+    mức giá đã trôi qua nhiều giờ — mức giá không còn đặt lệnh được nữa.
+    """
     mc = _to_market(market)
     market_def = MARKETS.get(mc)
     if not market_def:
@@ -330,6 +338,7 @@ class PaperTradingEngine:
         market_cash = {m: market_available_cash(db, account, m, alloc) for m in ALL_MARKETS}
 
         opened = 0
+        skipped_closed = 0
         for sig in candidates:
             key = (sig.stock_market, sig.stock_symbol)
             quote = quotes.get(key)
@@ -344,6 +353,11 @@ class PaperTradingEngine:
             mkt = sig.stock_market
             if alloc.get(mkt, 0.0) <= 0:
                 continue  # 该市场比例为 0，不投入
+            if not _is_trading_time(mkt):
+                # Thị trường đã đóng cửa: báo giá là giá đóng cửa đóng băng.
+                # Khớp lệnh ở đây là khớp tại mức giá không còn giao dịch được.
+                skipped_closed += 1
+                continue
             avail = market_cash.get(mkt, 0.0)
 
             # 仓位管理:按信号强度分配该市场预算(替换原固定 100 股)
@@ -417,6 +431,8 @@ class PaperTradingEngine:
                 sig.strategy_code,
             )
 
+        if skipped_closed:
+            logger.debug("[模拟盘] 跳过 %s 条信号:所属市场已休市", skipped_closed)
         if opened > 0:
             db.commit()
         return opened, new_keys, entry_events
@@ -505,6 +521,7 @@ class PaperTradingEngine:
         quotes = self._fetch_quotes_map(syms)
 
         closed = 0
+        skipped_closed = 0
         for pos in positions:
             # 跳过本轮刚建仓的持仓
             if skip_keys and (pos.stock_symbol, pos.stock_market) in skip_keys:
@@ -523,6 +540,15 @@ class PaperTradingEngine:
             pos.unrealized_pnl = round(_sell_u - _buy_cost_u, 4)
             if pos.highest_price is None or current_price > pos.highest_price:
                 pos.highest_price = current_price
+
+            if not _is_trading_time(pos.stock_market):
+                # Ngoài phiên vẫn cập nhật giá tham chiếu để màn hình không bị cũ,
+                # nhưng không kích hoạt lệnh: một lệnh cắt lỗ khớp lúc 23:00 theo
+                # giá đóng cửa A股 là lệnh không thể đặt được trong thực tế.
+                # Điều kiện đã chạm sẽ được xử lý ở phiên kế tiếp — đúng như một
+                # lệnh stop thật hành xử khi thị trường mở cửa nhảy giá.
+                skipped_closed += 1
+                continue
 
             # 检查止损
             if pos.stop_loss and current_price <= pos.stop_loss:
@@ -591,6 +617,8 @@ class PaperTradingEngine:
                     closed += 1
                     continue
 
+        if skipped_closed:
+            logger.debug("[模拟盘] %s 个持仓所属市场休市:只更新盯市价,不触发离场", skipped_closed)
         self._update_account_metrics(db, account)
         db.commit()
         return closed, exit_events
