@@ -220,7 +220,7 @@ def _looks_like_date(value: Any) -> bool:
 
 
 def _extract_requested_symbol(args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
-    """从上游工具参数提取 ticker，兼容 get_global_news 的日期首参。"""
+    """Rút ticker từ tham số công cụ của thượng nguồn, tương thích với việc get_global_news đặt ngày ở tham số đầu."""
     for value in args:
         if isinstance(value, str) and value.strip() and not _looks_like_date(value):
             return value.strip()
@@ -233,17 +233,18 @@ def _cached_symbol() -> str:
 
 
 def _patched_route_to_vendor(method_name: str, *args, **kwargs):
-    """模块级无状态 patch:A 股走 PanWatch(读 _cache()),港股先试上游再兜底,其余放行。
+    """Patch không trạng thái ở cấp module: cổ phiếu A đi qua PanWatch (đọc _cache()), cổ phiếu HK thử thượng nguồn trước rồi mới hứng, còn lại thả qua.
 
-    与上游 route_to_vendor(method, *args, **kwargs) 完全同签名。上游所有 toolkit
-    都用 positional 传 ticker:
+    Cùng chữ ký hoàn toàn với route_to_vendor(method, *args, **kwargs) của thượng nguồn.
+    Mọi toolkit của thượng nguồn đều truyền ticker theo vị trí:
       route_to_vendor("get_fundamentals", ticker, curr_date)
       route_to_vendor("get_news", ticker, start_date, end_date)
       route_to_vendor("get_stock_data", symbol, ...)
-      route_to_vendor("get_global_news", curr_date, look_back_days, limit)  # 无 symbol
+      route_to_vendor("get_global_news", curr_date, look_back_days, limit)  # không có symbol
 
-    无任何实例状态:symbol 来自调用参数,数据来自 _cache()(当前 context),
-    所以多个并发任务共享同一个 _patched 也不会串台。
+    Không giữ trạng thái thực thể nào: symbol lấy từ tham số lời gọi, dữ liệu lấy từ
+    _cache() (context hiện tại), nên nhiều tác vụ chạy song song dùng chung một _patched
+    vẫn không lẫn nhau.
     """
     _raise_if_cancelled()
     # Không lọc bỏ chuỗi toàn số: mã cổ phiếu A / Hồng Kông vốn hợp lệ khi toàn số; chỉ bỏ qua tham số rõ ràng là ngày tháng.
@@ -403,15 +404,16 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
 
 @contextmanager
 def patch_route_to_vendor():
-    """Monkeypatch tradingagents.dataflows.interface.route_to_vendor + 所有 import sites。
+    """Monkeypatch tradingagents.dataflows.interface.route_to_vendor + mọi nơi có import nó.
 
-    当请求 A 股代码时,从 _PANWATCH_DATA(当前 context)返回 PanWatch 已拉的数据。
-    非 A 股放行到原函数。
+    Khi yêu cầu mã cổ phiếu A thì trả về dữ liệu PanWatch đã kéo sẵn từ _PANWATCH_DATA
+    (context hiện tại). Không phải cổ phiếu A thì thả về hàm gốc.
 
-    引用计数 + 锁:并发的多个深度分析共享同一次安装,第一个进入者装、最后一个
-    退出才卸载,_real_route_to_vendor 永远保存真函数 —— 消除嵌套 patch 链错乱。
+    Đếm tham chiếu + khóa: nhiều lượt phân tích chuyên sâu chạy song song dùng chung một
+    lần cài, người vào đầu tiên thì cài, người ra cuối cùng mới gỡ, _real_route_to_vendor
+    luôn giữ hàm thật — xóa hẳn chuyện chuỗi patch lồng nhau bị rối.
 
-    如果 tradingagents 库未安装,本 context manager 是 no-op,不抛异常。
+    Nếu chưa cài thư viện tradingagents thì context manager này là no-op, không ném lỗi.
     """
     global _patch_refcount, _real_route_to_vendor
 
@@ -490,7 +492,7 @@ _MARKET_SNAPSHOT_IMPORT_SITES = (
 
 
 def _market_for_symbol(symbol: str):
-    """将 TradingAgents 的 ticker 映射到 PanWatch 市场。"""
+    """Ánh xạ ticker của TradingAgents sang thị trường của PanWatch."""
     from src.platform.marketdata.models import MarketCode
 
     if is_a_share(symbol):
@@ -501,7 +503,7 @@ def _market_for_symbol(symbol: str):
 
 
 def _build_panwatch_ohlcv_df(symbol: str, curr_date: str):
-    """用 PanWatch K线构建与原生 load_ohlcv 同结构的 DataFrame(Date/Open/High/Low/Close/Volume)。"""
+    """Dùng nến PanWatch dựng DataFrame cùng cấu trúc với load_ohlcv nguyên bản (Date/Open/High/Low/Close/Volume)."""
     _raise_if_cancelled()
     import pandas as pd
 
@@ -543,7 +545,7 @@ def _build_panwatch_ohlcv_df(symbol: str, curr_date: str):
 
 
 def _is_market_data_failure(error: Exception) -> bool:
-    """判断异常是否表示外部行情不可用，而非程序自身错误。"""
+    """Xét xem ngoại lệ có nghĩa là bảng giá bên ngoài không dùng được, chứ không phải lỗi của chính chương trình."""
     name = type(error).__name__.lower()
     detail = str(error).lower()
     return (
@@ -575,7 +577,7 @@ def _is_market_data_failure(error: Exception) -> bool:
 
 
 def _data_unavailable_message(method_name: str, symbol: str, error: Exception) -> str:
-    """给上游 agent 的显式降级结果，禁止将不可用数据默认为中性数据。"""
+    """Kết quả hạ cấp tường minh trả cho agent thượng nguồn, cấm mặc định coi dữ liệu không có là dữ liệu trung tính."""
     return (
         "DATA_UNAVAILABLE: "
         f"method={method_name}; symbol={symbol or 'N/A'}; reason={str(error)[:300]}. "
@@ -585,7 +587,7 @@ def _data_unavailable_message(method_name: str, symbol: str, error: Exception) -
 
 
 def _load_panwatch_ohlcv_or_raise(symbol: str, curr_date: str, *, fallback: bool = False):
-    """读取 MarketData 的 K 线；没有可验证的 OHLCV 时抛出统一的数据错误。"""
+    """Đọc nến từ MarketData; không có OHLCV kiểm chứng được thì ném lỗi dữ liệu thống nhất."""
     df = None
     try:
         df = _build_panwatch_ohlcv_df(symbol, curr_date)
@@ -612,7 +614,7 @@ def _load_panwatch_ohlcv_or_raise(symbol: str, curr_date: str, *, fallback: bool
 
 
 def _panwatch_load_ohlcv(symbol: str, curr_date: str, *args, **kwargs):
-    """A/HK 直接走 MarketData；美股优先 Yahoo，失败时再降级 MarketData。"""
+    """A/HK đi thẳng MarketData; cổ phiếu Mỹ ưu tiên Yahoo, hỏng thì mới hạ xuống MarketData."""
     _raise_if_cancelled()
     if is_panwatch_routable(symbol):
         return _load_panwatch_ohlcv_or_raise(symbol, curr_date)
@@ -638,7 +640,7 @@ def _safe_build_verified_market_snapshot(
     look_back_days: int = 30,
     indicators: Any = None,
 ) -> str:
-    """行情全部不可用时返回约束性提示，避免单个工具异常中断图执行。"""
+    """Khi mọi nguồn bảng giá đều không dùng được thì trả về lời nhắc mang tính ràng buộc, để một công cụ lỗi không làm đứt cả lượt chạy đồ thị."""
     try:
         return _real_build_verified_market_snapshot(
             symbol, curr_date, look_back_days, indicators=indicators
@@ -661,7 +663,7 @@ def _safe_build_verified_market_snapshot(
 
 
 def _ensure_load_ohlcv_patched() -> None:
-    """进程级幂等安装 load_ohlcv 补丁（A/HK 走 MarketData，美股可降级）。"""
+    """Cài bản vá load_ohlcv theo kiểu bất biến ở cấp tiến trình (A/HK đi MarketData, cổ phiếu Mỹ hạ cấp được)."""
     global _LOAD_OHLCV_PATCHED, _real_load_ohlcv
     if _LOAD_OHLCV_PATCHED:
         return
@@ -691,7 +693,7 @@ def _ensure_load_ohlcv_patched() -> None:
 
 
 def _ensure_market_snapshot_patched() -> None:
-    """将验证快照改为行情全失败时返回安全提示，而不是让图执行失败。"""
+    """Đổi ảnh chụp kiểm chứng sang trả về lời nhắc an toàn khi mọi nguồn bảng giá đều hỏng, thay vì để lượt chạy đồ thị thất bại."""
     global _MARKET_SNAPSHOT_PATCHED, _real_build_verified_market_snapshot
     if _MARKET_SNAPSHOT_PATCHED:
         return
@@ -721,9 +723,9 @@ def _ensure_market_snapshot_patched() -> None:
 
 
 def _args_summary(args: tuple) -> str:
-    """把 positional args 简短打印,放进日志 extra_args 便于区分 get_indicators 多次调用。
+    """In gọn các positional args, đưa vào extra_args của nhật ký cho dễ phân biệt nhiều lần gọi get_indicators.
 
-    e.g. ("601238", "macd", "2026-05-17", 30) → "macd, 2026-05-17, 30"(跳过 symbol)
+    Ví dụ ("601238", "macd", "2026-05-17", 30) → "macd, 2026-05-17, 30" (bỏ qua symbol)
     """
     if not args:
         return ""
@@ -739,10 +741,11 @@ def _args_summary(args: tuple) -> str:
 
 
 def _stock_meta_header(symbol: str) -> str:
-    """渲染标的元信息(公司名/市场/价格),作为所有工具返回的前缀。
+    """Dựng phần siêu dữ liệu của mã (tên công ty/thị trường/giá), làm tiền tố cho mọi kết quả công cụ trả về.
 
-    A 股 ticker 不在 yfinance/finnhub 数据集,LLM 不能从 ticker 反查公司名,
-    必须显式告诉它"601127 = 赛力斯",否则会瞎编(如把 601127 当中国平安)。
+    Ticker cổ phiếu A không nằm trong tập dữ liệu yfinance/finnhub, LLM không tra ngược ra
+    tên công ty từ ticker được, nên phải nói thẳng cho nó "601127 = 赛力斯", nếu không nó
+    sẽ bịa (như tưởng 601127 là Ping An).
     """
     stock = _cache().get("stock")
     quote = _cache().get("quote") or {}
@@ -784,12 +787,13 @@ def _stock_meta_header(symbol: str) -> str:
 
 
 def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tuple = ()) -> str:
-    """从 _cache()(当前 context 的数据)构造 TradingAgents 期望的数据格式(CSV / JSON 字符串)。
+    """Dựng định dạng dữ liệu mà TradingAgents mong đợi (chuỗi CSV / JSON) từ _cache() (dữ liệu của context hiện tại).
 
-    上游各 vendor 方法返回类型不一,通常是 str(已格式化的 CSV/表格/JSON)。
-    本函数尽量兼容常见 method_name。**未识别的 method 返回空串,触发上游默认 vendor。**
+    Các phương thức vendor của thượng nguồn trả về kiểu không giống nhau, thường là str
+    (CSV/bảng/JSON đã định dạng). Hàm này cố tương thích với những method_name hay gặp.
+    **method không nhận ra thì trả chuỗi rỗng, kích hoạt vendor mặc định của thượng nguồn.**
 
-    所有分支都以「标的元信息」开头,避免 LLM 在 A 股 ticker 上瞎编公司名。
+    Mọi nhánh đều mở đầu bằng «siêu dữ liệu của mã», tránh LLM bịa tên công ty trên ticker cổ phiếu A.
     """
     method = (method_name or "").lower()
     header = _stock_meta_header(symbol)
@@ -871,10 +875,11 @@ def _serve_from_panwatch(method_name: str, symbol: str, kwargs: dict, args: tupl
 
 
 def _serve_keyword_news(keyword: str) -> str:
-    """实时按行业/主题关键词搜中文新闻(东方财富搜索),格式化返回。
+    """Tìm tin tiếng Trung theo từ khóa ngành/chủ đề trong thời gian thực (tìm kiếm Đông Tài), định dạng rồi trả về.
 
-    用于 get_news 的 query 是行业/主题词(非 ticker,如"汽车行业""新能源汽车")时,
-    替代拉不到中文数据的上游 vendor。md_news_by_keyword 本身同步,直接调用即可。
+    Dùng khi query của get_news là từ ngành/chủ đề (không phải ticker, như "汽车行业",
+    "新能源汽车"), thay cho vendor thượng nguồn vốn không kéo được dữ liệu tiếng Trung.
+    Bản thân md_news_by_keyword là đồng bộ, gọi thẳng được.
     """
     from src.platform.marketdata.marketdata_client import md_news_by_keyword
 
@@ -893,9 +898,9 @@ def _serve_keyword_news(keyword: str) -> str:
 
 
 def _render_single_indicator(indicator: str, symbol: str) -> str:
-    """按 indicator 名(macd/rsi/kdj/boll/...)返回该指标当前值,而不是全 K 线 CSV。
+    """Trả về giá trị hiện tại của chỉ báo theo tên (macd/rsi/kdj/boll/...), thay vì CSV toàn bộ nến.
 
-    数据源:KlineCollector.get_technical_indicators 已经算好的 dataclass。
+    Nguồn dữ liệu: dataclass mà KlineCollector.get_technical_indicators đã tính sẵn.
     """
     tech = _cache().get("technical")
     if not tech:
@@ -973,7 +978,7 @@ def _render_single_indicator(indicator: str, symbol: str) -> str:
 
 
 def _quote_to_lightweight_fundamentals(symbol: str) -> str:
-    """从 quote 拉"轻量基本面"(市值/PE/换手率/成交额),给 LLM 一些真实数据。"""
+    """Kéo "mặt cơ bản nhẹ" từ quote (vốn hóa/P/E/tỷ lệ sang tay/giá trị khớp lệnh), đưa cho LLM ít dữ liệu thật."""
     quote = _cache().get("quote") or {}
     if not isinstance(quote, dict):
         return f"[No lightweight fundamentals available for {symbol}]"
@@ -1011,9 +1016,9 @@ def _quote_to_lightweight_fundamentals(symbol: str) -> str:
 
 
 def _klines_to_csv(klines) -> str:
-    """KlineData list → CSV 字符串。
+    """list KlineData → chuỗi CSV.
 
-    TradingAgents 上游期望:date,open,high,low,close,volume
+    Thượng nguồn TradingAgents mong đợi: date,open,high,low,close,volume
     """
     if not klines:
         return "date,open,high,low,close,volume\n"

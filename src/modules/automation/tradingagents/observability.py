@@ -1,11 +1,12 @@
-"""TradingAgents 进度回调。
+"""Callback tiến độ của TradingAgents.
 
-走一个统一回调链:
-1. LangChain `BaseCallbackHandler`:捕获 LangGraph 节点、LLM 和工具的真实生命周期
-2. `agent.py` 将同一个 handler 注入 `Propagator.get_graph_args(callbacks=...)`，不依赖 debug 文本解析
+Đi theo một chuỗi callback thống nhất:
+1. `BaseCallbackHandler` của LangChain: bắt vòng đời thật của nút LangGraph, của LLM và của công cụ
+2. `agent.py` tiêm đúng handler đó vào `Propagator.get_graph_args(callbacks=...)`, không phụ thuộc việc đọc văn bản debug
 
-进度写入 PanWatch 的 `log_context`,前端轮询 `/api/agents/runs/{trace_id}/progress`
-聚合返回阶段；同一文件下半部提供成本提取、预算检查和估算入口。
+Tiến độ ghi vào `log_context` của PanWatch, frontend hỏi vòng
+`/api/agents/runs/{trace_id}/progress` để lấy về các chặng đã gộp; nửa dưới của cùng tệp
+này cung cấp phần rút chi phí, kiểm ngân sách và lối vào ước tính.
 """
 
 from __future__ import annotations
@@ -76,23 +77,23 @@ except ImportError:  # Vẫn import được module này khi chưa cài tradinga
     _LANGCHAIN_AVAILABLE = False
 
     class _LCBaseCallbackHandler:  # type: ignore[no-redef]
-        """Fallback stub when langchain_core 未安装。"""
+        """Stub hứng khi chưa cài langchain_core."""
         pass
 
 
 class PanWatchProgressHandler(_LCBaseCallbackHandler):
-    """LangChain BaseCallbackHandler 兼容的进度处理器。
+    """Bộ xử lý tiến độ tương thích BaseCallbackHandler của LangChain.
 
-    新版 langchain (1.x) 把 callbacks 字段用 pydantic 校验为 BaseCallbackHandler 实例,
-    所以必须继承上游基类才能被接受。
+    langchain bản mới (1.x) dùng pydantic kiểm trường callbacks phải là thực thể
+    BaseCallbackHandler, nên buộc phải kế thừa lớp cơ sở của thượng nguồn mới được nhận.
 
-    覆盖核心 hook:
-    - on_llm_start: 某个 LLM 调用开始(可推断当前在哪个 analyst)
-    - on_llm_end: LLM 调用结束,带成本
-    - on_chain_start/end: LangGraph 节点切换
+    Ghi đè các hook cốt lõi:
+    - on_llm_start: một lời gọi LLM bắt đầu (suy ra đang ở analyst nào)
+    - on_llm_end: lời gọi LLM kết thúc, kèm chi phí
+    - on_chain_start/end: nút LangGraph chuyển
 
-    P0 简单实现:把所有事件都 logger.info 出来,带 trace_id 标签。
-    前端通过过滤 log_entries 表的 trace_id + event=ta_progress 拿到时间线。
+    Cài đặt đơn giản ở mức P0: mọi sự kiện đều logger.info ra, kèm nhãn trace_id.
+    Frontend lọc bảng log_entries theo trace_id + event=ta_progress để lấy dòng thời gian.
     """
 
     def __init__(
@@ -129,7 +130,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         return time.monotonic() - self._started_at
 
     def _emit(self, stage: str, action: str, **extra):
-        """写一条进度日志。前端按 trace_id + event=ta_progress 拉。"""
+        """Ghi một dòng nhật ký tiến độ. Frontend kéo theo trace_id + event=ta_progress."""
         if self.cancel_event is not None and self.cancel_event.is_set():
             return
         with log_context(
@@ -149,7 +150,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
             logger.info(f"[TA进度] stage={stage} action={action}{detail} {extra}")
 
     def emit(self, stage: str, action: str, **extra) -> None:
-        """向采集等非 LangChain 阶段发出同一格式的进度事件。"""
+        """Phát sự kiện tiến độ cùng định dạng cho các chặng không thuộc LangChain, như chặng thu thập."""
         self._emit(stage, action, **extra)
 
     # ---- Giao diện callbacks của LangChain ----
@@ -282,7 +283,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         self._emit("error", "chain_error", error=str(error)[:200], run_id=_run_id(kwargs))
 
     def on_tool_start(self, serialized, input_str, **kwargs):
-        """记录 LangGraph ToolNode 当前正在执行的工具。"""
+        """Ghi nhận công cụ mà ToolNode của LangGraph đang chạy."""
         name = ""
         try:
             name = kwargs.get("name") or (serialized or {}).get("name") or "unknown"
@@ -336,7 +337,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
         return _normalize_stage(name) or "unknown"
 
     def _finish_chain(self, action: str, kwargs: dict, **extra: Any) -> None:
-        """按 run_id 找回节点并发出结束事件；上游未携带节点名时也能正确闭环。"""
+        """Tìm lại nút theo run_id rồi phát sự kiện kết thúc; thượng nguồn không mang theo tên nút thì vẫn khép vòng đúng."""
         run_id = _run_id(kwargs)
         record = self._chain_runs.pop(run_id, None) if run_id else None
         name = (record or {}).get("name") or _callback_name(None, kwargs)
@@ -359,7 +360,7 @@ class PanWatchProgressHandler(_LCBaseCallbackHandler):
 
 
 def _normalize_stage(name: str) -> str:
-    """把 LangGraph 节点名标准化到 STAGES_ORDER 里的一个值。"""
+    """Chuẩn hóa tên nút LangGraph về một giá trị trong STAGES_ORDER."""
     n = "_".join(str(name or "").strip().lower().replace("-", " ").split())
     if not n:
         return ""
@@ -372,7 +373,7 @@ def _normalize_stage(name: str) -> str:
 
 
 def _callback_name(serialized: Any, kwargs: dict[str, Any]) -> str:
-    """兼容 LangChain callback 的 name/metadata/serialized 三种节点来源。"""
+    """Tương thích cả ba nguồn tên nút của callback LangChain: name/metadata/serialized."""
     metadata = kwargs.get("metadata") or {}
     return str(
         kwargs.get("name")
@@ -400,13 +401,13 @@ def _callback_agent(kwargs: dict[str, Any], chain_runs: dict[str, dict[str, str]
 
 
 def aggregate_progress(log_entries: list[dict]) -> dict:
-    """读 log_entries 表里 event=ta_progress 的记录,聚合成阶段进度。
+    """Đọc các bản ghi event=ta_progress trong bảng log_entries, gộp thành tiến độ từng chặng.
 
-    log_entries 行结构(参考 src/web/log_handler.py):
+    Cấu trúc dòng log_entries (xem src/web/log_handler.py):
     {timestamp, level, logger_name, message, trace_id, agent_name, event, tags, ...}
-    tags 是 dict,含 stage / action / elapsed_sec / total_cost_usd 等。
+    tags là dict, chứa stage / action / elapsed_sec / total_cost_usd…
 
-    返回结构(给前端):
+    Cấu trúc trả về (cho frontend):
     {
         "current_stage": "bull_bear_debate",
         "completed_stages": [...],
@@ -517,15 +518,15 @@ def aggregate_progress(log_entries: list[dict]) -> dict:
 
 
 def check_budget(monthly_budget_usd: float, agent_name: str = "tradingagents") -> dict:
-    """统计本月已用美元 + 剩余,供触发前校验。
+    """Thống kê số đô la đã dùng trong tháng + phần còn lại, để kiểm trước khi kích hoạt.
 
     Returns:
         {
-            "used": float,           # 本月已用(美元)
-            "remaining": float,      # 剩余(美元)
-            "limit": float,          # 配置上限
-            "exceeded": bool,        # 是否超限
-            "runs_this_month": int,  # 本月运行次数
+            "used": float,           # đã dùng trong tháng (đô la)
+            "remaining": float,      # còn lại (đô la)
+            "limit": float,          # trần theo cấu hình
+            "exceeded": bool,        # có vượt trần không
+            "runs_this_month": int,  # số lượt chạy trong tháng
         }
     """
     now = datetime.now(timezone.utc)
@@ -572,7 +573,7 @@ def check_budget(monthly_budget_usd: float, agent_name: str = "tradingagents") -
 
 
 def _extract_cost(raw_data) -> float:
-    """从 AnalysisHistory.raw_data 提取 cost_usd。"""
+    """Rút cost_usd từ AnalysisHistory.raw_data."""
     if not isinstance(raw_data, dict):
         return 0.0
     cost = raw_data.get("cost_usd")
@@ -590,13 +591,13 @@ def estimate_cost(
     selected_analysts: list[str],
     model: str = "deepseek-chat",
 ) -> dict:
-    """单次分析的成本估算(粗略,实际可能 ±50%)。
+    """Ước tính chi phí một lượt phân tích (thô, thực tế có thể lệch ±50%).
 
-    用于触发前给用户预估。公式假设:
-    - 每分析师 ~5k input + 2k output token
-    - 辩论每轮 ~12k input + 4k output token
-    - 风控 + PM ~15k input + 3k output token
-    - LangGraph 累积上下文实际比理论高 2-5 倍
+    Dùng để báo trước cho người dùng khi kích hoạt. Công thức giả định:
+    - Mỗi chuyên viên phân tích ~5k token vào + 2k token ra
+    - Mỗi vòng tranh luận ~12k token vào + 4k token ra
+    - Kiểm soát rủi ro + PM ~15k token vào + 3k token ra
+    - Ngữ cảnh LangGraph tích lũy thực tế cao gấp 2-5 lần lý thuyết
     """
     n_analysts = len(selected_analysts or [])
     prompt_tokens = n_analysts * 5000 + max(1, debate_rounds) * 12000 + 15000
@@ -626,6 +627,6 @@ def estimate_cost(
 
 
 def get_today_cache_key(symbol: str, market: str, debate_rounds: int, model: str) -> str:
-    """生成同标的同日的缓存键,用于跳过重复 LLM 调用。"""
+    """Sinh khóa đệm cho cùng mã cùng ngày, dùng để bỏ qua các lời gọi LLM lặp."""
     today = date.today().isoformat()
     return f"{market}:{symbol}:{today}:r{debate_rounds}:{model}"

@@ -1,10 +1,10 @@
-"""TradingAgents 运行时适配：LLM 配置、密钥注入和 LangChain 兼容补丁。
+"""Khớp nối lúc chạy của TradingAgents: cấu hình LLM, tiêm khóa và bản vá tương thích LangChain.
 
-桥接 PanWatch AIClient 配置 → TradingAgents LLM config。
+Bắc cầu cấu hình AIClient của PanWatch → cấu hình LLM của TradingAgents.
 
-TradingAgents 通过 langchain-openai / langchain-anthropic 等驱动 LLM,
-读取 config 字典 + 环境变量(`OPENAI_API_KEY`/`DEEPSEEK_API_KEY` 等)。
-本模块把 PanWatch 的 AIClient 配置桥接过去。
+TradingAgents chạy LLM qua langchain-openai / langchain-anthropic và tương tự, đọc dict
+config + biến môi trường (`OPENAI_API_KEY`/`DEEPSEEK_API_KEY`…). Module này bắc cầu cấu
+hình AIClient của PanWatch sang đó.
 """
 
 from __future__ import annotations
@@ -48,22 +48,23 @@ def build_ta_llm_config(
     llm_max_retries: int = 0,
     llm_max_tokens: int = 4096,
 ) -> dict[str, Any]:
-    """生成 TradingAgents 期望的 config dict。
+    """Sinh dict config mà TradingAgents mong đợi.
 
-    继承 tradingagents.default_config.DEFAULT_CONFIG (含 data_cache_dir / project_dir /
-    memory_log_path 等必需字段),再覆盖 PanWatch 配置:
-    - llm_provider: 统一走 openrouter 兼容协议(走 chat completions,避开 OpenAI Responses API)
-    - backend_url: PanWatch AI 服务的 base_url
-    - deep_think_llm: 推理/辩论/风控/PM 用的"强模型"。默认走 ai_client.model;
-      可由 deep_model 参数覆盖,允许辩论用 claude-sonnet / o3 这种贵但准的模型
-    - quick_think_llm: 分析师工具调用用的"快模型"。默认 deep_model;
-      可由 quick_model 参数覆盖,允许分析师用 haiku / gpt-4o-mini 等便宜模型
-    - max_debate_rounds: 辩论轮次
+    Kế thừa tradingagents.default_config.DEFAULT_CONFIG (chứa các trường bắt buộc như
+    data_cache_dir / project_dir / memory_log_path…), rồi ghi đè bằng cấu hình PanWatch:
+    - llm_provider: thống nhất đi giao thức tương thích openrouter (dùng chat completions, né Responses API của OpenAI)
+    - backend_url: base_url của dịch vụ AI PanWatch
+    - deep_think_llm: "mô hình mạnh" dùng cho suy luận/tranh luận/kiểm soát rủi ro/PM. Mặc định lấy ai_client.model;
+      tham số deep_model ghi đè được, cho phép tranh luận dùng mô hình đắt mà chuẩn như claude-sonnet / o3
+    - quick_think_llm: "mô hình nhanh" cho chuyên viên phân tích gọi công cụ. Mặc định là deep_model;
+      tham số quick_model ghi đè được, cho phép chuyên viên phân tích dùng mô hình rẻ như haiku / gpt-4o-mini
+    - max_debate_rounds: số vòng tranh luận
     - selected_analysts: ["market", "social", "news", "fundamentals"]
     - output_language: "Chinese" / "English"
 
-    注意:TA 上游 deep + quick 共用 backend_url,所以两个模型必须在**同一个 endpoint** 后面。
-    要混 Claude + GPT 推荐 LiteLLM proxy 把多 provider 聚合到一个 endpoint。
+    Lưu ý: thượng nguồn TA để deep + quick dùng chung backend_url, nên hai mô hình bắt
+    buộc nằm sau **cùng một endpoint**. Muốn trộn Claude + GPT thì nên dùng LiteLLM proxy
+    gom nhiều provider về một endpoint.
     """
     analysts = list(selected_analysts or VALID_ANALYSTS)
     invalid = [a for a in analysts if a not in VALID_ANALYSTS]
@@ -142,15 +143,16 @@ def build_ta_llm_config(
 
 
 def inject_api_key_env(ai_client: AIClient) -> None:
-    """把 PanWatch AI 服务的 API key 注入到环境变量。
+    """Tiêm API key của dịch vụ AI PanWatch vào biến môi trường.
 
-    TradingAgents llm_clients 按 provider 读不同 env var
-    (OPENAI_API_KEY / DEEPSEEK_API_KEY / OPENROUTER_API_KEY 等)。
-    我们 PanWatch 走 openrouter 兼容模式(chat completions),所以注入
-    OPENROUTER_API_KEY。同时也设 OPENAI_API_KEY 作 fallback。
+    llm_clients của TradingAgents đọc env var khác nhau theo provider
+    (OPENAI_API_KEY / DEEPSEEK_API_KEY / OPENROUTER_API_KEY…).
+    PanWatch đi chế độ tương thích openrouter (chat completions), nên tiêm
+    OPENROUTER_API_KEY. Đồng thời đặt luôn OPENAI_API_KEY làm lưới hứng.
 
-    注意:这是进程级 env var,如果同进程并发跑多个不同 key 的请求,可能竞态。
-    P0 假设 max_workers=2 且只用一个 AI service,可接受。
+    Lưu ý: đây là env var ở cấp tiến trình, nếu cùng tiến trình chạy song song nhiều yêu
+    cầu với key khác nhau thì có thể tranh chấp. Ở mức P0 giả định max_workers=2 và chỉ
+    dùng một dịch vụ AI, chấp nhận được.
     """
     if not ai_client.api_key:
         logger.warning("[TA] AIClient 没有 api_key,TradingAgents LLM 调用大概率失败")
@@ -169,7 +171,7 @@ _PATCH_APPLIED = False
 
 
 def apply_compat_patches() -> None:
-    """应用所有 LangChain 兼容性补丁。幂等。"""
+    """Áp mọi bản vá tương thích LangChain. Bất biến."""
     global _PATCH_APPLIED
     if _PATCH_APPLIED:
         return
@@ -180,7 +182,7 @@ def apply_compat_patches() -> None:
 
 
 def _coerce_tool_calls_args(tool_calls: Any) -> Any:
-    """把 tool_calls 列表中每项的 args 字段(若是 JSON 字符串)转成 dict。"""
+    """Đổi trường args của từng mục trong danh sách tool_calls (nếu là chuỗi JSON) thành dict."""
     if not isinstance(tool_calls, list):
         return tool_calls
     fixed = []
@@ -201,9 +203,9 @@ def _coerce_tool_calls_args(tool_calls: Any) -> Any:
 
 
 def _patch_ai_message_init() -> None:
-    """Patch AIMessage.__init__ 让 tool_calls 字段在校验前自动 coerce str args → dict。
+    """Patch AIMessage.__init__ để trường tool_calls tự ép chuỗi args → dict trước khi kiểm.
 
-    这是直接拦截 AIMessage 构造的可靠路径,不论 tool_calls 走的哪个上游函数。
+    Đây là đường chặn thẳng lúc dựng AIMessage nên đáng tin, bất kể tool_calls đi qua hàm nào của thượng nguồn.
     """
     try:
         from langchain_core.messages.ai import AIMessage
@@ -226,7 +228,7 @@ def _patch_ai_message_init() -> None:
 
 
 def _patch_tool_call_args_coercion() -> None:
-    """让 ToolCall / AIMessage 接受 string 类型的 args 并自动 json.loads。"""
+    """Để ToolCall / AIMessage nhận args kiểu chuỗi và tự json.loads."""
     try:
         from langchain_core.messages import tool as _tool_module
     except ImportError:
@@ -291,8 +293,8 @@ def _patch_tool_call_args_coercion() -> None:
 
 
 def _patch_ai_message_validator() -> None:
-    """备用方案:直接 patch AIMessage.model_validate 在 args 是 str 时降级清洗。
+    """Phương án dự phòng: patch thẳng AIMessage.model_validate để hạ cấp làm sạch khi args là chuỗi.
 
-    目前不启用,只在 tool_call_coercion 不够用时启用。
+    Hiện chưa bật, chỉ bật khi tool_call_coercion không đủ.
     """
     pass

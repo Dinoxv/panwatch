@@ -1,10 +1,10 @@
-"""TradingAgentsAgent — PanWatch 的 BaseAgent 子类,集成 TauricResearch/TradingAgents。
+"""TradingAgentsAgent — lớp con BaseAgent của PanWatch, tích hợp TauricResearch/TradingAgents.
 
-设计要点(详见 .docs/tradingagents/02-technical-design.md):
-1. collect() 走 PanWatch Provider Orchestrator,4 类数据并发拉
-2. analyze() 重写,不走单次 ai_client.chat,而是调 TradingAgentsGraph
-3. monkeypatch route_to_vendor 让 TradingAgents 拿到 PanWatch 数据(A 股专用)
-4. progress callback + cost tracker + 月度预算 + 同日缓存
+Điểm thiết kế (chi tiết xem .docs/tradingagents/02-technical-design.md):
+1. collect() đi qua Provider Orchestrator của PanWatch, kéo song song 4 nhóm dữ liệu
+2. analyze() được ghi đè, không gọi ai_client.chat một lần mà gọi TradingAgentsGraph
+3. monkeypatch route_to_vendor để TradingAgents lấy được dữ liệu PanWatch (riêng cổ phiếu A)
+4. progress callback + cost tracker + ngân sách tháng + đệm trong ngày
 """
 
 from __future__ import annotations
@@ -47,23 +47,23 @@ __all__ = ["TradingAgentsAgent", "TradingAgentsUnavailable"]
 
 
 def get_market_data():
-    """lazy import,便于测试 monkeypatch(module 级)。"""
+    """lazy import, cho tiện monkeypatch lúc test (ở cấp module)."""
     from src.platform.marketdata.marketdata_client import get_market_data as _g
 
     return _g()
 
 
 class TradingAgentsUnavailable(RuntimeError):
-    """tradingagents 库未安装或上游 API 变更导致不可用。"""
+    """Thư viện tradingagents chưa cài hoặc API thượng nguồn đổi nên không dùng được."""
 
 
 def _bounded_graph_class(graph_cls):
-    """让 TradingAgentsGraph 把请求边界传给 LangChain LLM 客户端。
+    """Để TradingAgentsGraph truyền các mốc giới hạn của yêu cầu xuống máy khách LLM của LangChain.
 
-    TradingAgents 0.5.0 已支持 ``llm_max_retries``/``max_tokens``，但当前
-    版本的 ``_get_provider_kwargs`` 尚未读取自定义 timeout。通过一个很小的
-    子类适配该差异，避免直接修改 site-packages，也兼容后续上游自行支持
-    timeout 的版本。
+    TradingAgents 0.5.0 đã hỗ trợ ``llm_max_retries``/``max_tokens``, nhưng
+    ``_get_provider_kwargs`` ở bản hiện tại chưa đọc timeout tự đặt. Dùng một lớp con rất
+    nhỏ để khớp chỗ lệch đó, vừa khỏi sửa thẳng site-packages, vừa tương thích với bản
+    thượng nguồn sau này tự hỗ trợ timeout.
     """
 
     class BoundedTradingAgentsGraph(graph_cls):
@@ -136,7 +136,7 @@ class TradingAgentsAgent(BaseAgent):
     # ---- Phương thức trừu tượng của BaseAgent ----
 
     async def collect(self, context: AgentContext) -> dict:
-        """从 PanWatch 数据体系收集数据,并发拉 4 类(走 marketdata 包)。"""
+        """Thu thập dữ liệu từ hệ dữ liệu PanWatch, kéo song song 4 nhóm (qua gói marketdata)."""
         if not context.watchlist:
             raise ValueError("TradingAgents 需要至少 1 只股票")
         # Lấy từng mã làm đơn vị; nếu danh sách theo dõi có nhiều mã thì lấy mã đầu
@@ -248,10 +248,10 @@ class TradingAgentsAgent(BaseAgent):
         return "", ""
 
     async def run_single(self, context: AgentContext, symbol: str) -> AnalysisResult:
-        """单只股票模式入口 — 供 AgentScheduler 调度时按股票迭代调用。
+        """Lối vào chế độ từng mã — cho AgentScheduler gọi lặp theo từng mã khi lập lịch.
 
-        典型场景:盘前自动跑用户绑定到 tradingagents 的核心仓位股票。
-        实现:过滤 watchlist 到指定 symbol,然后走标准 run() 流程。
+        Tình huống điển hình: trước phiên tự chạy các mã vị thế cốt lõi mà người dùng gắn vào tradingagents.
+        Cách làm: lọc watchlist về đúng symbol chỉ định, rồi đi theo luồng run() chuẩn.
         """
         # Tìm mã đích
         targets = [s for s in context.watchlist if s.symbol == symbol]
@@ -484,7 +484,7 @@ class TradingAgentsAgent(BaseAgent):
     # ---- Phương thức nội bộ ----
 
     def _check_availability(self) -> tuple[bool, str]:
-        """检测 tradingagents 是否可用。"""
+        """Dò xem tradingagents có dùng được không."""
         try:
             import tradingagents  # noqa: F401
             from tradingagents.graph.trading_graph import TradingAgentsGraph  # noqa: F401
@@ -503,7 +503,7 @@ class TradingAgentsAgent(BaseAgent):
         return f"ta-{symbol}-{int(datetime.now().timestamp())}"
 
     def _try_cache_hit(self, stock) -> AnalysisResult | None:
-        """同标的同日是否已分析过 → 返回缓存的 AnalysisResult。"""
+        """Cùng mã cùng ngày đã phân tích chưa → trả về AnalysisResult đã đệm."""
         if self.cache_ttl_hours <= 0:
             return None
         try:
@@ -536,13 +536,13 @@ class TradingAgentsAgent(BaseAgent):
         portfolio: Any | None = None,
         cancel_event: threading.Event | None = None,
     ) -> dict[str, Any]:
-        """在 worker 线程跑同步 TradingAgents 流程。
+        """Chạy luồng TradingAgents đồng bộ trong luồng worker.
 
-        步骤:
-        1. inject_api_key_env 注入 API key 到环境变量
-        2. patch_route_to_vendor 让 A 股请求路由到 PanWatch 数据
-        3. TradingAgentsGraph.propagate 跑 3-5 分钟
-        4. 返回 decision + final_state + cost_usd
+        Các bước:
+        1. inject_api_key_env tiêm API key vào biến môi trường
+        2. patch_route_to_vendor để yêu cầu cổ phiếu A định tuyến về dữ liệu PanWatch
+        3. TradingAgentsGraph.propagate chạy 3-5 phút
+        4. Trả về decision + final_state + cost_usd
         """
         # Phụ thuộc then chốt import trễ, bảo đảm khi _check_availability thất bại thì chỗ này không bị gọi
         from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -596,9 +596,9 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _inject_graph_callbacks(graph, handler):
-        """Monkey-patch graph.propagator.get_graph_args 让 LangGraph 节点级 callbacks 也注入。
+        """Monkey-patch graph.propagator.get_graph_args để callbacks ở cấp nút LangGraph cũng được tiêm vào.
 
-        否则只有 on_llm_start/end 会触发,on_chain_start/end (节点切换) 不会,进度条卡死。
+        Nếu không, chỉ on_llm_start/end kích hoạt, còn on_chain_start/end (chuyển nút) thì không, làm thanh tiến độ đứng im.
         """
         try:
             propagator = getattr(graph, "propagator", None)
@@ -618,7 +618,7 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _collect_toolkit_diagnostic(trace_id: str) -> dict:
-        """查同 trace_id 的 ta_toolkit 日志,聚合成 {summary, recent}。"""
+        """Tra nhật ký ta_toolkit cùng trace_id, gộp thành {summary, recent}."""
         from src.platform.persistence.database import SessionLocal
         from src.platform.persistence.models import LogEntry
 
@@ -653,7 +653,7 @@ class TradingAgentsAgent(BaseAgent):
 
     @staticmethod
     def _extract_cost_from_graph(graph) -> float:
-        """尝试从 TradingAgentsGraph 实例提取累计成本。上游未必暴露字段,容错。"""
+        """Thử rút chi phí lũy kế từ thực thể TradingAgentsGraph. Thượng nguồn chưa chắc phơi trường đó, nên chịu lỗi."""
         for attr in ("total_cost", "total_cost_usd", "_total_cost"):
             v = getattr(graph, attr, None)
             if v is not None:
@@ -664,7 +664,7 @@ class TradingAgentsAgent(BaseAgent):
         return 0.0
 
     def _fallback_cost_estimate(self, ta_config: dict) -> float:
-        """fallback 用 estimate 平均值。"""
+        """Lùi về dùng giá trị bình quân của estimate."""
         est = estimate_cost(
             debate_rounds=ta_config.get("max_debate_rounds", 1),
             selected_analysts=ta_config.get("selected_analysts", []),
