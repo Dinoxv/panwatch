@@ -39,7 +39,7 @@ class ChartAnalystAgent(BaseAgent):
             logger.warning("自选股列表为空，跳过截图采集")
             return {"screenshots": [], "watchlist": []}
 
-        # 准备股票列表
+        # Chuẩn bị danh sách cổ phiếu
         stocks = [
             {
                 "symbol": stock.symbol,
@@ -49,14 +49,14 @@ class ChartAnalystAgent(BaseAgent):
             for stock in context.watchlist
         ]
 
-        # 截图
+        # Chụp màn hình
         self._collector = ScreenshotCollector()
         try:
             screenshots = await self._collector.capture_batch(
                 stocks, period=self.period
             )
 
-            # 结构化信号（行情/技术/持仓），用于提示词增强（失败不影响截图）
+            # Tín hiệu có cấu trúc (giá / kỹ thuật / vị thế), dùng để làm giàu prompt (lỗi cũng không ảnh hưởng ảnh chụp)
             packs = {}
             try:
                 builder = SignalPackBuilder()
@@ -74,7 +74,7 @@ class ChartAnalystAgent(BaseAgent):
             except Exception as e:
                 logger.warning(f"SignalPack 获取失败（chart_analyst 继续执行）：{e}")
 
-            # 清理旧截图
+            # Dọn ảnh chụp cũ
             self._collector.cleanup_old_screenshots(max_age_hours=24)
 
             return {
@@ -96,7 +96,7 @@ class ChartAnalystAgent(BaseAgent):
         lines.append(f"## 分析时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append(f"## K线周期：{self._period_label(data.get('period', 'daily'))}\n")
 
-        # 股票列表（含持仓信息）
+        # Danh sách cổ phiếu (kèm thông tin vị thế)
         lines.append("## 待分析股票")
         screenshots: list[ChartScreenshot] = data.get("screenshots", [])
         packs = data.get("signal_packs", {}) or {}
@@ -113,7 +113,7 @@ class ChartAnalystAgent(BaseAgent):
                 else:
                     lines.append(f"{i}. {shot.name}({shot.symbol}) - 见图{i} | 未持仓")
 
-                # 补充结构化技术摘要（让多模态输出更稳定）
+                # Bổ sung tóm tắt kỹ thuật có cấu trúc (giúp đầu ra đa phương thức ổn định hơn)
                 tech = (pack.technical if pack else None) or {}
                 quote = pack.quote if pack else None
                 brief_parts = []
@@ -183,7 +183,7 @@ class ChartAnalystAgent(BaseAgent):
         """
         system_prompt, user_content = self.build_prompt(data, context)
 
-        # 收集图片路径
+        # Thu thập đường dẫn ảnh
         screenshots: list[ChartScreenshot] = data.get("screenshots", [])
         image_paths = [shot.filepath for shot in screenshots if shot.exists]
 
@@ -191,7 +191,7 @@ class ChartAnalystAgent(BaseAgent):
             logger.warning("没有可用的截图，跳过分析")
             content = "未能获取到 K 线图截图，请检查网络连接或稍后重试。"
         else:
-            # 调用多模态 AI
+            # Gọi AI đa phương thức
             logger.info(f"使用 {len(image_paths)} 张截图进行多模态分析")
             content = await context.ai_client.chat(
                 system_prompt,

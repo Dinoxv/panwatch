@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# 数据源类型说明
+# Giải thích các loại nguồn dữ liệu
 TYPE_LABELS = {
     "news": "新闻资讯",
     "kline": "K线数据",
@@ -69,7 +69,7 @@ class DataSourceResponse(BaseModel):
         from_attributes = True
 
 
-# 已接入 marketdata 新引擎的数据类型(随各类型逐步迁移扩充)
+# Các loại dữ liệu đã đấu vào engine marketdata mới (mở rộng dần theo tiến độ di trú từng loại)
 _ENGINE_ATTACHED_TYPES = {
     "news",
     "quote",
@@ -220,8 +220,8 @@ async def test_datasource(source_id: int, db: Session = Depends(get_db)):
 
     result = await manager.test_source(source)
 
-    # 不用 success / data 作为顶层字段,避免被 ResponseWrapperMiddleware 当成业务响应
-    # 拆解后导致 metadata 丢失(详见 src/web/response.py:59 的特殊分支)。
+    # Không dùng success / data làm trường cấp cao nhất, tránh bị ResponseWrapperMiddleware hiểu là phản hồi nghiệp vụ
+    # rồi tháo ra làm mất metadata (xem nhánh đặc biệt ở src/web/response.py:59).
     return {
         "test_passed": result.success,
         "source_name": source.name,

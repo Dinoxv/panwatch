@@ -30,7 +30,7 @@ def get_base_url() -> str:
             return val.rstrip("/")
         finally:
             db.close()
-    except Exception as e:  # noqa: BLE001 — DB 未初始化/表缺失等均降级为空
+    except Exception as e:  # noqa: BLE001 — cơ sở dữ liệu chưa khởi tạo / thiếu bảng đều hạ cấp thành rỗng
         logger.debug(f"get_base_url 读取失败,降级为空: {e}")
         return ""
 

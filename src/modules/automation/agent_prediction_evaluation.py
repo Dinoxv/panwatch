@@ -101,8 +101,8 @@ def _legacy_group_ids(rows: Sequence[Any]) -> dict[int, str]:
                 "key": f"legacy:{base_key}:{record_id or index}",
                 "horizons": set(),
                 "last_id": record_id,
-                # 同一键未凑齐至少两个 horizon 又出现新记录时，无法知道
-                # 后续结果属于哪次建议；宁可不配对，也不能交叉污染结果。
+                # Khi cùng một khóa chưa đủ ít nhất hai horizon mà đã có bản ghi mới, không thể biết
+                # kết quả sau thuộc về lần khuyến nghị nào; thà không ghép cặp còn hơn để kết quả nhiễm chéo.
                 "ambiguous": bool(
                     same_base_as_previous
                     and (previous["ambiguous"] or len(previous["horizons"]) < 2)

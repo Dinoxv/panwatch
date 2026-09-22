@@ -12,19 +12,19 @@ from src.modules.administration.update_checker import check_update
 
 router = APIRouter()
 
-# 模块 router 已不在仓库根的浅层目录；版本文件必须从本文件的绝对位置推导，
-# 不能依赖服务进程的当前工作目录。
+# Router của module không còn nằm ở thư mục nông sát gốc repo; tệp phiên bản phải suy ra từ vị trí tuyệt đối của chính tệp này,
+# không được dựa vào thư mục làm việc hiện tại của tiến trình dịch vụ.
 VERSION_FILE = Path(__file__).resolve().parents[4] / "VERSION"
 
 
 def get_app_version() -> str:
     """获取应用版本号"""
-    # 优先从环境变量读取
+    # Ưu tiên đọc từ biến môi trường
     version = os.getenv("APP_VERSION")
     if version:
         return version
 
-    # 从 VERSION 文件读取（支持多个位置）
+    # Đọc từ tệp VERSION (hỗ trợ nhiều vị trí)
     possible_paths = [Path("VERSION"), VERSION_FILE]
     for path in possible_paths:
         try:
@@ -47,7 +47,7 @@ class SettingResponse(BaseModel):
         from_attributes = True
 
 
-# 配置项描述
+# Mô tả mục cấu hình
 SETTING_DESCRIPTIONS = {
     "http_proxy": "HTTP 代理地址(配置后所有对外请求含行情/新闻/AI/通知统一走此代理)",
     "notify_quiet_hours": "通知静默时间段（HH:MM-HH:MM，空为关闭）",
@@ -101,7 +101,7 @@ def list_settings(db: Session = Depends(get_db)):
     return result
 
 
-AVATAR_KEY = "ui_avatar"  # DB 仅存文件名;图片本体落在 data/avatars/
+AVATAR_KEY = "ui_avatar"  # Cơ sở dữ liệu chỉ lưu tên tệp; ảnh thật nằm ở data/avatars/
 
 
 def _avatar_dir() -> str:
@@ -165,7 +165,7 @@ def set_avatar(update: SettingUpdate, db: Session = Depends(get_db)):
     fname = f"avatar.{ext}"
     with open(os.path.join(_avatar_dir(), fname), "wb") as f:
         f.write(raw)
-    if old and old != fname:  # 扩展名变化时清掉旧文件
+    if old and old != fname:  # Xóa tệp cũ khi phần mở rộng thay đổi
         try:
             os.remove(os.path.join(_avatar_dir(), old))
         except OSError:
@@ -192,7 +192,7 @@ def update_setting(key: str, update: SettingUpdate, db: Session = Depends(get_db
     db.commit()
     db.refresh(setting)
 
-    # http_proxy 改动立刻反映到进程 env,所有 httpx(trust_env=True)免重启即走新代理
+    # Đổi http_proxy phản ánh ngay vào env của tiến trình, mọi httpx (trust_env=True) dùng proxy mới mà không cần khởi động lại
     if key == "http_proxy":
         try:
             from server import apply_proxy_env

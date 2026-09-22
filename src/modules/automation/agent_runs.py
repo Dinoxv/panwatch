@@ -9,8 +9,8 @@ from src.platform.persistence.models import AgentRun, LogEntry
 
 logger = logging.getLogger(__name__)
 
-# 采集阶段可能在外部数据源限流/重试时暂时没有进度日志，不能沿用
-# “5 分钟无日志即 stale”的规则；但服务重启后也不能无限恢复旧任务。
+# Giai đoạn thu thập có thể tạm thời không có nhật ký tiến độ khi nguồn ngoài giới hạn tốc độ / thử lại, nên không dùng được
+# quy tắc “5 phút không có nhật ký là cũ”; nhưng sau khi dịch vụ khởi động lại cũng không được khôi phục tác vụ cũ vô hạn.
 ACTIVE_RUN_TTL_SEC = 45 * 60
 
 
@@ -131,8 +131,8 @@ def find_active_tradingagents_trace(db: Session, stock_symbol: str) -> str | Non
     """
     now = datetime.now(timezone.utc)
 
-    # 生命周期记录是首选数据源：采集阶段还没有 ta_progress 时也能恢复，
-    # 且不会因为某个外部源 5 分钟没有日志就重复触发任务。
+    # Bản ghi vòng đời là nguồn dữ liệu ưu tiên: khôi phục được cả khi giai đoạn thu thập chưa có ta_progress,
+    # và không kích hoạt lại tác vụ chỉ vì một nguồn ngoài im lặng 5 phút.
     active_run = (
         db.query(AgentRun)
         .filter(
@@ -147,7 +147,7 @@ def find_active_tradingagents_trace(db: Session, stock_symbol: str) -> str | Non
         created_at = _as_utc(active_run.created_at)
         if created_at is None or (now - created_at).total_seconds() <= ACTIVE_RUN_TTL_SEC:
             return active_run.trace_id
-        # 已超过整个任务安全窗口时，不能再被旧日志重新判成 running。
+        # Khi đã vượt cửa sổ an toàn của cả tác vụ thì nhật ký cũ không được phép đưa nó về lại trạng thái running.
         return None
 
     cutoff = now - timedelta(minutes=30)

@@ -24,14 +24,14 @@ from src.platform.persistence.json_safe import to_jsonable
 
 logger = logging.getLogger(__name__)
 
-# 各市场用于相对强度对比的大盘指数(代码 + 中文标签)。
-# A股优先沪深300(000300);港股恒生指数;美股标普500(efinance 用 .INX)。
+# Chỉ số chung của từng thị trường dùng để so sánh sức mạnh tương đối (mã + nhãn hiển thị).
+# Cổ phiếu A ưu tiên CSI 300 (000300); Hồng Kông dùng Hang Seng; Mỹ dùng S&P 500 (efinance dùng .INX).
 _INDEX_BY_MARKET: dict[str, tuple[str, str]] = {
     "CN": ("000300", "沪深300"),
     "HK": ("HSI", "恒生指数"),
     "US": (".INX", "标普500"),
 }
-# A股若 000300 取数失败时的兜底指数(上证指数)。
+# Chỉ số dự phòng cho cổ phiếu A khi lấy 000300 thất bại (Chỉ số Thượng Hải).
 _CN_INDEX_FALLBACK: tuple[str, str] = ("000001", "上证指数")
 
 
@@ -75,7 +75,7 @@ class ContextBuilder:
 
     def __init__(self):
         self._kline_cache: dict[tuple[str, str, int], dict] = {}
-        # 每次构建内,各市场大盘指数只取一次(避免逐股重复请求)。
+        # Trong mỗi lần dựng, chỉ số chung của từng thị trường chỉ lấy một lần (tránh gọi lặp cho từng mã).
         self._index_cache: dict[str, dict | None] = {}
 
     @staticmethod
@@ -102,7 +102,7 @@ class ContextBuilder:
                 if not isinstance(items, list):
                     items = []
                 if not items:
-                    # 新版本盘前/盘后将新闻放在 context_payload.<symbol>.news.*
+                    # Bản mới đặt tin tức trước / sau phiên tại context_payload.<symbol>.news.*
                     ctx_payload = raw.get("context_payload") or {}
                     if isinstance(ctx_payload, dict):
                         sym_payload = ctx_payload.get(symbol) or {}
@@ -215,7 +215,7 @@ class ContextBuilder:
         self._kline_cache[key] = ctx
         return ctx
 
-    # ----- ② 相对大盘强度 ------------------------------------------------- #
+    # ----- ② Sức mạnh tương đối so với thị trường chung ------------------- #
 
     @staticmethod
     def _index_for_market(market) -> tuple[str, str]:
@@ -252,7 +252,7 @@ class ContextBuilder:
 
         sym, _label = self._index_for_market(market)
         ctx = self._fetch_index_context(sym, market)
-        # A股 000300 取不到时兜底上证指数
+        # Khi không lấy được 000300 cho cổ phiếu A thì dự phòng bằng Chỉ số Thượng Hải
         if (not ctx or not ctx.get("available")) and mkt == "CN":
             ctx = self._fetch_index_context(_CN_INDEX_FALLBACK[0], market)
         self._index_cache[mkt] = ctx
@@ -288,7 +288,7 @@ class ContextBuilder:
                 return None
 
             _sym, label = self._index_for_market(market)
-            # 兜底场景下标签可能是上证,这里用实际命中的标签做近似(沪深300/上证差异不影响语义)
+            # Ở nhánh dự phòng, nhãn có thể là Thượng Hải; dùng luôn nhãn thực tế khớp được làm xấp xỉ (khác biệt CSI 300 / Thượng Hải không đổi ngữ nghĩa)
             return {
                 "index_label": label if market != MarketCode.CN else label,
                 "stock_5d": stock_5d,
@@ -302,7 +302,7 @@ class ContextBuilder:
             logger.debug(f"相对强度计算失败: {e}")
             return None
 
-    # ----- ① 公告全文 + 头部新闻正文保留 --------------------------------- #
+    # ----- ① Toàn văn công bố thông tin + giữ phần thân của tin đầu ------- #
 
     @staticmethod
     def _enrich_events_fulltext(
@@ -318,7 +318,7 @@ class ContextBuilder:
         """
         if not events:
             return events
-        # 按重要性降序挑候选,保留原顺序输出
+        # Chọn ứng viên theo mức quan trọng giảm dần, xuất ra vẫn giữ thứ tự gốc
         important_idx = [
             i
             for i, ev in enumerate(events)
@@ -482,25 +482,25 @@ class ContextBuilder:
                 "history_news_count": len(hist_ranked),
             }
 
-            # ① 头部实时新闻保留更多正文(放宽采集层 300 字截断)
+            # ① Tin thời gian thực ở đầu giữ nhiều phần thân hơn (nới ngưỡng cắt 300 chữ ở tầng thu thập)
             realtime_for_payload = self._retain_news_content(
                 [dict(it) for it in realtime_ranked[:8]], top_k=2, max_chars=800
             )
-            # ① 重要公告(importance>=2)的前 2-3 条附加东财全文(纯文本,~1000 字)
+            # ① 2-3 công bố quan trọng đầu tiên (importance>=2) kèm toàn văn EastMoney (văn bản thuần, ~1000 chữ)
             events_for_payload = self._enrich_events_fulltext(
                 [dict(ev) for ev in ((pack.events.items if (pack and pack.events) else [])[:8])],
                 top_k=3,
                 importance_min=2,
             )
 
-            # ② 个股相对大盘强度(指数按市场缓存一次)
+            # ② Sức mạnh của mã so với thị trường chung (chỉ số cache một lần cho mỗi thị trường)
             relative_strength = self._compute_relative_strength(
                 market=market,
                 kline_history=kline_history,
                 index_ctx=self._get_index_context(market),
             )
 
-            # ④ 最近一次 TradingAgents 深度结论(高权重先验,仅紧凑版本)
+            # ④ Kết luận chuyên sâu TradingAgents gần nhất (tiên nghiệm trọng số cao, chỉ bản rút gọn)
             try:
                 ta_verdict = get_latest_ta_verdict(symbol, within_days=14)
             except Exception as e:

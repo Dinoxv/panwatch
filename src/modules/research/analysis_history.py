@@ -10,7 +10,7 @@ from src.platform.persistence.json_safe import to_jsonable
 
 logger = logging.getLogger(__name__)
 
-# TradingAgents 深度分析在 AnalysisHistory 里的 agent_name(见 agent.py: name = "tradingagents")
+# agent_name của phân tích chuyên sâu TradingAgents trong AnalysisHistory (xem agent.py: name = "tradingagents")
 TA_AGENT_NAME = "tradingagents"
 
 
@@ -49,7 +49,7 @@ def save_analysis(
         payload = to_jsonable(raw_data or {})
         agent_kind = infer_agent_kind(agent_name)
 
-        # 查找是否已存在
+        # Tìm xem đã tồn tại chưa
         existing = db.query(AnalysisHistory).filter(
             AnalysisHistory.agent_name == agent_name,
             AnalysisHistory.stock_symbol == stock_symbol,
@@ -57,14 +57,14 @@ def save_analysis(
         ).first()
 
         if existing:
-            # 更新（同一天可覆盖）
+            # Cập nhật (trong cùng ngày thì ghi đè được)
             existing.title = title
             existing.content = content
             existing.raw_data = payload
             existing.agent_kind_snapshot = agent_kind
             logger.info(f"更新分析记录: {agent_name}/{stock_symbol}/{date_str}")
         else:
-            # 新增
+            # Thêm mới
             record = AnalysisHistory(
                 agent_name=agent_name,
                 stock_symbol=stock_symbol,
@@ -202,7 +202,7 @@ def get_latest_ta_verdict_row(
     """
     if today is None:
         today = date.today()
-    # +1 天以包含今天(get_latest_analysis 是严格小于)
+    # +1 ngày để bao gồm hôm nay (get_latest_analysis dùng phép nhỏ hơn nghiêm ngặt)
     return get_latest_analysis(
         TA_AGENT_NAME, symbol, before_date=today + timedelta(days=1)
     )
@@ -218,12 +218,12 @@ def _clean_one_liner(text: str, max_chars: int = 120) -> str:
     if not text:
         return ""
     s = str(text)
-    # 去 markdown 强调符、标题井号、链接残留
+    # Bỏ ký tự nhấn mạnh markdown, dấu thăng tiêu đề, phần liên kết còn sót
     s = re.sub(r"[#*`>\-]+", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     if not s:
         return ""
-    # 取首句(中英文句号 / 换行)
+    # Lấy câu đầu (dấu chấm kiểu Trung / Latin hoặc xuống dòng)
     m = re.split(r"[。\.!！\n]", s, maxsplit=1)
     head = (m[0] or s).strip()
     candidate = head if len(head) >= 8 else s
@@ -283,6 +283,6 @@ def get_latest_ta_verdict(
             "date": date_str,
             "age_days": int(age_days),
         }
-    except Exception as e:  # 任何意外都 fail-soft
+    except Exception as e:  # Mọi sự cố đều hạ cấp mềm
         logger.debug(f"提取 TA 深度结论失败: {symbol} - {e}")
         return None

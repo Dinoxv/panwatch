@@ -10,7 +10,7 @@ from sqlalchemy import func, or_
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-# 端点入参里有名为 logger 的 query 参数，模块级 logger 用别名避免遮蔽
+# Endpoint có tham số query tên là logger, nên logger cấp module dùng bí danh để khỏi bị che
 _module_logger = logging.getLogger(__name__)
 
 from src.platform.persistence.database import get_db
@@ -246,7 +246,7 @@ def list_logs(
     )
 
 
-# 日志 SSE tail 的轮询/推送节奏
+# Nhịp thăm dò / đẩy của luồng SSE tail nhật ký
 LOGS_SSE_POLL_SEC = 2.0
 LOGS_SSE_MAX_DURATION_SEC = 30 * 60
 LOGS_SSE_BATCH_LIMIT = 200
@@ -306,7 +306,7 @@ async def stream_logs(
             db.close()
 
     async def gen():
-        # 有 Last-Event-ID → 从缺口续推；否则从当前最新开始只 tail 增量
+        # Có Last-Event-ID → đẩy tiếp từ chỗ hụt; không thì bắt đầu từ bản ghi mới nhất và chỉ tail phần tăng thêm
         cursor = resume_id if resume_id > 0 else await asyncio.to_thread(_current_max_id)
         started = time.monotonic()
         idle_ticks = 0
@@ -324,7 +324,7 @@ async def stream_logs(
                 yield format_sse_event(
                     cursor, "logs", {"items": [i.model_dump() for i in items]}
                 )
-                # 一批打满说明还有积压，立即继续拉
+                # Một lô đầy nghĩa là còn tồn đọng, kéo tiếp ngay
                 if len(items) >= LOGS_SSE_BATCH_LIMIT:
                     continue
             else:

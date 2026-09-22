@@ -24,7 +24,7 @@ _ALLOWED_SCOPES = {SCOPE_MCP_READ}
 
 class CreatePatBody(BaseModel):
     name: str = Field("", max_length=100)
-    scopes: list[str] | None = None  # 默认 ["mcp:read"]
+    scopes: list[str] | None = None  # Mặc định ["mcp:read"]
     expires_in_days: int | None = Field(90, ge=1, le=3650)  # None = không bao giờ hết hạn
 
 
@@ -80,7 +80,7 @@ def create_pat(body: CreatePatBody, db: Session = Depends(get_db)):
     db.refresh(row)
 
     result = _serialize(row)
-    result["token"] = plaintext  # 明文仅创建时返回一次
+    result["token"] = plaintext  # Bản rõ chỉ trả về một lần lúc tạo
     return result
 
 

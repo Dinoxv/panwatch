@@ -9,7 +9,7 @@ score_breakdown(alpha/catalyst/quality/source_bonus 加分项,risk/crowd penalty
 
 from __future__ import annotations
 
-# 因子中文标签
+# Nhãn hiển thị của nhân tố
 FACTOR_LABELS = {
     "alpha_score": "选股α",
     "catalyst_score": "催化",
@@ -19,9 +19,9 @@ FACTOR_LABELS = {
     "crowd_penalty": "拥挤度",
 }
 
-# 加分类因子(正值=提升,负值=拖累)
+# Nhân tố cộng điểm (dương = nâng đỡ, âm = kéo lùi)
 ADDITIVE_FACTORS = ("alpha_score", "catalyst_score", "quality_score", "source_bonus")
-# 惩罚类因子(正值=拖累,score_breakdown 中以正数表示惩罚强度)
+# Nhân tố phạt (dương = kéo lùi, trong score_breakdown dùng số dương để biểu thị cường độ phạt)
 PENALTY_FACTORS = ("risk_penalty", "crowd_penalty")
 
 _EPS = 0.01
@@ -61,11 +61,11 @@ def explain_factors(score_breakdown) -> dict:
         v = _f(key)
         if v is None:
             continue
-        if v > _EPS:  # 惩罚为正 = 拖累,贡献记为负
+        if v > _EPS:  # Phạt dương = kéo lùi, phần đóng góp ghi là âm
             negative.append({"factor": key, "label": FACTOR_LABELS.get(key, key), "contribution": round(-v, 2)})
 
     positive.sort(key=lambda x: x["contribution"], reverse=True)
-    negative.sort(key=lambda x: x["contribution"])  # 最负在前
+    negative.sort(key=lambda x: x["contribution"])  # Âm nhất xếp trước
     return {"positive": positive[:5], "negative": negative[:5]}
 
 

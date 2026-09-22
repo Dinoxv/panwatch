@@ -145,14 +145,14 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
             "over_budget_action": "reject",
             "cache_ttl_hours": 12,
             "output_language": "Chinese",
-            "deep_model": "",       # 留空走默认 AI Service 的 model;可填如 "claude-sonnet-4"
-            "quick_model": "",      # 留空 = deep_model;可填便宜模型如 "deepseek-chat"
+            "deep_model": "",       # Để trống thì dùng model của AI Service mặc định; có thể điền ví dụ "claude-sonnet-4"
+            "quick_model": "",      # Để trống = deep_model; có thể điền mô hình rẻ hơn như "deepseek-chat"
             "timeout_minutes": 15,
-            "llm_timeout_seconds": 120,  # 单次 LLM 请求超时，防止 analyst 永久阻塞
-            "llm_max_retries": 0,         # 深度分析失败快速落终态，不在图内重复重试
-            "llm_max_tokens": 4096,       # 限制模型输出，避免网关空闲超时
-            "emit_paper_trading_signal": False,  # 是否把 BUY 决策写入 StrategySignalRun
-                                                  # 驱动模拟盘自动开仓 (默认关,需用户主动启用)
+            "llm_timeout_seconds": 120,  # Thời gian chờ tối đa cho một yêu cầu LLM, tránh để chuyên viên phân tích treo vĩnh viễn
+            "llm_max_retries": 0,         # Phân tích chuyên sâu thất bại thì chốt trạng thái cuối ngay, không thử lại lặp bên trong đồ thị
+            "llm_max_tokens": 4096,       # Giới hạn đầu ra của mô hình, tránh gateway hết hạn vì nhàn rỗi
+            "emit_paper_trading_signal": False,  # Có ghi quyết định MUA vào StrategySignalRun hay không
+                                                  # Dẫn động mô phỏng tự mở vị thế (mặc định tắt, người dùng phải chủ động bật)
             "enable_sec_edgar": False,  # 仅美股：优先使用有 filing-date 语义的 SEC EDGAR 财报
             "holding_period_days": 5,   # 上游决策质量回测使用的默认持仓期限
         },

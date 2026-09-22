@@ -23,7 +23,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# 公告解读缓存(公告不变,长 TTL)
+# Bộ đệm diễn giải công bố thông tin (công bố không đổi nên TTL dài)
 _ANN_CACHE = TTLCache(default_ttl_sec=21600)  # 6h
 
 router = APIRouter()
@@ -51,7 +51,7 @@ def insights_batch(payload: InsightsBatchRequest):
     if not payload.items:
         return []
 
-    # 1) 批量行情（按市场）
+    # 1) Lấy giá hàng loạt (theo thị trường)
     market_items: dict[MarketCode, list[str]] = {}
     for it in payload.items:
         market_code = _parse_market(it.market)
@@ -65,7 +65,7 @@ def insights_batch(payload: InsightsBatchRequest):
             items = []
         quotes_by_market[market_code] = {item["symbol"]: item for item in items}
 
-    # 2) K线摘要（逐只，带 60s 简易缓存）
+    # 2) Tóm tắt nến (từng mã, kèm bộ đệm đơn giản 60s)
     kline_by_symbol: dict[str, dict] = {}
     now = time.time()
     TTL = 60.0
@@ -91,11 +91,11 @@ def insights_batch(payload: InsightsBatchRequest):
             _KLINE_CACHE[cache_key] = (now, summary)
         kline_by_symbol[cache_key] = summary
 
-    # 3) 最新建议（建议池）
+    # 3) Khuyến nghị mới nhất (lấy từ kho khuyến nghị)
     stock_keys = [(it.symbol, _parse_market(it.market).value) for it in payload.items]
     latest_sugs = get_latest_suggestions(stock_keys=stock_keys, include_expired=False)
 
-    # 4) 合并返回
+    # 4) Gộp lại rồi trả về
     results = []
     for it in payload.items:
         market_code = _parse_market(it.market)
@@ -130,7 +130,7 @@ class AddPositionEvalRequest(BaseModel):
     model_id: int | None = None
 
 
-_VERDICTS = ("不适合", "谨慎", "适合")  # 先长后短:'不适合' 含 '适合',顺序不能反
+_VERDICTS = ("不适合", "谨慎", "适合")  # Dài trước ngắn sau: '不适合' chứa '适合', không được đảo thứ tự
 
 
 def _parse_verdict(text: str) -> str:
@@ -217,7 +217,7 @@ async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(g
     dilute_pct = (dilute_abs / cur_c * 100) if is_add and cur_c > 0 else 0.0
     action = "加仓" if is_add else "建仓"
 
-    # 上下文:实时行情 + 基本面 + 技术面 + 消息面(新闻/公告/本地观点)
+    # Ngữ cảnh: giá thời gian thực + cơ bản + kỹ thuật + tin tức (tin / công bố thông tin / quan điểm nội bộ)
     realtime = await fetch_realtime_context(req.symbol, market)
     fundamental = await _fetch_fundamental_context(req.symbol, market)
     technical = await fetch_technical_context(req.symbol, market)
@@ -269,7 +269,7 @@ async def add_position_eval(req: AddPositionEvalRequest, db: Session = Depends(g
     }
 
 
-# ── 公告/财报 利好利空解读(Phase B)──────────────────────────────────────
+# ── Diễn giải công bố thông tin / báo cáo tài chính theo hướng tích cực - tiêu cực (Phase B) ──
 _ANN_TONES = ("利好", "利空", "中性")
 
 
@@ -324,7 +324,7 @@ async def announcement_eval(req: AnnouncementEvalRequest, db: Session = Depends(
     anns = await _fetch_recent_announcements(req.symbol, name)
     if not anns:
         result = {"symbol": req.symbol, "market": market, "items": []}
-        _ANN_CACHE.set(cache_key, result, ttl_sec=600)  # 无数据短缓存
+        _ANN_CACHE.set(cache_key, result, ttl_sec=600)  # Bộ đệm ngắn cho trường hợp không có dữ liệu
         return result
 
     top = anns[:3]

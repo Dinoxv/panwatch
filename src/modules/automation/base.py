@@ -90,7 +90,7 @@ class PortfolioInfo:
         total_quantity = sum(p.quantity for p in positions)
         total_cost = sum(p.cost_value for p in positions)
         avg_cost = total_cost / total_quantity if total_quantity > 0 else 0
-        # 取第一个持仓的交易风格（如果同一股票在多个账户有不同风格，优先取短线）
+        # Lấy phong cách giao dịch của vị thế đầu tiên (nếu cùng mã ở nhiều tài khoản có phong cách khác nhau thì ưu tiên lướt sóng)
         trading_style = positions[0].trading_style
         for p in positions:
             if p.trading_style == "short":
@@ -130,7 +130,7 @@ class AgentContext:
         self.notifier = notifier
         self.config = config
         self.portfolio = portfolio if portfolio is not None else PortfolioInfo()
-        # 主模型标签(初始);实际使用模型由 ai_client 在 failover 后覆盖。
+        # Nhãn mô hình chính (giá trị khởi tạo); mô hình dùng thật sẽ được ai_client ghi đè sau khi hạ cấp.
         self._primary_model_label = model_label
         self.notify_policy = notify_policy
         self.suppress_notify = suppress_notify
@@ -158,8 +158,8 @@ class AnalysisResult:
     agent_name: str
     title: str
     content: str
-    # 通知专用内容(完整、不截断);为空时通知回退用 content。
-    # 深度分析用它推送完整四位分析师观点,而弹窗 content 保持精简。
+    # Nội dung riêng cho thông báo (đầy đủ, không cắt); nếu rỗng thì thông báo lùi về dùng content.
+    # Phân tích chuyên sâu dùng trường này để đẩy đủ quan điểm của cả bốn chuyên viên, còn content trên hộp thoại vẫn gọn.
     notify_content: str | None = None
     raw_data: dict = field(default_factory=dict)
     images: list[str] = field(default_factory=list)
@@ -193,13 +193,13 @@ class BaseAgent(ABC):
         system_prompt, user_content = self.build_prompt(data, context)
         content = await context.ai_client.chat(system_prompt, user_content)
 
-        # 标题含股票信息
+        # Tiêu đề chứa thông tin cổ phiếu
         stock_names = "、".join(s.name for s in context.watchlist[:5])
         if len(context.watchlist) > 5:
             stock_names += f" 等{len(context.watchlist)}只"
         title = f"【{self.display_name}】{stock_names}"
 
-        # 结尾附 AI 模型信息
+        # Cuối bài kèm thông tin mô hình AI
         if context.model_label:
             content = content.rstrip() + f"\n\n---\nAI: {context.model_label}"
 
@@ -230,7 +230,7 @@ class BaseAgent(ABC):
         elif self.name == "intraday_monitor":
             default = 30
         elif self.name == "tradingagents":
-            # 深度分析单次成本高,同标的 12 小时内不重复推送
+            # Phân tích chuyên sâu tốn kém mỗi lần chạy, nên cùng một mã không đẩy lại trong vòng 12 giờ
             default = 12 * 60
         else:
             default = 60
@@ -355,7 +355,7 @@ class BaseAgent(ABC):
             else:
                 logger.info(f"Agent [{self.display_name}] 无需通知")
 
-            # 记录是否发送了通知
+            # Ghi nhận đã gửi thông báo hay chưa
             result.raw_data["notified"] = notified
             return result
 

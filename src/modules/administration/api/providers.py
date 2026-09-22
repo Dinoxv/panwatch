@@ -202,8 +202,8 @@ async def test_model(model_id: int, db: Session = Depends(get_db)):
             api_key=service.api_key,
             model=model.model,
         )
-        # 测试连通性时不下发 temperature:部分模型(如 o1/claude-opus 等)不接受该参数,
-        # 省略后对所有模型都安全,避免因 temperature 报错而误判模型不可用。
+        # Khi kiểm tra kết nối thì không gửi temperature: một số mô hình (o1/claude-opus...) không nhận tham số này,
+        # bỏ đi thì an toàn với mọi mô hình, tránh việc lỗi temperature bị hiểu nhầm thành mô hình không khả dụng.
         reply = await client.chat(
             system_prompt="You are a helpful assistant.",
             user_content="Say 'OK' in one word.",
